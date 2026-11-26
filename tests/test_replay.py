@@ -257,3 +257,21 @@ def test_replay_check_lists_mismatches():
     assert rc["mismatches"] == ["wording: exit expected 0, observed 1"]
     assert rc["reproduced"] == ["release-lookup"]
     assert "2/3" in rc["line"]
+
+
+def test_replay_check_inconclusive_not_matched():
+    runs = [replace(r, status="inconclusive") for r in _runs()]
+    rc = replay_check(runs, load_expectations(EXPECT))
+    assert (rc["matched"], rc["total"]) == (0, 3)
+    assert rc["reproduced"] == []
+    assert rc["line"].startswith("replay check: 0/3 runs match")
+    assert rc["inconclusive"] == ["baseline", "wording", "release-lookup"]
+
+
+def test_replay_check_baseline_not_green():
+    runs = _runs()
+    runs[0] = replace(runs[0], status="fail")
+    rc = replay_check(runs, load_expectations(EXPECT))
+    assert rc["reproduced"] == []
+    assert rc["matched"] == 1  # only the baseline run itself still matches
+    assert rc["line"].startswith("replay check: 1/3 runs match")

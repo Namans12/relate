@@ -165,9 +165,17 @@ def replay_check(runs: Sequence[RunResult], expectations: dict) -> dict:
     mismatches: list[str] = []
     matched = 0
     reproduced: list[str] = []
+    inconclusive: list[str] = []
+    baseline = next((r for r in runs if r.patch is None), None)
+    baseline_green = baseline is not None and baseline.status == "pass"
     for run in runs:
         found = check_expectations([run], expectations)
         mismatches += found
+        # Mirrors compute_verdicts: inconclusive runs, and every patch run when the
+        # baseline is not green, are never "matched" regardless of the counts.
+        if run.status == "inconclusive" or (run.patch is not None and not baseline_green):
+            inconclusive.append(run.label)
+            continue
         if found:
             continue
         matched += 1
@@ -178,4 +186,5 @@ def replay_check(runs: Sequence[RunResult], expectations: dict) -> dict:
     line = (f"replay check: {matched}/{total} runs match "
             "fixtures/installer/expectations.toml (by content sha256)")
     return {"line": line, "matched": matched, "total": total,
-            "mismatches": mismatches, "reproduced": reproduced}
+            "mismatches": mismatches, "reproduced": reproduced,
+            "inconclusive": inconclusive}

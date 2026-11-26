@@ -169,6 +169,8 @@ def run_demo(
     print(rcheck["line"])
     for label in rcheck["reproduced"]:
         print(f"  {label} — expected regression reproduced; demo replay succeeded")
+    for label in rcheck["inconclusive"]:
+        print(f"  {label} — inconclusive, not counted")
     if warnings:
         print("\nwarnings")
         print("\n".join(f"  {w}" for w in warnings))
