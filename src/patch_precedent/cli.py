@@ -32,6 +32,13 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
     )
     explain.add_argument("patch_file", type=Path, metavar="PATCH_FILE")
     explain.add_argument("--store", type=Path, default=STORE_PATH)
+
+    demo = subparsers.add_parser(
+        "demo", help="replay baseline and patches against the upstream harness and explain"
+    )
+    demo.add_argument("scenario", metavar="SCENARIO", help="scenario to run (installer)")
+    demo.add_argument("--fixtures", type=Path, default=None, help="directory of *.patch files")
+    demo.add_argument("--runs-dir", type=Path, default=None, help="where run directories go")
     return parser, subparsers
 
 
@@ -106,6 +113,12 @@ def _cmd_explain(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_demo(args: argparse.Namespace) -> int:
+    from .demo import run_demo
+
+    return run_demo(args.scenario, args.fixtures, args.runs_dir)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser, _subparsers = build_parser()
     args = parser.parse_args(argv)
@@ -115,4 +128,6 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_verify(args)
     if args.command == "explain":
         return _cmd_explain(args)
+    if args.command == "demo":
+        return _cmd_demo(args)
     return 0
