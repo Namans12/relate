@@ -11,6 +11,7 @@ def load(name):
 def test_parse_release_lookup():
     r = load("release-lookup.tap")
     assert (r.passed, r.failed, r.planned) == (192, 2, 194)
+    assert r.skipped == 0
     assert r.complete
     failing = [(x.number, x.description) for x in r.results if not x.ok]
     assert failing == [
@@ -23,6 +24,7 @@ def test_parse_wording_and_baseline():
     for name in ("wording.tap", "baseline.tap"):
         r = load(name)
         assert (r.passed, r.failed, r.complete) == (194, 0, True)
+        assert r.skipped == 0
 
 
 def test_truncated_incomplete():
@@ -49,3 +51,10 @@ def test_incomplete_cases():
     assert not parse_tap("ok 1 - a\nok 1 - b\n1..2\n").complete  # duplicate numbers
     assert not parse_tap("ok 2 - a\n1..1\n").complete  # wrong number
     assert not parse_tap("ok 1 - a\nok 2 - b\n1..1\n").complete  # extra result
+
+
+def test_skip_tracked():
+    r = parse_tap("ok 1 - a\nok 2 - x # SKIP reason\nok 3 - t # TODO later\n1..3\n")
+    assert [x.skipped for x in r.results] == [False, True, False]
+    assert r.results[1].description == "x"
+    assert (r.skipped, r.passed, r.failed) == (1, 3, 0)
