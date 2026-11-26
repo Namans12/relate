@@ -1,6 +1,12 @@
 # Patch Precedent
 
-Two patches touch the same installer file, `distribution/install.sh`. The Relate graph links that file to ADR-0585 ("the installer downloads release assets over the direct route"), the commit that implemented it, and the two regression checks that guard it. Replaying both patches through the unmodified upstream test harness shows that only the release-lookup patch, which probes the GitHub release API to improve an error message, breaks the ADR's no-GitHub-API rule. The wording patch passes. Evidence (graph) and observation (test runs) stay separate: the committed graph is usable before any patch runs, and the replay adds observations on a copy.
+Two scenarios, each replaying authored patches against an unmodified upstream test harness and explaining the results through a Relate graph.
+
+**installer.** Two patches touch the same installer file, `distribution/install.sh`. The Relate graph links that file to ADR-0585 ("the installer downloads release assets over the direct route"), the commit that implemented it, and the two regression checks that guard it. Replaying both patches through the unmodified upstream test harness shows that only the release-lookup patch, which probes the GitHub release API to improve an error message, breaks the ADR's no-GitHub-API rule. The wording patch passes.
+
+**release.** ADR-0580 says a post-release version advance must never rotate `CHANGELOG.md`. A patch to `scripts/release-bump.sh` that always rotates looks harmless because rotation is idempotent, but it breaks that rule and fails check #2 of the release harness. A rewording patch passes, and a docs-only patch to `CONTRIBUTING.md`, which cites no decision, is the control.
+
+Evidence (graph) and observation (test runs) stay separate: the committed graph is usable before any patch runs, and the replay adds observations on a copy.
 
 ## Run it
 
@@ -17,10 +23,17 @@ Get the code:
 git clone https://github.com/Namans12/relate.git && cd relate
 ```
 
-Replay the baseline and both fixture patches against the upstream harness and explain the results:
+Run both scenarios, replaying each baseline and its fixture patches against the upstream harness and explaining the results:
+
+```bash
+uv run patch-precedent demo all
+```
+
+One scenario at a time:
 
 ```bash
 uv run patch-precedent demo installer
+uv run patch-precedent demo release
 ```
 
 Each later `demo` run takes about 25 seconds on the tested Mac.
@@ -31,58 +44,87 @@ Show the source chain behind a patch without fetching upstream or executing anyt
 uv run patch-precedent explain fixtures/installer/release-lookup.patch
 ```
 
-## What you'll see
+`explain` works on any diff against Relate at the pinned commit, not only the fixtures. For a file that cites no decision, such as the release scenario's control, the last line of its output is:
 
-An excerpt of a real `demo installer` run. `…` marks omitted sections (the header, the per-patch diffs and the artifact paths).
+```bash
+uv run patch-precedent explain fixtures/release/docs-only.patch
+```
 
 ```text
+CONTRIBUTING.md: no linked decision
+```
+
+## Scenarios
+
+| Scenario | Decision | Harness | Patches | Observed outcome |
+|---|---|---|---|---|
+| `installer` | ADR-0585, the installer downloads release assets over the direct route | `sh scripts/tests/test_install_sh.sh` (194 checks) | `release-lookup`, `wording` | `release-lookup` violates (exit 1, 192 / 2, fails #7 and #193); `wording` consistent (exit 0, 194 / 0) |
+| `release` | ADR-0580, post-release workspace versioning: an advance never rotates `CHANGELOG.md` | `sh scripts/tests/test_release_advance.sh` (6 checks) | `always-rotate`, `wording`, `docs-only` | `always-rotate` violates (exit 1, 5 / 1, fails #2); `wording` consistent (exit 0, 6 / 0); `docs-only` has no linked decision (exit 0, 6 / 0) |
+
+The release scenario's rotation patch drops the `--skip-changelog` guard in `scripts/release-bump.sh` on the argument that rotation is idempotent. Check #2 shows that an advance then rewrites `CHANGELOG.md`.
+
+## What you'll see
+
+An excerpt of a real `demo all` run. `…` marks omitted sections (per-scenario headers, the baselines, the per-patch diffs, the graph join tables, the artifact paths and the installer's comparison and graph evidence).
+
+```text
+== overall ==
+scenario   runs  matched  exit
+installer  3     3/3      0
+release    4     4/4      0
+overall exit 0
+
 …
+
 == comparison ==
-Input           Changed                  Exit  Passed/failed  #7 static  #193 runtime
---------------  -----------------------  ----  -------------  ---------  ------------
-baseline        — (unpatched)            0     194 / 0        ok 7       ok 193
-release-lookup  distribution/install.sh  1     192 / 2        not ok 7   not ok 193
-wording         distribution/install.sh  0     194 / 0        ok 7       ok 193
+Input          Changed                  Exit  Passed/failed  #2 runtime  #3 runtime
+-------------  -----------------------  ----  -------------  ----------  ----------
+baseline       — (unpatched)            0     6 / 0          ok 2        ok 3
+always-rotate  scripts/release-bump.sh  1     5 / 1          not ok 2    ok 3
+docs-only      CONTRIBUTING.md          0     6 / 0          ok 2        ok 3
+wording        scripts/release-bump.sh  0     6 / 0          ok 2        ok 3
 
 == graph evidence ==
-distribution/install.sh
-  cites ADR-0585 · The installer downloads release assets over the direct route [Proposed]
-    rule      install.sh consults no GitHub API endpoint
-    why       Anonymous GitHub API requests are limited to 60 per hour per IP address,
-              and users behind shared egress (VPNs, corporate NAT, Cloudflare WARP)
-              exhausted that quota, so the one-line installer broke. Release assets are
-              now fetched over the direct download route instead. Only ADR-0068's
-              installer authentication clause is superseded; version selection still
-              uses releases.json.
-    citation  https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/distribution/install.sh#L120-L128
-    decision  https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/docs/adr/0585-installer-downloads-via-direct-route.md#L8-L38
-    scope     https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/docs/adr/0585-installer-downloads-via-direct-route.md#L89-L97
-    commit    5ac38808 fix(installer): download release assets over the direct route, no GitHub API (LABS-1482, ADR-0585) (https://github.com/relatedb/relate/commit/5ac38808547d11f55b02333624cc3e88b46566eb)
+scripts/release-bump.sh
+  cites ADR-0580 · Post-release workspace versioning [Proposed]
+    rule      An advance never rotates CHANGELOG.md; the changelog rotates only at a release cut
+    why       After each release the workspace advances to the next unreleased version,
+              so main never carries a released version. The advance performs the
+              version-surface sweep without the changelog rotation, because an advance
+              is not a release cut and rotating then would mint a release section for a
+              version that never shipped. The released version therefore exists only on
+              the tagged commit and on the registries.
+    citation  https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/release-bump.sh#L224-L238
+    decision  https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/docs/adr/0580-post-release-workspace-versioning.md#L26-L45
+    scope     https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/docs/adr/0580-post-release-workspace-versioning.md#L66-L78
+    commit    d79d8b15 fix(release): close the cargo package drift window with a post-release version advance (LABS-1443, ADR-0580) (#233) (https://github.com/relatedb/relate/commit/d79d8b150561f56b4940876a067d6b7e4781d2bc)
     checks
-      #7    static   drift guard: install.sh consults no GitHub API endpoint (ADR-0585)
-            release-lookup → not ok 7
-            wording → ok 7
-            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/tests/test_install_sh.sh#L129-L135
-      #193  runtime  no case made a GitHub API request (ADR-0585)
-            release-lookup → not ok 193
-            wording → ok 193
-            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/tests/test_install_sh.sh#L610-L615
+      #2    runtime  advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged
+            always-rotate → not ok 2
+            wording → ok 2
+            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/tests/test_release_advance.sh#L45-L46
+      #3    runtime  advance: the version surfaces still advanced
+            always-rotate → ok 3
+            wording → ok 3
+            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/tests/test_release_advance.sh#L48-L49
+  also cites (scanned from source, not reviewed)
+    ADR-0278 · npm distribution [Accepted]  https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/release-bump.sh#L18
+    ADR-0560 · crates.io and PyPI distribution [Proposed]  https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/release-bump.sh#L184
+    ADR-0616 · npm platform packages resolve as file: links in the repository, registry pins injected at pack time [Proposed]  https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/release-bump.sh#L193
 
-== graph join (replay.rl) ==
-MATCH (p:Patch)-[:CHANGES]->(f:File)-[:CITES]->(d:Decision)-[:CHECKED_BY]->(t:Check),
-      (p)-[:PRODUCED]->(o:Observation)-[:FOR_CHECK]->(t),
-      (c:Commit)-[:IMPLEMENTS]->(d)
-RETURN p.id AS patch, f.path AS file, d.id AS decision, d.reason AS reason,
-       c.sha AS implementation, t.name AS assertion, o.tap AS observed,
-       p.label AS label, o.number AS tap_number
-ORDER BY patch, assertion
+…
 
-patch               label           file                     decision  implementation  assertion                                                           observed
-------------------  --------------  -----------------------  --------  --------------  ------------------------------------------------------------------  ----------
-patch:635b00b21f4b  release-lookup  distribution/install.sh  ADR-0585  5ac38808        drift guard: install.sh consults no GitHub API endpoint (ADR-0585)  not ok 7
-patch:635b00b21f4b  release-lookup  distribution/install.sh  ADR-0585  5ac38808        no case made a GitHub API request (ADR-0585)                        not ok 193
-patch:96278d65b413  wording         distribution/install.sh  ADR-0585  5ac38808        drift guard: install.sh consults no GitHub API endpoint (ADR-0585)  ok 7
-patch:96278d65b413  wording         distribution/install.sh  ADR-0585  5ac38808        no case made a GitHub API request (ADR-0585)                        ok 193
+== verdicts ==
+always-rotate: violates ADR-0580 — An advance never rotates CHANGELOG.md; the changelog rotates only at a release cut
+    #2 runtime: an advance rewrote CHANGELOG.md, minting a release section for a version that never shipped
+    harness exit 1, 5 passed / 1 failed
+docs-only: no linked decision
+wording: consistent with ADR-0580 as far as checks #2, #3 cover
+
+replay check: 4/4 runs match fixtures/release/expectations.toml (by content sha256)
+  always-rotate — expected regression reproduced; demo replay succeeded
+
+…
 
 == verdicts ==
 release-lookup: violates ADR-0585 — install.sh consults no GitHub API endpoint
@@ -109,7 +151,9 @@ Committed store (`data/precedent.rl`, always opened read-only):
 (Upstream)   pinned repo and revision
 ```
 
-Added only in a per-run copy (`runs/<timestamp>/replay.rl`):
+The store merges the hand-curated manifests (`evidence/installer.toml`, `evidence/release.toml`) with the scanned citation index (`evidence/scanned/*.tsv`) into one file.
+
+Added only in a per-run copy (`runs/<timestamp>/<scenario>/replay.rl`):
 
 ```text
 (Patch)-[:CHANGES]->(File)
@@ -129,23 +173,36 @@ RETURN p.id AS patch, f.path AS file, d.id AS decision, d.reason AS reason,
 ORDER BY patch, assertion
 ```
 
-Single-file mode: the evidence store is one Relate `.rl` file committed in the repo, opened in-process with `relate.connect` (no server, no sidecar files). `explain` and the demo's evidence queries open it with `read_only=True`; each replay writes to its own copy, `runs/<timestamp>/replay.rl`.
+Single-file mode: the evidence store is one Relate `.rl` file committed in the repo, opened in-process with `relate.connect` (no server, no sidecar files). `explain` and the demo's evidence queries open it with `read_only=True`; each replay writes to its own copy, `runs/<timestamp>/<scenario>/replay.rl`.
 
 All queries use bound parameters. Replays write to a copy because opening a Relate file read-write rewrites it, even for a read-only query; this keeps `data/precedent.rl` byte-unchanged and `git status` clean after a demo.
 
-For each case the demo makes a clean checkout of the pinned upstream revision, applies the patch with `git apply` (after `git apply --check`), and runs the upstream harness, `sh scripts/tests/test_install_sh.sh`, unmodified.
+For each case the demo makes a clean checkout of the pinned upstream revision, applies the patch with `git apply` (after `git apply --check`), and runs the scenario's upstream harness (`sh scripts/tests/test_install_sh.sh` or `sh scripts/tests/test_release_advance.sh`) unmodified.
 
 ## Evidence and provenance
 
-- `evidence/*.toml` are hand-curated manifests (installer, release); `evidence/scanned/*.tsv` is the generated citation index. Curated links point to permalinks at the pinned upstream SHA, with line ranges checked against that revision.
-- Check the committed store against a fresh build of the manifest with `uv run patch-precedent verify-store` (prints `store matches manifest: 6 nodes, 4 relationships` and exits 0). To experiment with a rebuild, write it elsewhere: `uv run patch-precedent build-store --out /tmp/precedent.rl`. The default output is `data/precedent.rl` and overwrites the committed store; restore it with `git checkout data/precedent.rl`.
+Curated evidence:
+
+- `evidence/installer.toml` and `evidence/release.toml` are hand-reviewed manifests holding each decision's rule, reason and checks. Links point to permalinks at the pinned upstream SHA, with line ranges checked against that revision.
+
+Scanned evidence:
+
+- `evidence/scanned/citations.tsv` lists every explicit `ADR-NNNN` mention outside `docs/adr` at the pinned commit (path, ADR, first line, count): 6,837 citations across 1,982 files and 514 ADRs. `evidence/scanned/decisions.tsv` lists all 567 ADR records with title, status and path.
+- Both files are generated by `scan-citations` and never interpreted. The scan output is deterministic: a second scan wrote byte-identical files. `explain` shows scanned citations separately as "also cites (scanned from source, not reviewed)", and a verdict uses only decisions that have curated checks.
+
+Commands:
+
+- `uv run patch-precedent scan-citations [--out-dir DIR]` regenerates the two TSVs from the upstream cache (default `evidence/scanned/`). It prints `scanned 6837 citations across 1982 files and 514 ADRs; 567 decisions (567 with records) at 5f7a510713c3`. Of the store and evidence commands, only this one needs the upstream cache.
+- `uv run patch-precedent build-store [--evidence-dir DIR] [--out PATH]` builds the store from the curated and scanned files. It reads only `evidence/` and needs no network.
+- `uv run patch-precedent verify-store [--evidence-dir DIR] [--store PATH]` compares the committed store with a fresh build of the evidence. It prints `store matches manifest: 2556 nodes, 6843 relationships` and exits 0.
+- To experiment with a rebuild, write it elsewhere: `uv run patch-precedent build-store --out /tmp/precedent.rl`. The default output is `data/precedent.rl` and overwrites the committed store; restore it with `git checkout data/precedent.rl`. The committed store is about 3 MB.
 - Rebuilding does not reproduce identical bytes, so file hashes differ between builds. `verify-store` therefore compares sorted snapshots of all nodes and relationships, which do match.
-- `fixtures/installer/expectations.toml` holds acceptance criteria keyed by patch content sha256. The demo checks itself against it (a disagreement is reported as a mismatch). The file decides only whether the replay matched; it is never displayed as results.
+- `fixtures/<scenario>/expectations.toml` holds acceptance criteria keyed by patch content sha256. The demo checks itself against it (a disagreement is reported as a mismatch). The file decides only whether the replay matched; it is never displayed as results.
 - Patch identity is content: `id = "patch:" + sha256[:12]`. File names are display labels only, so renaming a fixture does not change its verdict.
 
 ## Exit codes
 
-`demo`:
+`demo <scenario>`, and `demo all` for the overall exit:
 
 | Code | Meaning |
 |---:|---|
@@ -153,6 +210,10 @@ For each case the demo makes a clean checkout of the pinned upstream revision, a
 | 2 | Inconclusive or unusable input. Causes: unknown scenario; missing fixtures directory; baseline not green; a patch that did not apply cleanly; a harness timeout; no TAP output, or truncated or malformed TAP; an empty TAP plan (no checks ran); skipped checks (e.g. `ssh-keygen` unavailable); harness exit code and TAP failure count disagreeing; or none of a patch's linked checks appearing in the TAP output. The run is reported as inconclusive, never as pass or fail. |
 | 3 | Observations disagree with `expectations.toml`, a patch's content has no entry in it, or the graph join disagrees with the TAP output it was recorded from. |
 | 4 | Upstream cache missing and the upstream repo is unreachable (first run needs internet). |
+
+`demo all` runs the scenarios in order and prints each one's results even if an earlier one failed. Its overall exit is the worst scenario exit, by precedence 4, then 2, then 3, then 0.
+
+Why the overall exit is 0 when patches fail: the demo's exit says whether the replay matched expectations, not whether every patch passed. In the output above `always-rotate` and `release-lookup` fail their harnesses as expected, so both scenarios and the overall run exit 0. Each patch's own harness exit is in the comparison tables.
 
 `explain`:
 
@@ -165,7 +226,7 @@ For each case the demo makes a clean checkout of the pinned upstream revision, a
 
 ## Run artifacts
 
-Each `demo` run writes `runs/<UTC timestamp>/` (git-ignored) containing, per case, `<label>.log` (the harness output) and `<label>.exit` (its exit code, `none` or `timeout`), plus `replay.rl` (the store copy with replay nodes) and `summary.json` (runs, join rows, warnings, mismatches, verdicts and exit code).
+Runs are git-ignored. `demo installer` or `demo release` writes `runs/<UTC timestamp>/<scenario>/`; `demo all` writes `runs/<UTC timestamp>/{installer,release}/` plus `runs/<UTC timestamp>/summary.json` (each scenario's summary and the overall exit). Each scenario directory contains, per case, `<label>.log` (the harness output) and `<label>.exit` (its exit code, `none` or `timeout`), plus `replay.rl` (the store copy with replay nodes) and `summary.json` (runs, join rows, warnings, mismatches, verdicts and exit code).
 
 ## Tests
 
@@ -177,17 +238,17 @@ uv run pytest -m upstream # runs the real upstream harness, about 2-3 minutes
 ## Pins
 
 - Upstream: `https://github.com/relatedb/relate.git` at `5f7a510713c3feac146133e77d8c5bb72bae1b11`
-- Implementing commit: `5ac38808547d11f55b02333624cc3e88b46566eb`
+- Implementing commits: `5ac38808547d11f55b02333624cc3e88b46566eb` (ADR-0585), `d79d8b150561f56b4940876a067d6b7e4781d2bc` (ADR-0580)
 - `relate-db==1.1.0`, Python 3.12
 
 ## Limitations
 
 - Only tested on macOS.
-- Only the supplied fixtures run; there is no arbitrary patch execution.
-- Links between files, decisions and checks are curated by hand, not extracted.
+- Only the supplied fixtures run; there is no arbitrary patch execution. `explain` reads any patch but executes nothing.
+- Links between files, decisions and checks are curated by hand, not extracted. Only ADR-0585 and ADR-0580 have curated checks; the scanned citations are an index, not a review.
 - No MCP server or browser explorer yet.
 - If the upstream harness skips any check on your machine (for example, `ssh-keygen` is unavailable), the demo reports the run as inconclusive (exit 2) instead of trusting it.
-- ADR-0585 has status "Proposed" upstream.
+- ADR-0585 and ADR-0580 have status "Proposed" upstream.
 
 ## AI tools used
 
@@ -195,10 +256,10 @@ Patch Precedent was built with significant AI assistance, disclosed here as the 
 
 - **Claude Code (Anthropic)** turned the project plan into an implementation plan and ran the build. Claude Opus planned each task and reviewed every change and the final branch. Claude Sonnet subagents wrote the code, tests and documentation.
 - **The project owner** chose the idea, approved the plan, and made the integration, licensing and publication decisions.
-- **Not AI-generated:** Relate, the upstream installer, its test harness and ADR-0585 come from relatedb/relate at the pinned commit (see [NOTICE](NOTICE)).
+- **Not AI-generated:** Relate, the upstream installer, its test harness and ADR-0585, ADR-0580 and the release script come from relatedb/relate at the pinned commit (see [NOTICE](NOTICE)).
 - **No model at run time:** the demo and `explain` call no AI service and need no API key.
 - **Verified, not described:** every result, test count and output excerpt in this README comes from real local runs of the code in this repository.
 
 ## License and attribution
 
-Patch Precedent is released under the [MIT License](LICENSE). It references and excerpts relatedb/relate, which is Apache-2.0; [NOTICE](NOTICE) lists exactly what is used. Both patches in `fixtures/installer/` are authored demonstration inputs, not upstream changes.
+Patch Precedent is released under the [MIT License](LICENSE). It references and excerpts relatedb/relate, which is Apache-2.0; [NOTICE](NOTICE) lists exactly what is used. The patches in `fixtures/installer/` and `fixtures/release/` are authored demonstration inputs, not upstream changes.

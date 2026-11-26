@@ -12,10 +12,18 @@ License, Version 2.0, at commit 5f7a510713c3feac146133e77d8c5bb72bae1b11:
   fixtures/installer/.
 - The subject line of the implementing commit
   5ac38808547d11f55b02333624cc3e88b46566eb, quoted in evidence/installer.toml.
+- ADR titles and statuses for all decisions, quoted in
+  evidence/scanned/decisions.tsv.
+- File paths and line numbers of ADR citations, recorded in
+  evidence/scanned/citations.tsv.
+- Decision text from ADR-0580 (docs/adr/0580-post-release-workspace-versioning.md),
+  paraphrased in evidence/release.toml, plus the release fixtures' diff context
+  from scripts/release-bump.sh and CONTRIBUTING.md, appearing in the patches
+  under fixtures/release/.
 
-The two patches in fixtures/installer/ (wording.patch and release-lookup.patch)
-are authored demonstration inputs written against Relate's code. They are not
-upstream changes.
+The patches in fixtures/installer/ and fixtures/release/ are authored
+demonstration inputs written against Relate's code. They are not upstream
+changes.
 
 The upstream repository is fetched at run time into a local cache and is not
 vendored in this repository.
