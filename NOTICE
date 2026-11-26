@@ -1,0 +1,24 @@
+Patch Precedent
+===============
+
+This project includes references to and short excerpts of relatedb/relate
+(https://github.com/relatedb/relate), which is licensed under the Apache
+License, Version 2.0, at commit 5f7a510713c3feac146133e77d8c5bb72bae1b11:
+
+- Decision text from ADR-0585 (docs/adr/0585-installer-downloads-via-direct-route.md),
+  paraphrased in evidence/installer.toml.
+- Line references and check descriptions from scripts/tests/test_install_sh.sh.
+- Diff context from distribution/install.sh, appearing in the patches under
+  fixtures/installer/.
+
+The two patches in fixtures/installer/ (wording.patch and release-lookup.patch)
+are authored demonstration inputs written against Relate's code. They are not
+upstream changes.
+
+The upstream repository is fetched at run time into a local cache and is not
+vendored in this repository.
+
+Relate is copyright its authors. Apache License 2.0:
+https://www.apache.org/licenses/LICENSE-2.0
+
+The license for Patch Precedent's own code is to be chosen by the project owner.
