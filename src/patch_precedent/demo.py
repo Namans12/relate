@@ -68,40 +68,49 @@ def run_demo(
     fixtures_dir = Path(fixtures_dir) if fixtures_dir else root / "fixtures" / "installer"
     runs_root = Path(runs_root) if runs_root else root / "runs"
 
-    print(f"upstream  {pins.UPSTREAM_URL}@{pins.UPSTREAM_SHA[:12]}")
-    print(f"relate    {_relate_version()}")
-    print(f"evidence  {pins.STORE_PATH} (opened read-only)")
-    print("Results below are observed from fresh runs and live graph queries.")
-    print()
+    if not fixtures_dir.is_dir():
+        print(f"fixtures directory not found: {fixtures_dir}", file=sys.stderr)
+        return 2
+    if not pins.STORE_PATH.is_file():
+        print(f"evidence store not found: {pins.STORE_PATH} "
+              "(restore it with `git checkout data/precedent.rl`)", file=sys.stderr)
+        return 2
     try:
         ensure_upstream()
     except UpstreamUnavailable as exc:
         print(str(exc), file=sys.stderr)
         return 4
-    if not fixtures_dir.is_dir():
-        print(f"fixtures directory not found: {fixtures_dir}", file=sys.stderr)
-        return 2
+
+    print(f"upstream  {pins.UPSTREAM_URL}@{pins.UPSTREAM_SHA[:12]}")
+    print(f"relate    {_relate_version()}")
+    print(f"evidence  {pins.STORE_PATH} (opened read-only)")
+    print("Results below are observed from fresh runs and live graph queries.")
+    print()
     patches = [read_patch(p) for p in sorted(fixtures_dir.glob("*.patch"))]
     expectations = load_expectations(root / "fixtures" / "installer" / "expectations.toml")
     run_dir = _make_run_dir(runs_root)
 
     runs = []
-    for label, patch in [("baseline", None)] + [(p.label, p) for p in patches]:
-        print(f"== {label} ==")
-        if patch is not None:
-            print(f"patch {patch.sha256[:12]}  changes {', '.join(patch.changed_files)}")
-            print(Path(patch.path).read_text(errors="replace").rstrip("\n"))
-        print("running harness…", flush=True)
-        run = run_case(label, patch, run_dir)
-        runs.append(run)
-        if run.tap is not None:
-            counts = f"{run.tap.passed} passed / {run.tap.failed} failed"
-        else:
-            counts = "no TAP"
-        code = "none" if run.exit_code is None else run.exit_code
-        tail = f" ({run.reason})" if run.status == "inconclusive" and run.reason else ""
-        print(f"exit {code}  {counts}  → {run.status}{tail}")
-        print()
+    try:
+        for label, patch in [("baseline", None)] + [(p.label, p) for p in patches]:
+            print(f"== {label} ==")
+            if patch is not None:
+                print(f"patch {patch.sha256[:12]}  changes {', '.join(patch.changed_files)}")
+                print(Path(patch.path).read_text(errors="replace").rstrip("\n"))
+            print("running harness…", flush=True)
+            run = run_case(label, patch, run_dir)
+            runs.append(run)
+            if run.tap is not None:
+                counts = f"{run.tap.passed} passed / {run.tap.failed} failed"
+            else:
+                counts = "no TAP"
+            code = "none" if run.exit_code is None else run.exit_code
+            tail = f" ({run.reason})" if run.status == "inconclusive" and run.reason else ""
+            print(f"exit {code}  {counts}  → {run.status}{tail}")
+            print()
+    except UpstreamUnavailable as exc:
+        print(str(exc), file=sys.stderr)
+        return 4
 
     conn = open_readonly(pins.STORE_PATH)
     try:
