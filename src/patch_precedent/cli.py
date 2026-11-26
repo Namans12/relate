@@ -39,8 +39,8 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
     demo = subparsers.add_parser(
         "demo", help="replay baseline and patches against the upstream harness and explain"
     )
-    demo.add_argument("scenario", metavar="SCENARIO", choices=list(SCENARIOS),
-                      help=f"scenario to run ({', '.join(SCENARIOS)})")
+    demo.add_argument("scenario", metavar="SCENARIO", choices=[*SCENARIOS, "all"],
+                      help=f"scenario to run ({', '.join(SCENARIOS)}, or all)")
     demo.add_argument("--fixtures", type=Path, default=None, help="directory of *.patch files")
     demo.add_argument("--runs-dir", type=Path, default=None, help="where run directories go")
 
@@ -124,8 +124,13 @@ def _cmd_explain(args: argparse.Namespace) -> int:
 
 
 def _cmd_demo(args: argparse.Namespace) -> int:
-    from .demo import run_demo
+    from .demo import run_all, run_demo
 
+    if args.scenario == "all":
+        if args.fixtures is not None:
+            print("--fixtures cannot be used with 'demo all'", file=sys.stderr)
+            return 2
+        return run_all(args.runs_dir)
     return run_demo(args.scenario, args.fixtures, args.runs_dir)
 
 

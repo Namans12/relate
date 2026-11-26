@@ -2,16 +2,19 @@
 import json
 import shutil
 import sys
+from collections.abc import Sequence
 from datetime import datetime, timezone
 from pathlib import Path
 
 from . import pins
-from .scenarios import SCENARIOS, get_scenario
+from .scenarios import SCENARIOS, Scenario, get_scenario
 from .report import (
     comparison_table,
     compute_verdicts,
+    format_table,
     join_table,
     observed_map,
+    overall_exit,
     render_file_evidence,
 )
 
@@ -38,17 +41,28 @@ def _relate_version() -> str:
         return pins.RELATE_VERSION
 
 
-def run_demo(
-    scenario: str = "installer",
-    fixtures_dir: Path | None = None,
-    runs_root: Path | None = None,
-) -> int:
-    try:
-        sc = get_scenario(scenario)
-    except KeyError:
-        print(f"unknown scenario: {scenario!r} (available: {', '.join(SCENARIOS)})",
-              file=sys.stderr)
+def _preflight(fixtures_dirs: Sequence[Path]) -> int | None:
+    """Check fixtures, store and upstream before any output; return an exit code on failure."""
+    from .upstream import UpstreamUnavailable, ensure_upstream
+
+    for fixtures_dir in fixtures_dirs:
+        if not fixtures_dir.is_dir():
+            print(f"fixtures directory not found: {fixtures_dir}", file=sys.stderr)
+            return 2
+    if not pins.STORE_PATH.is_file():
+        print(f"evidence store not found: {pins.STORE_PATH} "
+              "(restore it with `git checkout data/precedent.rl`)", file=sys.stderr)
         return 2
+    try:
+        ensure_upstream()
+    except UpstreamUnavailable as exc:
+        print(str(exc), file=sys.stderr)
+        return 4
+    return None
+
+
+def _run_scenario(sc: Scenario, fixtures_dir: Path, run_dir: Path) -> tuple[int, dict]:
+    """Run one scenario into run_dir (already preflighted); return (exit code, summary)."""
     import relate
 
     from .diffparse import read_patch
@@ -63,24 +77,9 @@ def run_demo(
         replay_check,
     )
     from .store import cited_decisions, evidence_for_paths, open_readonly
-    from .upstream import UpstreamUnavailable, ensure_upstream
+    from .upstream import UpstreamUnavailable
 
     root = pins.project_root()
-    fixtures_dir = Path(fixtures_dir) if fixtures_dir else sc.fixtures_dir
-    runs_root = Path(runs_root) if runs_root else root / "runs"
-
-    if not fixtures_dir.is_dir():
-        print(f"fixtures directory not found: {fixtures_dir}", file=sys.stderr)
-        return 2
-    if not pins.STORE_PATH.is_file():
-        print(f"evidence store not found: {pins.STORE_PATH} "
-              "(restore it with `git checkout data/precedent.rl`)", file=sys.stderr)
-        return 2
-    try:
-        ensure_upstream()
-    except UpstreamUnavailable as exc:
-        print(str(exc), file=sys.stderr)
-        return 4
 
     print(f"upstream  {pins.UPSTREAM_URL}@{pins.UPSTREAM_SHA[:12]}")
     print(f"relate    {_relate_version()}")
@@ -89,7 +88,6 @@ def run_demo(
     print()
     patches = [read_patch(p) for p in sorted(fixtures_dir.glob("*.patch"))]
     expectations = load_expectations(sc.expectations_path)
-    run_dir = _make_run_dir(runs_root)
 
     runs = []
     try:
@@ -111,7 +109,7 @@ def run_demo(
             print()
     except UpstreamUnavailable as exc:
         print(str(exc), file=sys.stderr)
-        return 4
+        return 4, {}
 
     conn = open_readonly(pins.STORE_PATH)
     try:
@@ -231,4 +229,60 @@ def run_demo(
         "exit_code": exit_code,
     }
     summary_path.write_text(json.dumps(summary, indent=2) + "\n")
-    return exit_code
+    return exit_code, summary
+
+
+def run_demo(
+    scenario: str = "installer",
+    fixtures_dir: Path | None = None,
+    runs_root: Path | None = None,
+) -> int:
+    try:
+        sc = get_scenario(scenario)
+    except KeyError:
+        print(f"unknown scenario: {scenario!r} (available: {', '.join(SCENARIOS)})",
+              file=sys.stderr)
+        return 2
+    fixtures_dir = Path(fixtures_dir) if fixtures_dir else sc.fixtures_dir
+    runs_root = Path(runs_root) if runs_root else pins.project_root() / "runs"
+    failed = _preflight([fixtures_dir])
+    if failed is not None:
+        return failed
+    run_dir = _make_run_dir(runs_root) / sc.name
+    run_dir.mkdir()
+    code, _summary = _run_scenario(sc, fixtures_dir, run_dir)
+    return code
+
+
+def run_all(runs_root: Path | None = None) -> int:
+    """Run every scenario in registry order under one runs/<ts>/ directory."""
+    runs_root = Path(runs_root) if runs_root else pins.project_root() / "runs"
+    failed = _preflight([sc.fixtures_dir for sc in SCENARIOS.values()])
+    if failed is not None:
+        return failed
+    ts_dir = _make_run_dir(runs_root)
+    codes: list[int] = []
+    summaries: dict[str, dict] = {}
+    for sc in SCENARIOS.values():
+        print(f"### scenario: {sc.name}")
+        run_dir = ts_dir / sc.name
+        run_dir.mkdir()
+        code, summary = _run_scenario(sc, sc.fixtures_dir, run_dir)
+        if code == 4:  # upstream lost mid-run: nothing further can run
+            return 4
+        codes.append(code)
+        summaries[sc.name] = summary
+        print()
+    overall = overall_exit(codes)
+    rows = []
+    for name, summary in summaries.items():
+        rc = summary["replay_check"]
+        rows.append((name, len(summary["runs"]), f"{rc['matched']}/{rc['total']}",
+                     summary["exit_code"]))
+    print("== overall ==")
+    print(format_table(["scenario", "runs", "matched", "exit"], rows, rule=False))
+    print(f"overall exit {overall}")
+    (ts_dir / "summary.json").write_text(
+        json.dumps({"scenarios": summaries, "overall_exit": overall}, indent=2) + "\n")
+    print(f"summary   {ts_dir / 'summary.json'}")
+    return overall

@@ -125,15 +125,24 @@ def render_evidence_chain(
 
 # --- demo rendering -------------------------------------------------------
 
-def format_table(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> str:
+def overall_exit(codes: Sequence[int]) -> int:
+    """Worst exit wins: 4 (upstream), then 2, then 3, else 0."""
+    for worst in (4, 2, 3):
+        if worst in codes:
+            return worst
+    return 0
+
+
+def format_table(headers: Sequence[str], rows: Sequence[Sequence[str]], rule: bool = True) -> str:
     cells = [list(map(str, headers))] + [list(map(str, r)) for r in rows]
     widths = [max(len(r[i]) for r in cells) for i in range(len(headers))]
 
     def fmt(r):
         return "  ".join(c.ljust(w) for c, w in zip(r, widths)).rstrip()
 
-    rule = "  ".join("-" * w for w in widths)
-    return "\n".join([fmt(cells[0]), rule, *map(fmt, cells[1:])])
+    sep = "  ".join("-" * w for w in widths)
+    lines = [fmt(cells[0])] + ([sep] if rule else []) + [fmt(c) for c in cells[1:]]
+    return "\n".join(lines)
 
 
 def observed_map(run: RunResult) -> dict[str, TapResult]:

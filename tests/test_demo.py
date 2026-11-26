@@ -5,7 +5,7 @@ import shutil
 import pytest
 
 from patch_precedent import pins
-from patch_precedent.demo import run_demo
+from patch_precedent.demo import run_all, run_demo
 
 pytestmark = pytest.mark.upstream
 
@@ -14,9 +14,9 @@ D7 = "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)"
 D193 = "no case made a GitHub API request (ADR-0585)"
 
 
-def _summary(runs_root):
+def _summary(runs_root, scenario="installer"):
     (run_dir,) = [p for p in runs_root.iterdir() if p.is_dir()]
-    return json.loads((run_dir / "summary.json").read_text())
+    return json.loads((run_dir / scenario / "summary.json").read_text())
 
 
 def _by_label(summary):
@@ -60,3 +60,39 @@ def test_demo_renamed_fixtures(tmp_path):
     runs = _by_label(_summary(tmp_path / "runs"))
     assert runs["wording"]["failing_numbers"] == [7, 193]
     assert runs["release-lookup"]["failing"] == []
+
+
+RELEASE_2 = ("advance: empty-[Unreleased] CHANGELOG.md byte-identical — "
+             "no heading inserted, [Unreleased] ref unchanged")
+
+
+def test_demo_release_acceptance(tmp_path):
+    assert run_demo("release", runs_root=tmp_path) == 0
+    s = _summary(tmp_path, "release")
+    runs = _by_label(s)
+    triple = lambda r: (r["passed"], r["failed"], r["exit_code"])  # noqa: E731
+    assert triple(runs["baseline"]) == (6, 0, 0)
+    assert triple(runs["wording"]) == (6, 0, 0)
+    assert triple(runs["always-rotate"]) == (5, 1, 1)
+    assert triple(runs["docs-only"]) == (6, 0, 0)
+    assert runs["always-rotate"]["failing"] == [RELEASE_2]
+    assert runs["always-rotate"]["failing_numbers"] == [2]
+    ids = {runs["wording"]["patch_id"], runs["always-rotate"]["patch_id"]}
+    assert {row["patch"] for row in s["join_rows"]} == ids
+    assert s["exit_code"] == 0
+
+
+def test_demo_all(tmp_path, capsys):
+    before = hashlib.sha256(pins.STORE_PATH.read_bytes()).hexdigest()
+    assert run_all(runs_root=tmp_path) == 0
+    (run_dir,) = [p for p in tmp_path.iterdir() if p.is_dir()]
+    top = json.loads((run_dir / "summary.json").read_text())
+    assert list(top["scenarios"]) == ["installer", "release"]
+    assert top["overall_exit"] == 0
+    for name, sc in top["scenarios"].items():
+        assert sc["exit_code"] == 0
+        assert json.loads((run_dir / name / "summary.json").read_text()) == sc
+    out = capsys.readouterr().out
+    assert out.index("### scenario: installer") < out.index("### scenario: release")
+    assert "== overall ==" in out and "overall exit 0" in out
+    assert hashlib.sha256(pins.STORE_PATH.read_bytes()).hexdigest() == before
