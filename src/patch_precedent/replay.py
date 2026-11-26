@@ -159,7 +159,11 @@ def join_tap_disagreements(
     return out
 
 
-def replay_check(runs: Sequence[RunResult], expectations: dict) -> dict:
+def replay_check(
+    runs: Sequence[RunResult],
+    expectations: dict,
+    expectations_name: str = "fixtures/installer/expectations.toml",
+) -> dict:
     """Per-run comparison against expectations.toml, for the explicit replay-success line."""
     by_sha = {p["sha256"]: p for p in expectations.get("patch", [])}
     mismatches: list[str] = []
@@ -184,7 +188,7 @@ def replay_check(runs: Sequence[RunResult], expectations: dict) -> dict:
             reproduced.append(run.label)
     total = len(runs)
     line = (f"replay check: {matched}/{total} runs match "
-            "fixtures/installer/expectations.toml (by content sha256)")
+            f"{expectations_name} (by content sha256)")
     return {"line": line, "matched": matched, "total": total,
             "mismatches": mismatches, "reproduced": reproduced,
             "inconclusive": inconclusive}

@@ -5,6 +5,7 @@ import tempfile
 from pathlib import Path
 
 from .pins import STORE_PATH, project_root
+from .scenarios import SCENARIOS
 
 DEFAULT_MANIFEST = project_root() / "evidence" / "installer.toml"
 
@@ -36,7 +37,8 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
     demo = subparsers.add_parser(
         "demo", help="replay baseline and patches against the upstream harness and explain"
     )
-    demo.add_argument("scenario", metavar="SCENARIO", help="scenario to run (installer)")
+    demo.add_argument("scenario", metavar="SCENARIO", choices=list(SCENARIOS),
+                      help=f"scenario to run ({', '.join(SCENARIOS)})")
     demo.add_argument("--fixtures", type=Path, default=None, help="directory of *.patch files")
     demo.add_argument("--runs-dir", type=Path, default=None, help="where run directories go")
     return parser, subparsers

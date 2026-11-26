@@ -32,12 +32,13 @@ def classify(
     timed_out: bool,
     exit_code: int | None,
     tap: TapReport | None,
+    timeout_s: int = pins.HARNESS_TIMEOUT_S,
 ) -> tuple[Status, str | None]:
     if not apply_ok:
         return "inconclusive", "the patch did not apply cleanly to the pinned upstream"
     if timed_out:
         return "inconclusive", (
-            f"the harness timed out after {pins.HARNESS_TIMEOUT_S} seconds"
+            f"the harness timed out after {timeout_s} seconds"
         )
     if tap is None:
         return "inconclusive", "no TAP output was produced by the harness"
@@ -61,10 +62,16 @@ def classify(
     )
 
 
-def run_case(label: str, patch: PatchInfo | None, run_dir: Path) -> RunResult:
+def run_case(
+    label: str,
+    patch: PatchInfo | None,
+    run_dir: Path,
+    harness_cmd: tuple[str, ...] = pins.HARNESS_CMD,
+    timeout_s: int = pins.HARNESS_TIMEOUT_S,
+) -> RunResult:
     ensure_upstream()
     sha = pins.UPSTREAM_SHA
-    command = " ".join(pins.HARNESS_CMD)
+    command = " ".join(harness_cmd)
     run_dir = Path(run_dir)
     run_dir.mkdir(parents=True, exist_ok=True)
     log_path = run_dir / f"{label}.log"
@@ -87,14 +94,14 @@ def run_case(label: str, patch: PatchInfo | None, run_dir: Path) -> RunResult:
         timed_out = False
         with open(log_path, "wb") as log:
             proc = subprocess.Popen(
-                list(pins.HARNESS_CMD),
+                list(harness_cmd),
                 cwd=checkout,
                 stdout=log,
                 stderr=subprocess.STDOUT,
                 start_new_session=True,
             )
             try:
-                exit_code: int | None = proc.wait(timeout=pins.HARNESS_TIMEOUT_S)
+                exit_code: int | None = proc.wait(timeout=timeout_s)
             except subprocess.TimeoutExpired:
                 timed_out = True
                 exit_code = None
@@ -105,4 +112,4 @@ def run_case(label: str, patch: PatchInfo | None, run_dir: Path) -> RunResult:
                 proc.wait()
         exit_path.write_text(f"{'timeout' if timed_out else exit_code}\n")
         tap = parse_tap(log_path.read_text(errors="replace"))
-        return result(exit_code, tap, *classify(True, timed_out, exit_code, tap))
+        return result(exit_code, tap, *classify(True, timed_out, exit_code, tap, timeout_s))

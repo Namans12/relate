@@ -1,0 +1,31 @@
+# Acceptance criteria the demo checks itself against, keyed by patch content (sha256).
+# They are never displayed as results: shown outcomes come only from observed runs.
+
+[baseline]
+exit = 0
+passed = 6
+failed = 0
+failing = []
+
+[[patch]]
+sha256 = "25a59c759f3f8876f6fe6495e01d016dbfc1ef83ce717a5b9293936edc291269"  # wording.patch
+exit = 0
+passed = 6
+failed = 0
+failing = []
+
+[[patch]]
+sha256 = "5b21144e810e0ac0b41f213f1f42c2846e7b79410b1dcec5509ff1b11fd5f1c5"  # always-rotate.patch
+exit = 1
+passed = 5
+failed = 1
+failing = [
+  "advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged",
+]
+
+[[patch]]
+sha256 = "8ea2fb7d08c0eb7a34a9304f351477678848ee4f1cdbff9334c177b62ebfc27a"  # docs-only.patch
+exit = 0
+passed = 6
+failed = 0
+failing = []

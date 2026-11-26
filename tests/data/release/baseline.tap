@@ -1,0 +1,10 @@
+release-bump: CHANGELOG rotation skipped (the advance's scoped mode); the changelog rotates only at a release cut
+release-bump: all version surfaces set to 0.1.1
+ok 1 - advance: scoped bump exits 0
+ok 2 - advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged
+ok 3 - advance: the version surfaces still advanced
+ok 4 - refusal: an argument other than --skip-changelog exits 1
+ok 5 - refusal: usage printed to stderr
+ok 6 - refusal: nothing touched before the refusal
+1..6
+# pass 6, fail 0 (of 6)

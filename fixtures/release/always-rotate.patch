@@ -1,0 +1,23 @@
+diff --git a/scripts/release-bump.sh b/scripts/release-bump.sh
+index 6048649..b9e9e46 100755
+--- a/scripts/release-bump.sh
++++ b/scripts/release-bump.sh
+@@ -228,14 +228,10 @@ cargo metadata --format-version 1 > /dev/null
+ # the idempotence decision, the link-ref rewrites — lives in
+ # scripts/changelog_rotate.py, the one implementation, unit-tested directly.
+ # Already-rotated is the module's own skip notice on stdout, exit 0. The
+-# advance's scoped mode skips the step: the changelog rotates only at a
+-# release cut (ADR-0580).
+-if (( ! skip_changelog )); then
+-  python3 scripts/changelog_rotate.py "$changelog" \
+-    --version "$next" --date "$(date +%F)"
+-else
+-  echo "release-bump: CHANGELOG rotation skipped (the advance's scoped mode); the changelog rotates only at a release cut"
+-fi
++# advance's scoped mode used to skip the step, but rotation is idempotent, so
++# every sweep now runs it and the changelog can never fall behind (ADR-0580).
++python3 scripts/changelog_rotate.py "$changelog" \
++  --version "$next" --date "$(date +%F)"
+ 
+ # --- 4. Consistency self-check (after editing) --------------------------------
+ 

@@ -1,0 +1,13 @@
+diff --git a/scripts/release-bump.sh b/scripts/release-bump.sh
+index 6048649..534c546 100755
+--- a/scripts/release-bump.sh
++++ b/scripts/release-bump.sh
+@@ -234,7 +234,7 @@ if (( ! skip_changelog )); then
+   python3 scripts/changelog_rotate.py "$changelog" \
+     --version "$next" --date "$(date +%F)"
+ else
+-  echo "release-bump: CHANGELOG rotation skipped (the advance's scoped mode); the changelog rotates only at a release cut"
++  echo "release-bump: --skip-changelog: CHANGELOG.md left unchanged (an advance is not a release cut)"
+ fi
+ 
+ # --- 4. Consistency self-check (after editing) --------------------------------

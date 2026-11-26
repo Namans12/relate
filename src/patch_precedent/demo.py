@@ -1,4 +1,4 @@
-"""`demo installer`: replay baseline and patches, then explain the results via the graph."""
+"""`demo <scenario>`: replay baseline and patches, then explain the results via the graph."""
 import json
 import shutil
 import sys
@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from . import pins
+from .scenarios import SCENARIOS, get_scenario
 from .report import (
     comparison_table,
     compute_verdicts,
@@ -13,8 +14,6 @@ from .report import (
     observed_map,
     render_evidence_chain,
 )
-
-SCENARIOS = ("installer",)
 
 
 def _make_run_dir(root: Path) -> Path:
@@ -44,7 +43,9 @@ def run_demo(
     fixtures_dir: Path | None = None,
     runs_root: Path | None = None,
 ) -> int:
-    if scenario not in SCENARIOS:
+    try:
+        sc = get_scenario(scenario)
+    except KeyError:
         print(f"unknown scenario: {scenario!r} (available: {', '.join(SCENARIOS)})",
               file=sys.stderr)
         return 2
@@ -65,7 +66,7 @@ def run_demo(
     from .upstream import UpstreamUnavailable, ensure_upstream
 
     root = pins.project_root()
-    fixtures_dir = Path(fixtures_dir) if fixtures_dir else root / "fixtures" / "installer"
+    fixtures_dir = Path(fixtures_dir) if fixtures_dir else sc.fixtures_dir
     runs_root = Path(runs_root) if runs_root else root / "runs"
 
     if not fixtures_dir.is_dir():
@@ -87,7 +88,7 @@ def run_demo(
     print("Results below are observed from fresh runs and live graph queries.")
     print()
     patches = [read_patch(p) for p in sorted(fixtures_dir.glob("*.patch"))]
-    expectations = load_expectations(root / "fixtures" / "installer" / "expectations.toml")
+    expectations = load_expectations(sc.expectations_path)
     run_dir = _make_run_dir(runs_root)
 
     runs = []
@@ -98,7 +99,7 @@ def run_demo(
                 print(f"patch {patch.sha256[:12]}  changes {', '.join(patch.changed_files)}")
                 print(Path(patch.path).read_text(errors="replace").rstrip("\n"))
             print("running harness…", flush=True)
-            run = run_case(label, patch, run_dir)
+            run = run_case(label, patch, run_dir, sc.harness_cmd, sc.timeout_s)
             runs.append(run)
             if run.tap is not None:
                 counts = f"{run.tap.passed} passed / {run.tap.failed} failed"
@@ -136,7 +137,8 @@ def run_demo(
         joined = join_rows(jconn)
     finally:
         jconn.close()
-    rcheck = replay_check(runs, expectations)
+    rcheck = replay_check(
+        runs, expectations, sc.expectations_path.relative_to(root).as_posix())
     mismatches = check_expectations(runs, expectations)
     mismatches += join_tap_disagreements(runs, evidence_by_patch, joined)
 
