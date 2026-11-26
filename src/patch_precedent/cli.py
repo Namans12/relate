@@ -51,6 +51,24 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
     mcp.add_argument("--runs-dir", type=Path, default=project_root() / "runs",
                      help="where demo run directories (replay evidence) live")
 
+    subparsers.add_parser(
+        "fetch-relate-cli", help="download and verify the pinned relate CLI; print its path"
+    )
+
+    ev = subparsers.add_parser("eval", help="agent evaluation (runs headless Claude Code)")
+    ev_sub = ev.add_subparsers(dest="eval_command", metavar="<eval-command>", required=True)
+    run = ev_sub.add_parser(
+        "run", help="run each case with and without the precedent tool (needs `demo all` first)"
+    )
+    run.add_argument("--repeats", type=int, default=3)
+    run.add_argument("--cases", default=None, help="comma-separated case ids, e.g. C1,C2")
+    run.add_argument("--arms", default="baseline,graph", help="comma-separated: baseline,graph")
+    run.add_argument("--out", type=Path, default=None,
+                     help="output directory (default eval/results/<UTC timestamp>)")
+    run.add_argument("--claude-bin", default="claude")
+    run.add_argument("--runs-dir", type=Path, default=project_root() / "runs",
+                     help="where demo run directories (replay evidence) live")
+
     scan = subparsers.add_parser(
         "scan-citations", help="scan upstream for ADR-NNNN mentions into evidence/scanned/"
     )
@@ -151,6 +169,51 @@ def _cmd_mcp(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_fetch_relate_cli(args: argparse.Namespace) -> int:
+    from .relate_cli import RelateCliError, ensure_relate_cli
+
+    try:
+        print(ensure_relate_cli())
+    except (RelateCliError, OSError) as exc:
+        print(str(exc).replace("\n", " "), file=sys.stderr)
+        return 4
+    return 0
+
+
+def _cmd_eval_run(args: argparse.Namespace) -> int:
+    import datetime
+
+    from .eval.cases import load_cases
+    from .eval.runner import EvalRefused, run_eval
+    from .upstream import UpstreamUnavailable
+
+    cases = load_cases()
+    if args.cases:
+        want = [c.strip() for c in args.cases.split(",") if c.strip()]
+        unknown = [c for c in want if c not in {x.id for x in cases}]
+        if unknown:
+            print(f"unknown case(s): {', '.join(unknown)}", file=sys.stderr)
+            return 2
+        cases = [c for c in cases if c.id in want]
+    arms = [a.strip() for a in args.arms.split(",") if a.strip()]
+    if args.repeats < 1:
+        print("--repeats must be at least 1", file=sys.stderr)
+        return 2
+    out = args.out or project_root() / "eval" / "results" / datetime.datetime.now(
+        datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    try:
+        run_eval(cases, arms, args.repeats, out, runs_root=args.runs_dir,
+                 claude_bin=args.claude_bin)
+    except EvalRefused as exc:
+        print(str(exc).replace("\n", " "), file=sys.stderr)
+        return 2
+    except UpstreamUnavailable as exc:
+        print(str(exc).replace("\n", " "), file=sys.stderr)
+        return 4
+    print(f"wrote {out}")
+    return 0
+
+
 def _cmd_scan(args: argparse.Namespace) -> int:
     from .scan import write_index
     from .upstream import UpstreamUnavailable
@@ -183,6 +246,10 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_demo(args)
     if args.command == "mcp":
         return _cmd_mcp(args)
+    if args.command == "fetch-relate-cli":
+        return _cmd_fetch_relate_cli(args)
+    if args.command == "eval":
+        return _cmd_eval_run(args)
     return 0
 
 

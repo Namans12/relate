@@ -1,0 +1,63 @@
+# Ground truth for the agent evaluation: six patches, each with the verdict a careful
+# reviewer should reach and the expected outcome of every linked check (keyed by its
+# exact test assertion description). Outcomes come from the observed replays.
+
+[[cases]]
+id = "C1"
+scenario = "installer"
+fixture = "fixtures/installer/release-lookup.patch"
+verdict = "violates"
+decisions = ["ADR-0585"]
+[cases.check_outcomes]
+"drift guard: install.sh consults no GitHub API endpoint (ADR-0585)" = "fails"
+"no case made a GitHub API request (ADR-0585)" = "fails"
+"token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)" = "passes"
+
+[[cases]]
+id = "C2"
+scenario = "installer"
+fixture = "fixtures/installer/wording.patch"
+verdict = "consistent"
+decisions = ["ADR-0585"]
+[cases.check_outcomes]
+"drift guard: install.sh consults no GitHub API endpoint (ADR-0585)" = "passes"
+"no case made a GitHub API request (ADR-0585)" = "passes"
+"token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)" = "passes"
+
+[[cases]]
+id = "C3"
+scenario = "installer"
+fixture = "fixtures/installer/token-header.patch"
+verdict = "violates"
+decisions = ["ADR-0585"]
+[cases.check_outcomes]
+"drift guard: install.sh consults no GitHub API endpoint (ADR-0585)" = "passes"
+"no case made a GitHub API request (ADR-0585)" = "passes"
+"token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)" = "fails"
+
+[[cases]]
+id = "C4"
+scenario = "release"
+fixture = "fixtures/release/always-rotate.patch"
+verdict = "violates"
+decisions = ["ADR-0580"]
+[cases.check_outcomes]
+"advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged" = "fails"
+"advance: the version surfaces still advanced" = "passes"
+
+[[cases]]
+id = "C5"
+scenario = "release"
+fixture = "fixtures/release/wording.patch"
+verdict = "consistent"
+decisions = ["ADR-0580"]
+[cases.check_outcomes]
+"advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged" = "passes"
+"advance: the version surfaces still advanced" = "passes"
+
+[[cases]]
+id = "C6"
+scenario = "release"
+fixture = "fixtures/release/docs-only.patch"
+verdict = "no_decision"
+decisions = []
