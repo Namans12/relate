@@ -9,7 +9,7 @@ from . import pins
 from .report import (
     comparison_table,
     compute_verdicts,
-    format_table,
+    join_table,
     observed_map,
     render_evidence_chain,
 )
@@ -145,22 +145,21 @@ def run_demo(
     print()
 
     print("== graph evidence ==")
+    by_file: dict[str, list] = {}
     for run in runs:
-        if run.patch is None:
-            continue
-        print(f"-- {run.label} --")
-        obs = observed_map(run)
-        for f in run.patch.changed_files:
-            print(render_evidence_chain(f, per_file[run.patch.id][f], obs))
+        if run.patch is not None:
+            for f in run.patch.changed_files:
+                by_file.setdefault(f, []).append(run)
+    for f, file_runs in by_file.items():
+        print(render_evidence_chain(
+            f, per_file[file_runs[0].patch.id][f],
+            patch_observed=[(r.label, observed_map(r)) for r in file_runs]))
         print()
 
     print("== graph join (replay.rl) ==")
     print(JOIN_QUERY.rstrip())
     print()
-    print(format_table(
-        ["patch", "file", "decision", "implementation", "assertion", "observed"],
-        [[r["label"], r["file"], r["decision"], r["implementation"][:8], r["assertion"],
-          r["observed"]] for r in joined]))
+    print(join_table(joined))
     print()
 
     verdicts, exit_code = compute_verdicts(runs, evidence_by_patch, mismatches)

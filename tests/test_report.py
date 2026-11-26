@@ -4,7 +4,13 @@ from pathlib import Path
 from patch_precedent import pins
 from patch_precedent.diffparse import read_patch
 from patch_precedent.harness import RunResult
-from patch_precedent.report import compute_verdicts
+from patch_precedent.report import (
+    comparison_table,
+    compute_verdicts,
+    join_table,
+    observed_map,
+    render_evidence_chain,
+)
 from patch_precedent.tap import parse_tap
 
 ROOT = pins.project_root()
@@ -84,3 +90,54 @@ def test_inconclusive_patch_gives_exit_2():
     lines, code = compute_verdicts(runs, _evidence(), ["x"])
     assert code == 2
     assert "wording: inconclusive (the patch did not apply cleanly to the pinned upstream)" in lines
+
+
+def test_baseline_changed_cell_says_unpatched():
+    table = comparison_table(_runs(), _evidence())
+    baseline_line = next(line for line in table.splitlines() if line.startswith("baseline"))
+    assert "— (unpatched)" in baseline_line
+    assert "upstream" not in table
+
+
+def _chain_rows():
+    return [dict(_row(D7, 7, "static", "e7"), title="T", status="Proposed", reason="r",
+                 citation_url="cu", decision_url="du", consequences_url="su",
+                 implementation="a" * 40, commit_subject="subj", commit_url="cm",
+                 check_url="k7"),
+            dict(_row(D193, 193, "runtime", "e193"), title="T", status="Proposed", reason="r",
+                 citation_url="cu", decision_url="du", consequences_url="su",
+                 implementation="a" * 40, commit_subject="subj", commit_url="cm",
+                 check_url="k193")]
+
+
+def test_shared_chain_prints_each_patch_under_each_check_once():
+    runs = _runs()
+    obs = [(r.label, observed_map(r)) for r in runs[1:]]
+    out = render_evidence_chain("distribution/install.sh", _chain_rows(), patch_observed=obs)
+    assert out.count("distribution/install.sh") == 1
+    assert out.count("cites ADR-0585") == 1
+    lines = out.splitlines()
+    i7 = next(i for i, line in enumerate(lines) if "#7 " in line or line.strip().startswith("#7"))
+    block7 = "\n".join(lines[i7:i7 + 4])
+    assert "wording → ok 7" in block7
+    assert "release-lookup → not ok 7" in out
+    assert "release-lookup → not ok 193" in out
+    assert "wording → ok 193" in out
+    assert out.count("→") == 4
+
+
+def test_chain_without_patch_observed_is_unchanged():
+    out = render_evidence_chain("a.sh", _chain_rows())
+    assert "→" not in out
+
+
+def test_join_table_columns_match_query():
+    rows = [{"patch": "patch:abc", "label": "wording", "file": "f.sh", "decision": "ADR-0585",
+             "implementation": "5ac38808547d", "assertion": D7, "observed": "not ok",
+             "tap_number": 7, "reason": "ignored"}]
+    lines = join_table(rows).splitlines()
+    assert lines[0].split() == ["patch", "label", "file", "decision", "implementation",
+                                "assertion", "observed"]
+    assert "patch:abc" in lines[2]
+    assert "5ac38808 " in lines[2] and "5ac388085" not in lines[2]
+    assert lines[2].rstrip().endswith("not ok 7")

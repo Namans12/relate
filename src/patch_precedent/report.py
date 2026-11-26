@@ -35,8 +35,22 @@ def _observed_suffix(check: str, observed: dict[str, TapResult] | None) -> str:
     return f"  → {'ok' if res.ok else 'not ok'} {res.number}"
 
 
+def _patch_observed_lines(
+    check: str, patch_observed: Sequence[tuple[str, Mapping[str, TapResult]]]
+) -> list[str]:
+    lines = []
+    for label, observed in patch_observed:
+        res = observed.get(check)
+        verdict = "not observed" if res is None else f"{'ok' if res.ok else 'not ok'} {res.number}"
+        lines.append(f"            {label} → {verdict}")
+    return lines
+
+
 def render_evidence_chain(
-    path: str, rows: list[dict], observed: dict[str, TapResult] | None = None
+    path: str,
+    rows: list[dict],
+    observed: dict[str, TapResult] | None = None,
+    patch_observed: Sequence[tuple[str, Mapping[str, TapResult]]] | None = None,
 ) -> str:
     if not rows:
         return f"{path}: no linked decision"
@@ -65,6 +79,8 @@ def render_evidence_chain(
                 f"      {num:<6}{row['check_kind']:<9}{row['check']}"
                 f"{_observed_suffix(row['check'], observed)}"
             )
+            if patch_observed:
+                lines += _patch_observed_lines(row["check"], patch_observed)
             lines.append(f"            {row['check_url']}")
     return "\n".join(lines)
 
@@ -104,11 +120,19 @@ def comparison_table(runs: Sequence[RunResult], evidence_by_patch: Mapping[str, 
     headers = ["Input", "Changed", "Exit", "Passed/failed"] + [f"#{n} {k}" for n, k, _ in checks]
     body = []
     for run in runs:
-        changed = "upstream" if run.patch is None else ", ".join(run.patch.changed_files)
+        changed = "— (unpatched)" if run.patch is None else ", ".join(run.patch.changed_files)
         exit_cell = "—" if run.exit_code is None else str(run.exit_code)
         pf = f"{run.tap.passed} / {run.tap.failed}" if run.tap else "—"
         body.append([run.label, changed, exit_cell, pf] + [cell_for(run, c) for _, _, c in checks])
     return format_table(headers, body)
+
+
+def join_table(rows: Sequence[Mapping]) -> str:
+    """The graph-join result as a table whose columns mirror the printed JOIN_QUERY."""
+    return format_table(
+        ["patch", "label", "file", "decision", "implementation", "assertion", "observed"],
+        [[r["patch"], r["label"], r["file"], r["decision"], r["implementation"][:8],
+          r["assertion"], f'{r["observed"]} {r["tap_number"]}'] for r in rows])
 
 
 def compute_verdicts(
