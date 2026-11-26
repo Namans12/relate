@@ -191,10 +191,14 @@ uv run pytest -m upstream # runs the real upstream harness, about 2-3 minutes
 
 ## AI tools used
 
-This project was built with Claude Code: Claude Opus planned the work and reviewed every task, and Claude Sonnet subagents wrote the implementation and tests. All verification runs, test results and demo output in this README come from real local runs.
+Patch Precedent was built with significant AI assistance, disclosed here as the hackathon rules require.
 
-> Owner: confirm or edit this disclosure before submission.
+- **Claude Code (Anthropic)** turned the project plan into an implementation plan and ran the build. Claude Opus planned each task and reviewed every change and the final branch. Claude Sonnet subagents wrote the code, tests and documentation.
+- **The project owner** chose the idea, approved the plan, and made the integration, licensing and publication decisions.
+- **Not AI-generated:** Relate, the upstream installer, its test harness and ADR-0585 come from relatedb/relate at the pinned commit (see [NOTICE](NOTICE)).
+- **No model at run time:** the demo and `explain` call no AI service and need no API key.
+- **Verified, not described:** every result, test count and output excerpt in this README comes from real local runs of the code in this repository.
 
 ## License and attribution
 
-See [NOTICE](NOTICE). Relate is Apache-2.0; both patches in `fixtures/installer/` are authored demonstration inputs, not upstream changes.
+Patch Precedent is released under the [MIT License](LICENSE). It references and excerpts relatedb/relate, which is Apache-2.0; [NOTICE](NOTICE) lists exactly what is used. Both patches in `fixtures/installer/` are authored demonstration inputs, not upstream changes.

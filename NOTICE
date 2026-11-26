@@ -10,6 +10,8 @@ License, Version 2.0, at commit 5f7a510713c3feac146133e77d8c5bb72bae1b11:
 - Line references and check descriptions from scripts/tests/test_install_sh.sh.
 - Diff context from distribution/install.sh, appearing in the patches under
   fixtures/installer/.
+- The subject line of the implementing commit
+  5ac38808547d11f55b02333624cc3e88b46566eb, quoted in evidence/installer.toml.
 
 The two patches in fixtures/installer/ (wording.patch and release-lookup.patch)
 are authored demonstration inputs written against Relate's code. They are not
@@ -21,4 +23,6 @@ vendored in this repository.
 Relate is copyright its authors. Apache License 2.0:
 https://www.apache.org/licenses/LICENSE-2.0
 
-The license for Patch Precedent's own code is to be chosen by the project owner.
+Patch Precedent's own code and documentation are licensed under the MIT
+License; see LICENSE. That license does not cover the Relate material
+described above, which remains under Apache License 2.0.
