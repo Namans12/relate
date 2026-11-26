@@ -1,0 +1,18 @@
+diff --git a/distribution/install.sh b/distribution/install.sh
+index 331db681..a33deda1 100755
+--- a/distribution/install.sh
++++ b/distribution/install.sh
+@@ -151,7 +151,12 @@ fetch_url() { # $1 = URL, $2 = destination
+ 
+ # One release asset over the direct route.
+ direct_get() { # $1 = asset name, $2 = destination
+-	fetch_url "$download_base/$tag/$1" "$2" || die "$fetch_error"
++	fetch_url "$download_base/$tag/$1" "$2" && return 0
++	asset_error=$fetch_error
++	if fetch_url "https://api.github.com/repos/relatedb/relate/releases/tags/$tag" "$tmp/release-info.json"; then
++		echo "Release $tag exists. Check the asset name: $1" >&2
++	fi
++	die "$asset_error"
+ }
+ 
+ # The one https:// gate both override seams take, before any request.

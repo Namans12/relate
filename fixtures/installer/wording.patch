@@ -1,0 +1,13 @@
+diff --git a/distribution/install.sh b/distribution/install.sh
+index 331db681..b095337a 100755
+--- a/distribution/install.sh
++++ b/distribution/install.sh
+@@ -255,7 +255,7 @@ case "$latest_status" in
+ *) die "$metadata_fail: the document is malformed: no latest.tag" ;;
+ esac
+ 
+-echo "Installing relate $tag ($os/$arch) to $INSTALL_DIR"
++echo "Installing relate $tag for $os/$arch in $INSTALL_DIR"
+ 
+ # Cheap first: the manifest and its signature are small; the binary is
+ # the large download and must not start until the manifest is
