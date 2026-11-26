@@ -294,7 +294,7 @@ _CITED_QUERY = (
     "OPTIONAL MATCH (d)-[:CHECKED_BY]->(k:Check) "
     "RETURN f.path AS file, d.id AS decision, d.title AS title, d.status AS status, "
     "d.url AS decision_url, c.url AS citation_url, c.curated AS curated, "
-    "c.scanned AS scanned, count(k) AS n_checks"
+    "c.scanned AS scanned, count(CASE WHEN c.curated = true THEN k END) AS n_checks"
 )
 
 
@@ -305,6 +305,7 @@ def cited_decisions(conn, paths: Sequence[str]) -> dict[str, list[dict]]:
         rows = []
         for r in conn.execute(_CITED_QUERY, {"path": path}):
             d = r.data()
+            # n_checks counts only through a curated edge (CASE in the query), as evidence_for_paths.
             d["has_checks"] = d.pop("n_checks") > 0
             rows.append(d)
         rows.sort(key=lambda r: (not r["curated"], r["decision"]))

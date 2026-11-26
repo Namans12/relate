@@ -230,3 +230,24 @@ def test_curated_decision_missing_from_scan_refused(ev):
 def test_store_size_budget():
     from patch_precedent.pins import STORE_PATH
     assert STORE_PATH.stat().st_size <= 5 * 1024 * 1024
+
+
+def test_has_checks_follows_curated_edge(store):
+    def one(c, path, adr):
+        return [r for r in cited_decisions(c, [path])[path] if r["decision"] == adr][0]
+
+    def run(c):
+        r = one(c, "README.md", "ADR-0585")
+        assert (r["curated"], r["scanned"], r["has_checks"]) == (False, True, False)
+        r = one(c, "distribution/install.sh", "ADR-0585")
+        assert (r["curated"], r["has_checks"]) == (True, True)
+        r = one(c, "scripts/release-bump.sh", "ADR-0580")
+        assert (r["curated"], r["has_checks"]) == (True, True)
+        paths = ["README.md", "Makefile", "distribution/install.sh",
+                 "scripts/release-bump.sh", "scripts/tests/test_install_sh.sh",
+                 "docs/PUBLISHING.md", "CONTRIBUTING.md"]
+        for p in paths:
+            linked = {r["decision"] for r in evidence_for_paths(c, [p])[p]}
+            flagged = {r["decision"] for r in cited_decisions(c, [p])[p] if r["has_checks"]}
+            assert flagged <= linked, p
+    _with(store, run)
