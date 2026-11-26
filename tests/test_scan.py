@@ -33,6 +33,11 @@ def test_parse_adr_header_variants():
     assert parse_adr_header("# 0004. Memory first\n\n- **Status**: Superseded by ADR-0012\n") == (
         "Memory first", "Superseded by ADR-0012")
     assert parse_adr_header("# plain title\n\nStatus: accepted\n") == ("plain title", "accepted")
+    assert parse_adr_header("# 0557 \u2014 List only the procedures\n\nStatus: Proposed\n") == (
+        "List only the procedures", "Proposed")
+    assert parse_adr_header("# ADR 0052: GraphStore withdrawn\n\n## Status\n\nAccepted\n\n## Context\n") == (
+        "GraphStore withdrawn", "Accepted")
+    assert parse_adr_header("# T\n\n## Status\n\n## Context\nx\n") == ("T", "unknown")
 
 
 def test_tsv_roundtrip_byte_stable(tmp_path):

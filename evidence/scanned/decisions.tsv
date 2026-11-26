@@ -50,9 +50,9 @@ ADR-0048	Separate identity loadtest memory budget	Accepted	docs/adr/0048-identit
 ADR-0049	Gate the merged product in-tree	Accepted	docs/adr/0049-in-tree-merged-product-gate.md
 ADR-0050	Pluggable snapshot codecs (Parquet default, CypherLite JSON)	Accepted	docs/adr/0050-snapshot-codecs.md
 ADR-0051	WASM product path is Database `:memory:`	Accepted	docs/adr/0051-wasm-memory-database.md
-ADR-0052	GraphStore withdrawn	unknown	docs/adr/0052-graphstore-withdrawn.md
-ADR-0053	CypherLite product names	unknown	docs/adr/0053-cypherlite-product-names.md
-ADR-0054	One C ABI, one env prefix, one Python package	unknown	docs/adr/0054-one-c-abi-env-python.md
+ADR-0052	GraphStore withdrawn	Accepted	docs/adr/0052-graphstore-withdrawn.md
+ADR-0053	CypherLite product names	Accepted	docs/adr/0053-cypherlite-product-names.md
+ADR-0054	One C ABI, one env prefix, one Python package	Accepted	docs/adr/0054-one-c-abi-env-python.md
 ADR-0055	MemoryDB is licensed under Apache License 2.0	Accepted	docs/adr/0055-apache-2-license.md
 ADR-0056	OpenCypher TCK is the Cypher language contract	Accepted	docs/adr/0056-opencypher-tck-language-contract.md
 ADR-0057	Embedded C ABI is the client boundary; Bolt is optional remote transport	Accepted	docs/adr/0057-embedded-c-abi-and-bolt.md
@@ -154,7 +154,7 @@ ADR-0154	Value cloning cost: container values are O(1) to clone (Rc-backed)	Acce
 ADR-0155	Bulk writes and imports: batched UNWIND, bounded failure, idempotent MERGE mode	Accepted	docs/adr/0155-bulk-writes-batched-unwind.md
 ADR-0156	Clone a native directory without writing it	Proposed	docs/adr/0156-directory-clone.md
 ADR-0157	`fs-to-graph` import contract	Accepted	docs/adr/0157-fs-to-graph-import.md
-ADR-0158	Streaming single-process pull, in-memory identity, refuse non-empty destinations	unknown	docs/adr/0158-streaming-single-process-pull.md
+ADR-0158	Streaming single-process pull, in-memory identity, refuse non-empty destinations	Accepted	docs/adr/0158-streaming-single-process-pull.md
 ADR-0159	Snapshot round trip between a native directory and a `.cl` bundle	Accepted	docs/adr/0159-snapshot-round-trip.md
 ADR-0160	Restore from a `.cl` bundle takes no options	Accepted	docs/adr/0160-restore-without-options.md
 ADR-0161	Exclusive, crash-safe publish destination creation	Accepted	docs/adr/0161-exclusive-destination-creation.md
@@ -507,11 +507,11 @@ ADR-0553	Wide-column parts are the Parquet checkpoint format	Proposed	docs/adr/0
 ADR-0554	The element-id namespace segment is dash-bearing	Proposed	docs/adr/0554-dash-bearing-element-id-segment.md
 ADR-0555	Operators stream rows; unbounded results are never accumulated	Proposed	docs/adr/0555-operators-stream-rows-never-accumulate.md
 ADR-0556	Shortest routes search property-seekable endpoints as pairs	Proposed	docs/adr/0556-shortest-route-pair-search-for-seekable-endpoints.md
-ADR-0557	— List only the procedures an embedded engine can answer	Proposed	docs/adr/0557-drop-server-only-procedures.md
+ADR-0557	List only the procedures an embedded engine can answer	Proposed	docs/adr/0557-drop-server-only-procedures.md
 ADR-0558	Encode each commit's redo once, at admission	Accepted	docs/adr/0558-encode-commit-redo-once-at-admission.md
 ADR-0559	Run-time argument rejections are their own error variant	Proposed	docs/adr/0559-runtime-argument-value-error-variant.md
 ADR-0560	crates.io and PyPI distribution	Proposed	docs/adr/0560-crates-io-and-pypi-distribution.md
-ADR-0561	— `dbms.listCapabilities` lists this engine's own capabilities	Proposed	docs/adr/0561-listcapabilities-lists-our-own-capabilities.md
+ADR-0561	`dbms.listCapabilities` lists this engine's own capabilities	Proposed	docs/adr/0561-listcapabilities-lists-our-own-capabilities.md
 ADR-0562	npm platform package names carry the relate- prefix	Proposed	docs/adr/0562-npm-platform-package-names.md
 ADR-0563	The Parquet row-group cap is 1024 rows	Proposed	docs/adr/0563-parquet-row-group-cap-1024.md
 ADR-0564	Charge the workspace as the commit redo is encoded	Accepted	docs/adr/0564-charge-the-workspace-as-the-commit-redo-is-encoded.md
@@ -556,7 +556,7 @@ ADR-0604	An over-cap transaction is refused at the statement that crosses the ca
 ADR-0605	Binary releases carry their third-party notices and pass a license allow-list	Proposed	docs/adr/0605-third-party-license-gate-for-binary-releases.md
 ADR-0606	The label-less scan warning carries no index suggestion	Proposed	docs/adr/0606-label-less-scan-warning-carries-no-index.md
 ADR-0607	SHORTEST k and SHORTEST k GROUPS take the shortest-path route by length class	Proposed	docs/adr/0607-route-shortest-k-and-groups-by-class.md
-ADR-0608	— Sealing restored adjacency	Proposed	docs/adr/0608-seal-restored-adjacency.md
+ADR-0608	Sealing restored adjacency	Proposed	docs/adr/0608-seal-restored-adjacency.md
 ADR-0609	Execute the full-text analyzer catalogue from the one analyzer table	Proposed	docs/adr/0609-analyzer-catalogue-executes-from-analyzer-table.md
 ADR-0611	Index-backed grouped and extremum aggregates over a labeled property	Accepted	docs/adr/0611-index-backed-aggregates.md
 ADR-0612	Batch the shortest-path fan with a multi-source level sweep	Proposed	docs/adr/0612-batch-the-shortest-fan-with-a-multi-source-sweep.md

@@ -10,9 +10,11 @@ COLUMNS = {
     "citations": ("path", "adr", "first_line", "count"),
     "decisions": ("adr", "title", "status", "record_path"),
 }
-# Upstream ADR headers vary: "# ADR-0580: T", "# 0004. T", "# T"; "Status: X" or "- **Status**: X".
-_TITLE_RE = re.compile(r"^# (?:ADR[- ]\d{4}[:.]?\s+|\d{4}[:.]?\s+)?(.*\S)\s*$")
+# Upstream ADR headers vary: "# ADR-0580: T", "# 0004. T", "# 0557 \u2014 T", "# T";
+# "Status: X", "- **Status**: X", or a "## Status" heading followed by the value.
+_TITLE_RE = re.compile(r"^# (?:ADR[- ]\d{4}(?:[:.]|\s+[\u2014\u2013-])?\s+|\d{4}(?:[:.]|\s+[\u2014\u2013-])?\s+)?(.*\S)\s*$")
 _STATUS_RE = re.compile(r"^(?:[-*]\s+)?(?:\*\*)?Status(?::\*\*|\*\*:|:)\s*(.+?)\s*$", re.M)
+_STATUS_HEADING_RE = re.compile(r"^##\s+Status\s*$", re.M)
 _RECORD_RE = re.compile(r"^(\d{4})[^/]*\.md$")
 
 
@@ -34,12 +36,26 @@ def parse_adr_header(text: str) -> tuple[str, str]:
     first = text.split("\n", 1)[0].rstrip("\r")
     m = _TITLE_RE.match(first)
     s = _STATUS_RE.search(text)
-    return (m.group(1) if m else "", s.group(1) if s else "unknown")
+    status = s.group(1) if s else _status_after_heading(text)
+    return (m.group(1) if m else "", status)
+
+
+def _status_after_heading(text: str) -> str:
+    """First non-empty line under a `## Status` heading, stopping at the next heading."""
+    h = _STATUS_HEADING_RE.search(text)
+    if h:
+        for line in text[h.end():].splitlines():
+            line = line.strip()
+            if line.startswith("#"):
+                break
+            if line:
+                return line
+    return "unknown"
 
 
 def _git(repo: Path, *args: str, input: bytes | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(
-        ["git", "--git-dir", str(repo), *args], input=input, capture_output=True
+        ["git", "--git-dir", str(repo), "-c", "core.quotePath=false", *args], input=input, capture_output=True
     )
 
 
