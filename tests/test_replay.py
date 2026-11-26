@@ -60,8 +60,6 @@ def _rows(path):
 def test_join_four_rows(copy):
     record_runs(copy, _runs())
     rows = _rows(copy)
-    for r in rows:
-        print(r)
     a, b = _runs()[1].patch.id, _runs()[2].patch.id
     got = [(r["patch"], r["tap_number"], r["observed"]) for r in rows]
     assert sorted(got) == sorted([(a, 7, "ok"), (a, 193, "ok"),
@@ -166,5 +164,25 @@ def test_snapshot_replay_copy(copy):
     conn = open_readonly(copy)
     try:
         assert snapshot(conn)
+    finally:
+        conn.close()
+
+
+def test_rerecord_replaces_stale_state(copy):
+    runs = _runs()
+    record_runs(copy, runs)
+    pid = runs[2].patch.id
+    record_runs(copy, [replace(runs[2], tap=None, exit_code=None,
+                               status="inconclusive", reason="no TAP")])
+    conn = relate.connect(str(copy))
+    try:
+        assert [r.data()["n"] for r in conn.execute(
+            "MATCH (:Patch {id: $i})-[:PRODUCED]->(o:Observation) RETURN count(o) AS n",
+            {"i": pid})] == [0]
+        assert [r for r in join_rows(conn) if r["patch"] == pid] == []
+        run = [r.data()["p"] for r in conn.execute(
+            "MATCH (r:Run {id: $i}) RETURN properties(r) AS p", {"i": pid})]
+        assert len(run) == 1
+        assert "passed" not in run[0] and run[0]["status"] == "inconclusive"
     finally:
         conn.close()

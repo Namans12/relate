@@ -38,6 +38,10 @@ def _run_props(run: RunResult) -> dict:
 
 def _record_patch_run(conn, run: RunResult, checks: set[str]) -> None:
     patch = run.patch
+    # Replace any earlier recording of this patch; Patch and CHANGES are content-derived.
+    conn.execute("MATCH (p:Patch {id: $id})-[:PRODUCED]->(o:Observation) DETACH DELETE o",
+                 {"id": patch.id})
+    conn.execute("MATCH (r:Run {id: $id}) DETACH DELETE r", {"id": patch.id})
     conn.execute("MERGE (p:Patch {id: $id}) SET p.label = $label, p.sha256 = $sha",
                  {"id": patch.id, "label": patch.label, "sha": patch.sha256})
     for path in patch.changed_files:
@@ -45,11 +49,8 @@ def _record_patch_run(conn, run: RunResult, checks: set[str]) -> None:
         conn.execute(
             "MATCH (p:Patch {id: $id}), (f:File {path: $path}) MERGE (p)-[:CHANGES]->(f)",
             {"id": patch.id, "path": path})
-    conn.execute("MERGE (r:Run {id: $id})", {"id": patch.id})
-    for key, value in _run_props(run).items():
-        # property names come from the fixed set in _run_props, never from input
-        conn.execute(f"MATCH (r:Run {{id: $id}}) SET r.{key} = $v",
-                     {"id": patch.id, "v": value})
+    conn.execute("MERGE (r:Run {id: $id}) SET r += $props",
+                 {"id": patch.id, "props": _run_props(run)})
     conn.execute(
         "MATCH (r:Run {id: $id}), (p:Patch {id: $id}) MERGE (r)-[:APPLIED]->(p)",
         {"id": patch.id})
