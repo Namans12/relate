@@ -95,6 +95,8 @@ RETURN p.id AS patch, f.path AS file, d.id AS decision, d.reason AS reason,
 ORDER BY patch, assertion
 ```
 
+Single-file mode: the evidence store is one Relate `.rl` file committed in the repo, opened in-process with `relate.connect` (no server, no sidecar files). `explain` and the demo's evidence queries open it with `read_only=True`; each replay writes to its own copy, `runs/<timestamp>/replay.rl`.
+
 All queries use bound parameters. Replays write to a copy because opening a Relate file read-write rewrites it, even for a read-only query; this keeps `data/precedent.rl` byte-unchanged and `git status` clean after a demo.
 
 For each case the demo makes a clean checkout of the pinned upstream revision, applies the patch with `git apply` (after `git apply --check`), and runs the upstream harness, `sh scripts/tests/test_install_sh.sh`, unmodified.
@@ -114,7 +116,7 @@ For each case the demo makes a clean checkout of the pinned upstream revision, a
 | Code | Meaning |
 |---:|---|
 | 0 | Every patch had a conclusive verdict and the observations matched `expectations.toml`. A patch that violates an ADR still exits 0 if that was expected. |
-| 2 | Inconclusive: unknown scenario, missing fixtures directory, baseline not green, a patch that did not apply, a harness timeout, or truncated or missing TAP. |
+| 2 | Inconclusive or unusable input. Causes: unknown scenario; missing fixtures directory; baseline not green; a patch that did not apply cleanly; a harness timeout; no TAP output, or truncated or malformed TAP; an empty TAP plan (no checks ran); skipped checks (e.g. `ssh-keygen` unavailable); harness exit code and TAP failure count disagreeing; or none of a patch's linked checks appearing in the TAP output. The run is reported as inconclusive, never as pass or fail. |
 | 3 | Observations disagree with `expectations.toml`. |
 | 4 | Upstream cache missing and the upstream repo is unreachable (first run needs internet). |
 
@@ -150,6 +152,7 @@ uv run pytest -m upstream # runs the real upstream harness, about 2-3 minutes
 - Only the supplied fixtures run; there is no arbitrary patch execution.
 - Links between files, decisions and checks are curated by hand, not extracted.
 - No MCP server or browser explorer yet.
+- If the upstream harness skips any check on your machine (for example, `ssh-keygen` is unavailable), the demo reports the run as inconclusive (exit 2) instead of trusting it.
 - ADR-0585 has status "Proposed" upstream.
 
 ## AI tools used
