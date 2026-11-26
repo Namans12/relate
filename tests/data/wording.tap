@@ -1,0 +1,196 @@
+ok 1 - drift guard: install.sh's pinned SIGNING_KEY matches distribution/release-signing-key.pub
+ok 2 - drift guard: install.sh's LEGACY_MANIFEST_CEILING matches manifest.rs (ADR-0457)
+ok 3 - drift guard: the ADR-0457 sums header prefix is one literal in install.sh, manifest.rs, release.yml and the harness fixture
+ok 4 - drift guard: install.sh matches the header through the shared prefix
+ok 5 - drift guard: install.sh's RELEASES_JSON_URL matches releases_json.rs (ADR-0571)
+ok 6 - drift guard: install.sh's override env var matches releases_json.rs (ADR-0571)
+ok 7 - drift guard: install.sh consults no GitHub API endpoint (ADR-0585)
+ok 8 - drift guard: install.sh's DOWNLOAD_BASE matches download_route.rs's canonical base (ADR-0585)
+ok 9 - drift guard: install.sh's override env var matches download_route.rs (ADR-0585)
+ok 10 - drift guard: install.ps1's pinned signing key matches distribution/release-signing-key.pub
+ok 11 - drift guard: install.ps1's sums header prefix matches manifest.rs (ADR-0457)
+ok 12 - drift guard: install.ps1's legacy ceiling matches manifest.rs (ADR-0457)
+ok 13 - drift guard: install.ps1's releases.json URL matches releases_json.rs (ADR-0571)
+ok 14 - drift guard: install.ps1's download base matches install.sh's (ADR-0585)
+ok 15 - drift guard: install.ps1 reads the two override seams install.sh and the CLI read, through its https gate
+ok 16 - drift guard: install.ps1 consults no GitHub API endpoint (ADR-0585)
+ok 17 - drift guard: install.ps1 is pure ASCII (Windows PowerShell 5.1 reads it as ANSI)
+ok 18 - drift guard: install.sh's SIGNER matches install.ps1's $RelateSigner (ADR-0115)
+ok 19 - drift guard: the Windows install one-liner is one string in install.sh and upgrade_cmd (ADR-0586)
+ok 20 - drift guard: install.ps1's header documents the same one-liner
+ok 21 - drift guard: the publisher fixture carries a latest.tag the installer fixtures follow
+ok 22 - Darwin/arm64: installer exits 0
+ok 23 - Darwin/arm64: downloads relate-darwin-arm64 over the direct route
+ok 24 - Darwin/arm64: does not download the linux-amd64 asset
+ok 25 - Darwin/arm64: installed content is the darwin-arm64 fixture
+ok 26 - Linux/x86_64: installer exits 0
+ok 27 - Linux/x86_64: downloads relate-linux-amd64 over the direct route
+ok 28 - Linux/x86_64: installed content is the linux-amd64 fixture
+ok 29 - unsupported OS (FreeBSD): installer dies non-zero
+ok 30 - unsupported OS (FreeBSD): stderr carries the expected message
+ok 31 - unsupported OS (FreeBSD): nothing installed
+ok 32 - unsupported OS (FreeBSD): no temp names left in the bin dir
+ok 33 - unsupported OS (FreeBSD): no request is made
+ok 34 - Windows shell (MINGW64_NT-10.0-22631): installer dies non-zero
+ok 35 - Windows shell (MINGW64_NT-10.0-22631): stderr carries the expected message
+ok 36 - Windows shell (MINGW64_NT-10.0-22631): nothing installed
+ok 37 - Windows shell (MINGW64_NT-10.0-22631): no temp names left in the bin dir
+ok 38 - Windows shell (MINGW64_NT-10.0-22631): no request is made
+ok 39 - Windows shell (MINGW64_NT-10.0-22631): not reported as an unsupported OS
+ok 40 - Windows shell (MSYS_NT-10.0-19045): installer dies non-zero
+ok 41 - Windows shell (MSYS_NT-10.0-19045): stderr carries the expected message
+ok 42 - Windows shell (MSYS_NT-10.0-19045): nothing installed
+ok 43 - Windows shell (MSYS_NT-10.0-19045): no temp names left in the bin dir
+ok 44 - Windows shell (MSYS_NT-10.0-19045): no request is made
+ok 45 - Windows shell (MSYS_NT-10.0-19045): not reported as an unsupported OS
+ok 46 - Windows shell (CYGWIN_NT-10.0-26100): installer dies non-zero
+ok 47 - Windows shell (CYGWIN_NT-10.0-26100): stderr carries the expected message
+ok 48 - Windows shell (CYGWIN_NT-10.0-26100): nothing installed
+ok 49 - Windows shell (CYGWIN_NT-10.0-26100): no temp names left in the bin dir
+ok 50 - Windows shell (CYGWIN_NT-10.0-26100): no request is made
+ok 51 - Windows shell (CYGWIN_NT-10.0-26100): not reported as an unsupported OS
+ok 52 - unsupported arch (i386): installer dies non-zero
+ok 53 - unsupported arch (i386): stderr carries the expected message
+ok 54 - unsupported arch (i386): nothing installed
+ok 55 - unsupported arch (i386): no temp names left in the bin dir
+ok 56 - unsupported arch (i386): no request is made
+ok 57 - piped run: installer exits 0
+ok 58 - piped run: says it ran before it could be read, and where to review it
+ok 59 - run from a file: no piped-execution note
+ok 60 - token unset: installer exits 0
+ok 61 - token unset: no Authorization header in any curl call
+ok 62 - token unset: exactly three direct downloads (manifest + signature + binary)
+ok 63 - token set: installer exits 0 — the token is not read
+ok 64 - token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)
+ok 65 - token set: installs the fixture binary
+ok 66 - manifest 404: installer dies non-zero
+ok 67 - manifest 404: stderr carries the expected message
+ok 68 - manifest 404: nothing installed
+ok 69 - manifest 404: no temp names left in the bin dir
+ok 70 - manifest 404: only the manifest was requested
+ok 71 - manifest 403 (rate-limit shape): installer dies non-zero
+ok 72 - manifest 403 (rate-limit shape): stderr carries the expected message
+ok 73 - manifest 403 (rate-limit shape): nothing installed
+ok 74 - manifest 403 (rate-limit shape): no temp names left in the bin dir
+ok 75 - manifest 403 (rate-limit shape): only the manifest was requested
+ok 76 - manifest 403 (rate-limit shape): no private-repository advice — that is not the failure
+ok 77 - signature 404: installer dies non-zero
+ok 78 - signature 404: stderr carries the expected message
+ok 79 - signature 404: nothing installed
+ok 80 - signature 404: no temp names left in the bin dir
+ok 81 - signature 404: only the manifest and signature were requested
+ok 82 - binary 404: installer dies non-zero
+ok 83 - binary 404: stderr carries the expected message
+ok 84 - binary 404: nothing installed
+ok 85 - binary 404: no temp names left in the bin dir
+ok 86 - binary 404: manifest and signature were fetched and verified first
+ok 87 - download URL override: installer exits 0
+ok 88 - download URL override: every asset is fetched from the override base
+ok 89 - download URL override: the canonical base is not fetched
+ok 90 - download URL override, http scheme: installer dies non-zero
+ok 91 - download URL override, http scheme: stderr carries the expected message
+ok 92 - download URL override, http scheme: nothing installed
+ok 93 - download URL override, http scheme: no temp names left in the bin dir
+ok 94 - download URL override, http scheme: no request is made
+ok 95 - download URL override, loopback http (the CLI seam's dev carve-out): installer dies non-zero
+ok 96 - download URL override, loopback http (the CLI seam's dev carve-out): stderr carries the expected message
+ok 97 - download URL override, loopback http (the CLI seam's dev carve-out): nothing installed
+ok 98 - download URL override, loopback http (the CLI seam's dev carve-out): no temp names left in the bin dir
+ok 99 - download URL override, loopback http (the CLI seam's dev carve-out): no request is made
+ok 100 - download URL override, empty value: installer exits 0
+ok 101 - download URL override, empty value: the canonical base is fetched (empty means default)
+ok 102 - happy path: installer exits 0
+ok 103 - happy path: $HOME/.local/bin/relate exists
+ok 104 - happy path: installed file is executable
+ok 105 - happy path: installed content matches the fixture
+ok 106 - happy path: bin dir holds exactly the installed binary (no temp leftovers)
+ok 107 - happy path: ssh-keygen -Y verify ran under the relate-release identity
+ok 108 - happy path: SHA256SUMS.sig is downloaded before the binary asset
+ok 109 - publisher fixture as releases.json: installer exits 0
+ok 110 - publisher fixture as releases.json: the direct route is asked for the fixture's latest tag
+ok 111 - publisher fixture as releases.json: installs that release's product binary
+ok 112 - metadata URL override: installer exits 0
+ok 113 - metadata URL override: the override URL is fetched
+ok 114 - metadata URL override: the canonical URL is not fetched
+ok 115 - metadata URL override, plain http: installer dies non-zero
+ok 116 - metadata URL override, plain http: stderr carries the expected message
+ok 117 - metadata URL override, plain http: nothing installed
+ok 118 - metadata URL override, plain http: no temp names left in the bin dir
+ok 119 - metadata URL override, plain http: no request is made
+ok 120 - metadata fetch: protocol-pinned to https across redirects
+ok 121 - HOME 'relhome': installer dies non-zero
+ok 122 - HOME 'relhome': stderr carries the expected message
+ok 123 - HOME 'relhome': nothing installed
+ok 124 - HOME 'relhome': no temp names left in the bin dir
+ok 125 - HOME 'relhome': no request is made
+ok 126 - HOME '': installer dies non-zero
+ok 127 - HOME '': stderr carries the expected message
+ok 128 - HOME '': nothing installed
+ok 129 - HOME '': no temp names left in the bin dir
+ok 130 - HOME '': no request is made
+ok 131 - metadata URL override, empty value: installer exits 0
+ok 132 - metadata URL override, empty value: the canonical URL is fetched (empty means default)
+ok 133 - verify failure: installer dies non-zero
+ok 134 - verify failure: stderr carries the expected message
+ok 135 - verify failure: nothing installed
+ok 136 - verify failure: no temp names left in the bin dir
+ok 137 - verify failure: only the manifest and signature were requested
+ok 138 - no version header above the legacy ceiling: installer dies non-zero
+ok 139 - no version header above the legacy ceiling: stderr carries the expected message
+ok 140 - no version header above the legacy ceiling: nothing installed
+ok 141 - no version header above the legacy ceiling: no temp names left in the bin dir
+ok 142 - no version header above the legacy ceiling: only the manifest and signature were requested
+ok 143 - mismatched version header: installer dies non-zero
+ok 144 - mismatched version header: stderr carries the expected message
+ok 145 - mismatched version header: nothing installed
+ok 146 - mismatched version header: no temp names left in the bin dir
+ok 147 - mismatched version header: only the manifest and signature were requested
+ok 148 - empty version header: installer dies non-zero
+ok 149 - empty version header: stderr carries the expected message
+ok 150 - empty version header: nothing installed
+ok 151 - empty version header: no temp names left in the bin dir
+ok 152 - empty version header: only the manifest and signature were requested
+ok 153 - no-space header spelling: installer dies non-zero
+ok 154 - no-space header spelling: stderr carries the expected message
+ok 155 - no-space header spelling: nothing installed
+ok 156 - no-space header spelling: no temp names left in the bin dir
+ok 157 - no-space header spelling: only the manifest and signature were requested
+ok 158 - extra-space header value: installer exits 0 (both parsers trim)
+ok 159 - extra-space header value: installs the fixture binary
+ok 160 - headerless manifest at/below the legacy ceiling: installer exits 0
+ok 161 - headerless manifest at/below the legacy ceiling: warns about the legacy manifest
+ok 162 - headerless manifest at/below the legacy ceiling: installs the fixture binary
+ok 163 - ssh-keygen absent: installer dies non-zero
+ok 164 - ssh-keygen absent: stderr carries the expected message
+ok 165 - ssh-keygen absent: nothing installed
+ok 166 - ssh-keygen absent: no temp names left in the bin dir
+ok 167 - ssh-keygen absent: no request is made
+ok 168 - real ssh-keygen: patched copy differs only in the SIGNING_KEY line
+ok 169 - real ssh-keygen: installer exits 0 with a real signature
+ok 170 - real ssh-keygen: installed content matches the fixture
+ok 171 - real ssh-keygen: stub ssh-keygen was not invoked
+ok 172 - real ssh-keygen, wrong signer key: installer dies non-zero
+ok 173 - real ssh-keygen, wrong signer key: error mentions signature verification
+ok 174 - real ssh-keygen, wrong signer key: nothing installed
+ok 175 - checksum fail: installer dies non-zero
+ok 176 - checksum fail: stderr carries the expected message
+ok 177 - checksum fail: nothing installed
+ok 178 - checksum fail: no temp names left in the bin dir
+ok 179 - metadata unreachable: installer dies non-zero
+ok 180 - metadata unreachable: stderr carries the expected message
+ok 181 - metadata unreachable: no download is attempted
+ok 182 - metadata unreachable: no GITHUB_TOKEN hint (no token can help fetch the website file)
+ok 183 - metadata unreachable: the message text appears exactly once in install.sh
+ok 184 - malformed releases.json: installer dies non-zero
+ok 185 - malformed releases.json: stderr carries the expected message
+ok 186 - malformed releases.json: no download is attempted
+ok 187 - null latest: installer dies non-zero
+ok 188 - null latest: stderr carries the expected message
+ok 189 - null latest: no download is attempted
+ok 190 - latest.tag outside the vX.Y.Z shape: installer dies non-zero
+ok 191 - latest.tag outside the vX.Y.Z shape: stderr carries the expected message
+ok 192 - latest.tag outside the vX.Y.Z shape: no download is attempted
+ok 193 - no case made a GitHub API request (ADR-0585)
+ok 194 - cleanliness: installer temp dirs removed (TMPDIR empty after all runs)
+1..194
+# pass 194, fail 0 (of 194)
