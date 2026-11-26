@@ -27,10 +27,11 @@ def test_demo_matches_acceptance(tmp_path, capsys):
     assert run_demo("installer", runs_root=tmp_path) == 0
     s = _summary(tmp_path)
     runs = _by_label(s)
-    triple = lambda r: (r["passed"], r["failed"], r["skipped"])  # noqa: E731
+    triple = lambda r: (r["passed"], r["failed"], r["exit_code"])  # noqa: E731
     assert triple(runs["baseline"]) == (194, 0, 0)
     assert triple(runs["wording"]) == (194, 0, 0)
-    assert triple(runs["release-lookup"]) == (192, 2, 0)
+    assert triple(runs["release-lookup"]) == (192, 2, 1)
+    assert all(r["skipped"] == 0 for r in runs.values())
     assert runs["release-lookup"]["failing"] == [D7, D193]
     assert runs["release-lookup"]["failing_numbers"] == [7, 193]
     assert len(s["join_rows"]) == 4
