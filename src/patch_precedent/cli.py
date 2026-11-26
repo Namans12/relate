@@ -4,10 +4,12 @@ import sys
 import tempfile
 from pathlib import Path
 
+from . import pins
 from .pins import STORE_PATH, project_root
 from .scenarios import SCENARIOS
 
 DEFAULT_MANIFEST = project_root() / "evidence" / "installer.toml"
+DEFAULT_SCAN_DIR = project_root() / "evidence" / "scanned"
 
 
 def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]:
@@ -41,6 +43,11 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
                       help=f"scenario to run ({', '.join(SCENARIOS)})")
     demo.add_argument("--fixtures", type=Path, default=None, help="directory of *.patch files")
     demo.add_argument("--runs-dir", type=Path, default=None, help="where run directories go")
+
+    scan = subparsers.add_parser(
+        "scan-citations", help="scan upstream for ADR-NNNN mentions into evidence/scanned/"
+    )
+    scan.add_argument("--out-dir", type=Path, default=DEFAULT_SCAN_DIR)
     return parser, subparsers
 
 
@@ -121,6 +128,23 @@ def _cmd_demo(args: argparse.Namespace) -> int:
     return run_demo(args.scenario, args.fixtures, args.runs_dir)
 
 
+def _cmd_scan(args: argparse.Namespace) -> int:
+    from .scan import write_index
+    from .upstream import UpstreamUnavailable
+
+    try:
+        citations, decisions = write_index(args.out_dir)
+    except UpstreamUnavailable as exc:
+        print(str(exc).replace("\n", " "), file=sys.stderr)
+        return 4
+    files = len({c[0] for c in citations})
+    adrs = len({c[1] for c in citations})
+    recs = sum(1 for d in decisions if d[3])
+    print(f"scanned {len(citations)} citations across {files} files and {adrs} ADRs; "
+          f"{len(decisions)} decisions ({recs} with records) at {pins.UPSTREAM_SHA[:12]}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser, _subparsers = build_parser()
     args = parser.parse_args(argv)
@@ -130,6 +154,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_verify(args)
     if args.command == "explain":
         return _cmd_explain(args)
+    if args.command == "scan-citations":
+        return _cmd_scan(args)
     if args.command == "demo":
         return _cmd_demo(args)
     return 0

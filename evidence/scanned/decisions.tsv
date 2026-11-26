@@ -1,0 +1,571 @@
+# patch-precedent scanned decisions
+# upstream https://github.com/relatedb/relate.git
+# revision 5f7a510713c3feac146133e77d8c5bb72bae1b11
+adr	title	status	record_path
+ADR-0001	cip-eval: a ratcheted Gherkin eval derived from the CIP documents	accepted	docs/adr/0001-cip-eval-ratcheted-gherkin-eval.md
+ADR-0002	Cypher 25 semantics are the target where sources disagree	accepted	docs/adr/0002-cypher-25-semantic-target.md
+ADR-0003	Typed engine errors carry openCypher TCK error kinds	accepted	docs/adr/0003-tck-named-error-kinds.md
+ADR-0004	Memory-first graph with Parquet snapshots via object_store	Superseded in part by ADR-0012	docs/adr/0004-memory-first-parquet-object-store.md
+ADR-0005	Labeled property graph stored as columnar node and relationship Parquet tables	Accepted	docs/adr/0005-lpg-parquet-layout.md
+ADR-0006	TCK harness vendors feature files; expanded count is the denominator; skips only shrink	Accepted	docs/adr/0006-tck-harness-and-skips.md
+ADR-0007	Cypher is parsed with a hand-written recursive-descent parser	Accepted	docs/adr/0007-recursive-descent-parser.md
+ADR-0008	Localhost-only HTTP/JSON query API for tools and the explorer	Accepted	docs/adr/0008-localhost-http-query-api.md
+ADR-0009	Logical planner is a real pass, not only parse-then-execute	Accepted	docs/adr/0009-logical-planner.md
+ADR-0010	Label and property indexes for MATCH	Accepted	docs/adr/0010-label-property-indexes.md
+ADR-0011	Snapshot isolation via read snapshots; writers serialize	Superseded by ADR-0013	docs/adr/0011-snapshot-isolation.md
+ADR-0012	WAL-first durability with Parquet checkpoints	Superseded in part by ADR-0014	docs/adr/0012-wal-and-parquet-checkpoints.md
+ADR-0013	Tuple-level MVCC for snapshot reads	Accepted	docs/adr/0013-tuple-mvcc.md
+ADR-0014	Single write path: WAL then snapshot; graph is a materialization	Accepted	docs/adr/0014-single-wal-write-path.md
+ADR-0015	Optimistic writes; commit_ts assigned at WAL append	Accepted	docs/adr/0015-optimistic-wal-commits.md
+ADR-0016	Write execute uses a private overlay, not a graph clone	Accepted	docs/adr/0016-write-overlay.md
+ADR-0017	Write-write conflicts are returned to the client; the engine does not retry	Accepted	docs/adr/0017-client-conflict.md
+ADR-0018	Snapshot reads do not exclude apply_redo	Accepted	docs/adr/0018-concurrent-snapshot-reads.md
+ADR-0019	Waiting independent WAL records share one fsync	Accepted	docs/adr/0019-group-commit-shared-fsync.md
+ADR-0020	Checkpoint at a frozen LSN; writers append a new WAL segment	Accepted	docs/adr/0020-segmented-wal-concurrent-checkpoint.md
+ADR-0021	OpenCypher temporal values are first-class `Value`s	Accepted	docs/adr/0021-opencypher-temporal-values.md
+ADR-0022	Checkpoint shards are byte-budgeted id windows (copy-on-write)	Accepted	docs/adr/0022-id-window-checkpoint-shards.md
+ADR-0023	Incremental version GC does not take the exclusive graph lock	Accepted	docs/adr/0023-incremental-version-gc.md
+ADR-0024	MATCH rewrites choose the seek, not Cypher text order	Accepted	docs/adr/0024-match-rewrite-planner.md
+ADR-0025	`shortestPath` is BFS, not full variable-length expand	Accepted	docs/adr/0025-shortestpath-bfs.md
+ADR-0026	Residual MATCH predicates apply when their variables bind	Proposed	docs/adr/0026-eager-residual-match-predicates.md
+ADR-0027	Rows carry only live variables between clauses	Proposed	docs/adr/0027-live-row-variables.md
+ADR-0028	User-visible multi-statement transactions	Accepted	docs/adr/0028-user-visible-transactions.md
+ADR-0029	Withdraw the localhost HTTP sidecar	Accepted	docs/adr/0029-withdraw-localhost-http.md
+ADR-0030	Equality, prefix, and trigram indexes on string properties	Accepted	docs/adr/0030-string-prefix-trigram-indexes.md
+ADR-0031	Adjacency is partitioned by relationship type	Accepted	docs/adr/0031-typed-adjacency.md
+ADR-0033	Compact live records and typed CSR in RAM	Accepted	docs/adr/0033-compact-live-records-typed-csr.md
+ADR-0034	Bound `shortestPath` is bidirectional BFS	Accepted	docs/adr/0034-bidirectional-shortestpath.md
+ADR-0035	Typed adj is ordered by integer `ts` for `ORDER BY t.ts DESC LIMIT`	Accepted	docs/adr/0035-ordered-expand-ts.md
+ADR-0036	Fold one-hop MATCH aggregates while walking adjacency	Accepted	docs/adr/0036-fold-one-hop-aggregates.md
+ADR-0037	Bound `shortestPath` with `max_hops ≤ 3` is set intersection	Accepted	docs/adr/0037-shallow-bound-shortestpath.md
+ADR-0038	Lock-free snapshot pins; no database `RwLock` on the query path	Accepted	docs/adr/0038-lock-free-snapshot-pins.md
+ADR-0040	CREATE / DROP / SHOW INDEX name a (label, property) pair	Accepted	docs/adr/0040-create-drop-index.md
+ADR-0041	Time-triggered checkpoint when the WAL has work	Accepted	docs/adr/0041-timed-checkpoint.md
+ADR-0042	Logical cap on the live graph and data-dependent indexes	Accepted	docs/adr/0042-graph-memory-limit.md
+ADR-0044	Withdraw engine-level S3	Accepted	docs/adr/0044-withdraw-engine-s3.md
+ADR-0045	Optional CDC slots hold WAL recycle; apply-only replicas	Superseded by [ADR-0574](0574-withdraw-cdc-replication-slots.md)	docs/adr/0045-cdc-replication-slots.md
+ADR-0046	CypherLite parser in front of the MemoryDB runtime	Accepted	docs/adr/0046-cypherlite-parser-memorydb-runtime.md
+ADR-0047	MemoryDB reaches CypherLite CIP parity	Accepted	docs/adr/0047-memorydb-cip-parity.md
+ADR-0048	Separate identity loadtest memory budget	Accepted	docs/adr/0048-identity-loadtest-memory-budget.md
+ADR-0049	Gate the merged product in-tree	Accepted	docs/adr/0049-in-tree-merged-product-gate.md
+ADR-0050	Pluggable snapshot codecs (Parquet default, CypherLite JSON)	Accepted	docs/adr/0050-snapshot-codecs.md
+ADR-0051	WASM product path is Database `:memory:`	Accepted	docs/adr/0051-wasm-memory-database.md
+ADR-0052	GraphStore withdrawn	unknown	docs/adr/0052-graphstore-withdrawn.md
+ADR-0053	CypherLite product names	unknown	docs/adr/0053-cypherlite-product-names.md
+ADR-0054	One C ABI, one env prefix, one Python package	unknown	docs/adr/0054-one-c-abi-env-python.md
+ADR-0055	MemoryDB is licensed under Apache License 2.0	Accepted	docs/adr/0055-apache-2-license.md
+ADR-0056	OpenCypher TCK is the Cypher language contract	Accepted	docs/adr/0056-opencypher-tck-language-contract.md
+ADR-0057	Embedded C ABI is the client boundary; Bolt is optional remote transport	Accepted	docs/adr/0057-embedded-c-abi-and-bolt.md
+ADR-0058	Interactive shell surface reduced to six dot-commands	Proposed	docs/adr/0058-interactive-shell-surface-reduction.md
+ADR-0059	WAL redo payloads for catalog DDL are typed models	Proposed	docs/adr/0059-wal-redo-typed-payloads.md
+ADR-0060	Re-freeze the identity loadtest baseline for gate-host daytime conditions	Accepted	docs/adr/0060-identity-loadtest-baseline-refreeze.md
+ADR-0061	CI-host loadtest baselines (two host classes)	Accepted	docs/adr/0061-ci-host-loadtest-baselines.md
+ADR-0062	CI loadtest band calibration to runner variance	Accepted	docs/adr/0062-ci-loadtest-band-calibration.md
+ADR-0063	Lazy prefix/trigram postings with incremental dirty catch-up	Accepted	docs/adr/0063-lazy-string-index-postings.md
+ADR-0064	CI gate absolute p99 jitter allowance raised to runner reality	Accepted	docs/adr/0064-ci-p99-jitter-allowance.md
+ADR-0065	Withdraw the WASM and Swift surfaces	Accepted	docs/adr/0065-withdraw-wasm-swift-surfaces.md
+ADR-0066	Retire the MemoryDB name in favor of cypherlite	Accepted	docs/adr/0066-retire-memorydb-naming.md
+ADR-0067	Release and versioning policy: manual dispatch, tag-after-build, lockstep Rust/Python versions	Accepted	docs/adr/0067-release-versioning-and-process.md
+ADR-0068	CLI install script distributed as a GitHub Pages static asset	Accepted	docs/adr/0068-cli-install-script-via-github-pages.md
+ADR-0069	CLI lifecycle commands as positionals, plus self-upgrade design	Accepted	docs/adr/0069-cli-lifecycle-commands.md
+ADR-0070	Docker baseline loadtest environment (2 vCPU / 2 GB)	Accepted	docs/adr/0070-docker-baseline-loadtest-environment.md
+ADR-0071	CI-owned loadtest freeze with environment fingerprint	Accepted	docs/adr/0071-ci-owned-loadtest-freeze-fingerprint.md
+ADR-0072	Synchronous virtual filesystem for WAL and snapshots	Accepted	docs/adr/0072-virtual-filesystem.md
+ADR-0073	Interactive CLI line editing via rustyline	Accepted	docs/adr/0073-interactive-cli-line-editing.md
+ADR-0074	Single-file bundle VFS selected by `.cl` path	Accepted	docs/adr/0074-single-file-bundle-vfs.md
+ADR-0075	Label-only read for the snapshot label census	Accepted	docs/adr/0075-label-only-snapshot-census.md
+ADR-0076	Interner id→string lookup is lock-free	Accepted	docs/adr/0076-lock-free-interner.md
+ADR-0077	Configurable WAL durability boundaries	Accepted	docs/adr/0077-embedded-durability-boundary.md
+ADR-0078	Redo ops carry typed values; JSON only at the WAL boundary	Accepted	docs/adr/0078-typed-redo-in-process.md
+ADR-0079	Anonymous usage metrics in the CLI	Proposed	docs/adr/0079-anonymous-usage-metrics.md
+ADR-0080	CLI `pull` command: Query API v2 into `Database`	Proposed	docs/adr/0080-cli-pull-command.md
+ADR-0081	Opt-in, rooted local-file capability for LOAD CSV	Proposed	docs/adr/0081-opt-in-load-csv-file-capability.md
+ADR-0082	Bound the number of decoded Bolt values per message	Proposed	docs/adr/0082-bound-bolt-decoded-value-count.md
+ADR-0083	Borrow Bolt input from one bounded payload buffer	Proposed	docs/adr/0083-borrowed-bolt-input-buffer.md
+ADR-0084	Reinstate the WASM distribution	Accepted	docs/adr/0084-reinstate-wasm-distribution.md
+ADR-0085	wasm32 build split for the engine crates	Accepted	docs/adr/0085-wasm32-build-split.md
+ADR-0086	Bounded decoding of persisted WAL, bundles, and Parquet	Proposed	docs/adr/0086-bounded-persistence-input.md
+ADR-0087	Fallible persistence values and an escaped map form	Proposed	docs/adr/0087-fallible-persistence-decoding.md
+ADR-0088	Explicit provenance and versioned composite values in Arrow batches	Proposed	docs/adr/0088-explicit-arrow-value-provenance.md
+ADR-0089	Publish checkpoint shards under immutable generation-unique paths	Proposed	docs/adr/0089-immutable-checkpoint-shard-publication.md
+ADR-0090	Role-mark Native identities and durably stage reset	Proposed	docs/adr/0090-native-reset-role-and-durability.md
+ADR-0091	Quarantine retired bundle pages across catalog publication	Proposed	docs/adr/0091-bundle-generation-page-quarantine.md
+ADR-0092	Publish pull identity with the selected snapshot manifest	Proposed	docs/adr/0092-manifest-bound-pull-identity.md
+ADR-0093	Copy-on-write the selected bundle WAL tail page	Proposed	docs/adr/0093-bundle-wal-page-ownership.md
+ADR-0094	Preflight deterministic WAL acceptance before append	Proposed	docs/adr/0094-preflight-wal-acceptance.md
+ADR-0095	Persist admitted schema theater with checkpoint snapshots	Proposed	docs/adr/0095-durable-checkpoint-schema-theater.md
+ADR-0096	One canonical persisted-ID predicate	Proposed	docs/adr/0096-canonical-persisted-id-predicate.md
+ADR-0097	Exclusive ownership and private creation for persistent storage	Proposed	docs/adr/0097-exclusive-storage-ownership.md
+ADR-0098	Exclusive temporary files and durable atomic replacement	Proposed	docs/adr/0098-safe-atomic-replacement.md
+ADR-0099	Fallible `memory_usage` and `pull_lookup` public APIs	Proposed	docs/adr/0099-fallible-memory-usage-and-pull-lookup.md
+ADR-0100	Size-optimized WASM build pipeline	Accepted	docs/adr/0100-wasm-size-optimized-build.md
+ADR-0103	Engine / surfaces / testing workspace layout and boundary rules	Accepted	docs/adr/0103-engine-surfaces-testing-layout.md
+ADR-0104	Cargo feature bundles, starting with the CLI	Accepted	docs/adr/0104-cargo-feature-bundles.md
+ADR-0105	Parquet snapshot codec behind an additive `parquet` Cargo feature	Proposed	docs/adr/0105-optional-parquet-codec.md
+ADR-0106	JSON checkpoints carry pull identity inline	Proposed	docs/adr/0106-json-snapshot-pull-identity.md
+ADR-0107	JSONL default output when stdout is not a terminal	Proposed	docs/adr/0107-jsonl-default-for-piped-output.md
+ADR-0108	Open-then-verify for local `LOAD CSV` reads	Proposed	docs/adr/0108-load-csv-open-then-verify.md
+ADR-0109	Bolt TLS and plaintext policy	Accepted	docs/adr/0109-bolt-tls.md
+ADR-0110	Bolt connection and query governance	Proposed	docs/adr/0110-bolt-connection-query-governance.md
+ADR-0111	Engine bounded execution: cooperative cancellation and bounded snapshot pins	Proposed	docs/adr/0111-engine-bounded-execution.md
+ADR-0112	Inferred schema via `db.schema.*` procedures	Accepted	docs/adr/0112-inferred-schema-procedures.md
+ADR-0113	CLI HTTPS clients do not check certificate revocation	Accepted	docs/adr/0113-no-tls-revocation-checking.md
+ADR-0114	WAL recovery rejects undecodable records and checks the store version first	Accepted	docs/adr/0114-wal-recovery-rejects-undecodable-records.md
+ADR-0115	Sign release checksums with SSHSIG for offline install and upgrade verification	Accepted	docs/adr/0115-sshsig-release-signing.md
+ADR-0116	Fixed namespaces with Neo4j Community Edition database semantics	Accepted	docs/adr/0116-fixed-namespaces-community-edition-semantics.md
+ADR-0117	Namespace selection in the embedding APIs and over Bolt	Accepted	docs/adr/0117-namespace-selection-apis-and-bolt.md
+ADR-0118	CLI `--namespace` selects the session namespace	Accepted	docs/adr/0118-cli-namespace-flag.md
+ADR-0119	CIP-eval drops frozen scenarios that need Enterprise databases	Accepted	docs/adr/0119-cip-eval-drops-enterprise-database-scenarios.md
+ADR-0120	Persist the ontology as a document and derive `system_ontologies`	Accepted	docs/adr/0120-ontology-document-persistence.md
+ADR-0121	`db.ontology.*` procedures manage the single ontology	Accepted	docs/adr/0121-ontology-procedures.md
+ADR-0122	Pull credential hardening: plaintext refusal and env-file warnings	Proposed	docs/adr/0122-pull-auth-hardening.md
+ADR-0123	Codesign and notarize the macOS release binaries with a Developer ID	Accepted	docs/adr/0123-macos-codesign-notarize.md
+ADR-0124	Generate and publish release notes with OpenCode	Accepted	docs/adr/0124-release-notes-automation.md
+ADR-0125	Post-review amendments to release-notes automation	Accepted	docs/adr/0125-release-notes-amendments.md
+ADR-0126	Bolt basic auth with a generated token default	Accepted	docs/adr/0126-bolt-basic-auth.md
+ADR-0127	Store-version compatibility contract: migrate-on-open, hands-off, forward-only	Proposed	docs/adr/0127-store-version-compatibility.md
+ADR-0128	Docker image for the cypherlite-bolt server	Accepted	docs/adr/0128-docker-bolt-server-image.md
+ADR-0129	Trigger the website update via the explicit release.yml chain	Accepted	docs/adr/0129-website-release-chain.md
+ADR-0130	Cookbook: tested markdown recipes with in-page WASM cells	Accepted	docs/adr/0130-cookbook-tested-recipes.md
+ADR-0131	WASM script execution and result rendering	Accepted	docs/adr/0131-wasm-script-execution.md
+ADR-0132	Single-file recipes: embedded data, table and gram results	Accepted	docs/adr/0132-single-file-recipes.md
+ADR-0133	Cookbook pages link only to public targets	Accepted	docs/adr/0133-cookbook-public-links-only.md
+ADR-0134	Whole-recipe playground link	Proposed	docs/adr/0134-whole-recipe-playground-link.md
+ADR-0135	Cookbook diagrams: mermaid source, pre-rendered SVG	Proposed	docs/adr/0135-cookbook-diagrams.md
+ADR-0136	Frozen read-only open beside a native writer	Proposed	docs/adr/0136-read-only-open.md
+ADR-0137	Follow a native WAL and reload across a checkpoint gap	Proposed	docs/adr/0137-wal-follow.md
+ADR-0138	ProcedureNotFound carries the Neo4j FAILURE code at the Bolt boundary	Accepted	docs/adr/0138-bolt-procedure-not-found-code.md
+ADR-0139	Bolt failed-HELLO delay	Accepted	docs/adr/0139-bolt-failed-hello-delay.md
+ADR-0140	Bolt ROUTE advertises the dialed address	Accepted	docs/adr/0140-bolt-route-advertises-dialed-address.md
+ADR-0141	Bolt one handshake deadline per connection	Accepted	docs/adr/0141-bolt-single-handshake-deadline.md
+ADR-0142	Browser/Desktop-compat record shapes for dbms.components, SHOW DATABASES, and dbms.info	Accepted	docs/adr/0142-browser-compat-record-shapes.md
+ADR-0143	Browser/Desktop-compat shapes for dbms.showCurrentUser, dbms.clientConfig, dbms.listConfig, and dbms.licenseAgreementDetails	Accepted	docs/adr/0143-browser-dbms-procedures.md
+ADR-0144	Graph-examples differential Cypher suite (Neo4j EE docker reference)	Proposed	docs/adr/0144-graph-examples-differential-suite.md
+ADR-0145	WASM persistence is an OPFS sync-access VFS	Accepted	docs/adr/0145-wasm-opfs-vfs.md
+ADR-0146	Unknown-namespace selection is "Graph not found: \<name\>"	Accepted	docs/adr/0146-unknown-namespace-selection-is-graph-not-found.md
+ADR-0147	Public namespace values are typed	Proposed	docs/adr/0147-typed-namespace-values.md
+ADR-0148	One element-id shape parser	Proposed	docs/adr/0148-shared-element-id-parser.md
+ADR-0149	CE kind tokens come from the typed error model	Accepted	docs/adr/0149-ce-kind-tokens-from-typed-error-model.md
+ADR-0150	Typed connect constructor in the Rust API	Accepted	docs/adr/0150-typed-connect-constructor.md
+ADR-0151	Cookbook graph view: interactive NVL with double-click expand	Proposed	docs/adr/0151-cookbook-graph-view-nvl.md
+ADR-0152	Neo4j Kernel version string reported by dbms.components	Accepted	docs/adr/0152-neo4j-kernel-version-reporting-policy.md
+ADR-0153	`db.schema.visualization()` semantics	Accepted	docs/adr/0153-db-schema-visualization-semantics.md
+ADR-0154	Value cloning cost: container values are O(1) to clone (Rc-backed)	Accepted	docs/adr/0154-value-clone-cost.md
+ADR-0155	Bulk writes and imports: batched UNWIND, bounded failure, idempotent MERGE mode	Accepted	docs/adr/0155-bulk-writes-batched-unwind.md
+ADR-0156	Clone a native directory without writing it	Proposed	docs/adr/0156-directory-clone.md
+ADR-0157	`fs-to-graph` import contract	Accepted	docs/adr/0157-fs-to-graph-import.md
+ADR-0158	Streaming single-process pull, in-memory identity, refuse non-empty destinations	unknown	docs/adr/0158-streaming-single-process-pull.md
+ADR-0159	Snapshot round trip between a native directory and a `.cl` bundle	Accepted	docs/adr/0159-snapshot-round-trip.md
+ADR-0160	Restore from a `.cl` bundle takes no options	Accepted	docs/adr/0160-restore-without-options.md
+ADR-0161	Exclusive, crash-safe publish destination creation	Accepted	docs/adr/0161-exclusive-destination-creation.md
+ADR-0162	Query type on QueryResult and the Bolt RUN summary	Accepted	docs/adr/0162-query-type-on-result-and-bolt.md
+ADR-0163	Clone `--to-snapshot-format` transcodes the checkpoint codec	Accepted	docs/adr/0163-clone-to-snapshot-format.md
+ADR-0164	CLI exit contract for an open transaction	Accepted	docs/adr/0164-exit-open-transaction.md
+ADR-0165	Cold store-metadata read: `store_info` in cypherlite-storage, surfaced as `cypherlite info` and `.info`	Accepted	docs/adr/0165-info-command.md
+ADR-0166	`db.schema.visualization()`: populate `indexes`/`constraints` from the catalog	Accepted	docs/adr/0166-viz-catalog-detail.md
+ADR-0167	`point()` accepts map-like entity arguments	Accepted	docs/adr/0167-point-accepts-map-like-entities.md
+ADR-0168	Non-finite and out-of-range numeric conversions follow Neo4j	Accepted	docs/adr/0168-non-finite-and-out-of-range-conversions.md
+ADR-0169	Keywords as label and relationship-type names	Accepted	docs/adr/0169-keywords-as-label-and-type-names.md
+ADR-0170	Shared `Value` payloads: `Arc` for String, List, Map and Vector	Accepted	docs/adr/0170-shared-value-payloads.md
+ADR-0171	Lazy per-label probe replaces the snapshot label census	Accepted	docs/adr/0171-lazy-per-label-snapshot-probe.md
+ADR-0172	Incremental constraint validation	Accepted	docs/adr/0172-incremental-constraint-validation.md
+ADR-0173	Overlay-owned redo log and scratch equality index	Proposed	docs/adr/0173-overlay-owned-redo-log-and-scratch-index.md
+ADR-0174	Re-check constraints committed mid-transaction; cancellable validation loops	Accepted	docs/adr/0174-committed-catalog-constraint-rechecks.md
+ADR-0175	String list elements, Java string forms, and remaining float-to-integer sites follow Neo4j	Accepted	docs/adr/0175-list-and-string-form-conversions.md
+ADR-0176	Graph-examples nightly is report-only — diffs never fail the run	Accepted	docs/adr/0176-graph-examples-report-only-nightly.md
+ADR-0177	Bolt parameters decode temporal, duration, and point values — or fail the RUN	Accepted	docs/adr/0177-bolt-parameter-conversion.md
+ADR-0178	Expose the engine's IANA wall-clock zone resolver	Accepted	docs/adr/0178-engine-zone-resolver.md
+ADR-0179	Bolt parameter conversion is crate-internal	Accepted	docs/adr/0179-bolt-parameter-conversion-crate-internal.md
+ADR-0180	Checkpoint shards stream, split on compact bytes, and keep clean rows	Accepted	docs/adr/0180-checkpoint-shard-writes.md
+ADR-0181	Typed Query API JSON wire format for pull	Proposed	docs/adr/0181-typed-query-api-wire-for-pull.md
+ADR-0182	Unicode identifiers: the CYPHER 25 rule with a checked-in Unicode 13.0.0 table	Proposed	docs/adr/0182-unicode-identifiers.md
+ADR-0183	Checkpoint rewrites coalesce neighboring shards up to the byte target	Proposed	docs/adr/0183-coalesce-checkpoint-shards.md
+ADR-0184	Composite uniqueness probes pick the smallest committed-plus-scratch bucket	Accepted	docs/adr/0184-composite-key-smallest-bucket-probe.md
+ADR-0185	Lazy relationship equality postings for relationship uniqueness probes	Accepted	docs/adr/0185-relationship-equality-postings.md
+ADR-0186	MATCH-clause shortest paths run on BFS	Accepted	docs/adr/0186-match-clause-shortest-path-bfs.md
+ADR-0187	`db.schema.visualization()`: virtual relationships carry a `name` property	Accepted	docs/adr/0187-viz-relationship-name-property.md
+ADR-0188	Remove the superseded toString() TCK scenario from the pinned corpus	Accepted	docs/adr/0188-remove-superseded-tck-scenario-from-pin.md
+ADR-0189	One shared shortest-path search for the expression and clause forms	Accepted	docs/adr/0189-shared-shortest-path-search.md
+ADR-0190	Scoped CLI help: a command index, per-command help, and synopsis-scoped usage errors	Accepted	docs/adr/0190-scoped-cli-help.md
+ADR-0191	Keywords as symbolic names (aliases, references, binding variables, map keys)	Accepted	docs/adr/0191-keywords-as-symbolic-names.md
+ADR-0192	CLI "did you mean" suggestion for unknown flags	Proposed	docs/adr/0192-cli-unknown-flag-suggestions.md
+ADR-0193	`--version` honors the JSON output mode	Proposed	docs/adr/0193-version-json.md
+ADR-0194	CLI error envelope and exit-code map for query runs	Proposed	docs/adr/0194-cli-error-envelope-and-exit-codes.md
+ADR-0195	An `envelope` output mode: `{columns, rows, truncated}`	Proposed	docs/adr/0195-result-envelope-mode.md
+ADR-0196	A row cap for agent-driven runs: `--max-rows`	Proposed	docs/adr/0196-row-cap-for-agent-runs.md
+ADR-0197	Examples in `--help`, with an opt-out	Proposed	docs/adr/0197-help-examples.md
+ADR-0198	collect() + list in WITH: `WITH *` grouping keys and aggregates in CASE arms	Accepted	docs/adr/0198-collect-list-concat.md
+ADR-0199	Statement progress when a multi-statement run fails	Proposed	docs/adr/0199-statement-progress-on-failure.md
+ADR-0200	`query` command and `--database`	Proposed	docs/adr/0200-query-command-and-database-flag.md
+ADR-0201	Pull carries the source's constraints and indexes	Proposed	docs/adr/0201-pull-carries-schema.md
+ADR-0202	Graph floor includes retained structure	Accepted	docs/adr/0202-graph-floor-memory.md
+ADR-0203	Newest-first expansion order (Neo4j relationship-chain parity)	Proposed	docs/adr/0203-newest-first-expansion-order.md
+ADR-0204	Nightly differential: bounded pull retry and pre-cleanup reference diagnostics	Proposed	docs/adr/0204-nightly-pull-retry-and-diagnostics.md
+ADR-0205	Aggregations skip nulls; `sum`/`avg` accept durations	Proposed	docs/adr/0205-aggregations-skip-nulls-and-sum-durations.md
+ADR-0206	Compressed topology storage — conditional adopt	Proposed	docs/adr/0206-compressed-topology-storage.md
+ADR-0207	Packed width-3 TEXT postings	Accepted	docs/adr/0207-packed-text-trigrams.md
+ADR-0209	Batched execution of global bulk writes	Proposed	docs/adr/0209-batched-global-bulk-writes.md
+ADR-0210	`CALL { … } IN TRANSACTIONS`: legacy WITH-import, concluding results, per-batch commits	Proposed	docs/adr/0210-call-in-transactions-batching.md
+ADR-0211	Graph-type elements with relaxed property declarations, and `SET GRAPH TYPE <name>`	Proposed	docs/adr/0211-graph-type-elements-and-as-graph.md
+ADR-0212	Conformance corpora (TCK, CIP-eval, cookbook) run optimized; unit suites stay debug	Proposed	docs/adr/0212-tck-release-in-ci.md
+ADR-0213	Python driver-like result ergonomics — Record rows, single/peek/data, to_df()	Proposed	docs/adr/0213-python-driver-result-ergonomics.md
+ADR-0214	`Cursor.graph()` — de-duplicated result-graph extraction	Accepted	docs/adr/0214-python-result-graph.md
+ADR-0215	`Cursor.consume()` → `ResultSummary` with client-edge timing	Accepted	docs/adr/0215-python-result-summary.md
+ADR-0216	Idiomatic Node.js/TypeScript client — driver-style result ergonomics	Accepted	docs/adr/0216-javascript-client-ergonomics.md
+ADR-0217	One shared single-input aggregate table, exact-arity backstop	Proposed	docs/adr/0217-shared-single-input-aggregate-table.md
+ADR-0218	Statistics-based orientation of unbound comma-MATCH parts	Proposed	docs/adr/0218-stats-based-match-orientation.md
+ADR-0219	Python parameter conversion — UUID, bytes, tuple, explicit Point, ordered maps	Accepted	docs/adr/0219-python-parameter-conversion.md
+ADR-0220	Tabular C ABI — one canonical entry point per operation	Accepted	docs/adr/0220-tabular-abi-single-entry-points.md
+ADR-0221	Engine-reported per-statement elapsed time	Accepted	docs/adr/0221-engine-reported-statement-elapsed.md
+ADR-0222	JavaScript tagged-template queries	Accepted	docs/adr/0222-javascript-tagged-template-queries.md
+ADR-0223	Wire JSON entity values carry an explicit `kind` tag	Accepted	docs/adr/0223-wire-entity-kind-tags.md
+ADR-0224	Engine-reported per-result-column types	Accepted	docs/adr/0224-result-column-types.md
+ADR-0225	Single-input aggregates require exactly one argument	Accepted	docs/adr/0225-single-input-aggregate-arity.md
+ADR-0226	Pin the ontology mappings: document to graph, ontology to graph type	Accepted	docs/adr/0226-ontology-mappings.md
+ADR-0227	Ontology document format: JSON or YAML, stored verbatim	Accepted	docs/adr/0227-ontology-document-format.md
+ADR-0228	Ontology list property types map to closed graph-type list types	Accepted	docs/adr/0228-ontology-list-property-types-closed.md
+ADR-0229	Remove the `system_ontologies` Cypher surface	Accepted	docs/adr/0229-remove-system-ontologies-cypher-surface.md
+ADR-0230	Did-you-mean command suggestions on query parse errors	Accepted	docs/adr/0230-command-did-you-mean-on-parse-errors.md
+ADR-0231	bare `cypherlite` opens the interactive shell on a TTY	Accepted	docs/adr/0231-bare-invocation-opens-shell-on-tty.md
+ADR-0232	Network surfaces charter — shared auth, Query API v2 subset, MCP transport	Accepted	docs/adr/0232-network-surfaces-charter.md
+ADR-0233	Replace cypherlite-bolt's tokio core with thread-per-connection	Proposed	docs/adr/0233-bolt-thread-per-connection.md
+ADR-0234	httparse for HTTP/1.1 request-head parsing	Accepted	docs/adr/0234-httparse-request-parsing.md
+ADR-0235	Built-in `db.ping()` procedure	Accepted	docs/adr/0235-db-ping-procedure.md
+ADR-0236	Query API v2 value encoding follows the Neo4j contract	Accepted	docs/adr/0236-query-api-v2-value-encoding.md
+ADR-0237	Query API v2 managed-transaction routes on engine transactions	Accepted	docs/adr/0237-query-api-tx-routes.md
+ADR-0238	One shared accept loop in `cypherlite-serve`	Proposed	docs/adr/0238-shared-accept-loop.md
+ADR-0239	`--format` output-flag spelling and the `toon` output mode	Accepted	docs/adr/0239-format-flag-spelling-and-toon-mode.md
+ADR-0240	TTY-adaptive JSON pretty-printing and `--pretty`	Accepted	docs/adr/0240-tty-adaptive-json-pretty-printing.md
+ADR-0241	`--timeout` query flag and exit code 7	Accepted	docs/adr/0241-query-timeout-flag-and-exit-code-7.md
+ADR-0242	`agent-context` discovery command and `skill list`/`skill check`	Accepted	docs/adr/0242-agent-context-command-and-skill-drift-check.md
+ADR-0243	Query-latency suite from the graph-benchmark-ldbc workload	Accepted	docs/adr/0243-query-latency-suite.md
+ADR-0244	In-process sampling profiler for the query-latency suite	Accepted	docs/adr/0244-in-process-query-sampling-profiler.md
+ADR-0245	Baseline environment and gate for the query-latency suite	Accepted	docs/adr/0245-query-latency-baseline-environment-and-gate.md
+ADR-0246	Defer the query-latency plan goldens	Accepted	docs/adr/0246-defer-query-latency-plan-goldens.md
+ADR-0247	SF0.1 literals for the query-latency suite	Accepted	docs/adr/0247-query-latency-sf0-1-literals.md
+ADR-0248	`cypherlite serve --host HOST` — explicit bind host, loopback default, loud plaintext posture	Accepted	docs/adr/0248-serve-host-flag.md
+ADR-0249	Docker image serves Bolt + HTTP + MCP from one `cypherlite serve` process	Accepted	docs/adr/0249-docker-unified-serve-image.md
+ADR-0250	Release discovery from a static releases.json on the website	Accepted	docs/adr/0250-releases-json-update-discovery.md
+ADR-0251	Fast test architecture — memory-first tiers, OS-delta lanes, build-once, background cadences	Accepted	docs/adr/0251-test-architecture.md
+ADR-0252	The corpus family builds once in a single merged CI job	Accepted	docs/adr/0252-corpus-family-single-job.md
+ADR-0253	Unit and integration tests compile at `[profile.test] opt-level = 1`	Accepted	docs/adr/0253-test-profile-opt-level.md
+ADR-0254	cargo-nextest executes the unit-lane test suites; the corpus gate stays on stock cargo test	Accepted	docs/adr/0254-cargo-nextest-test-execution.md
+ADR-0255	mold links every Linux CI build; CARGO_INCREMENTAL and the dev debug-info trim are workflow-level env	Accepted	docs/adr/0255-mold-linker-linux-ci.md
+ADR-0256	Vector SEARCH flat-scan rewrite — bounded top-k heap, no per-row Value clones	Accepted	docs/adr/0256-vector-search-flat-scan-rewrite.md
+ADR-0257	Query input limits: max query-text size and max nesting depth	Proposed	docs/adr/0257-query-input-limits.md
+ADR-0258	Automated PR reviews with OpenCode	Proposed	docs/adr/0258-automated-pr-reviews.md
+ADR-0259	Query-execution stack provisioning: big-stack worker thread at the engine layer	Proposed	docs/adr/0259-query-execution-stack-provisioning.md
+ADR-0260	Sanitize internal-class errors at the Bolt and load trust boundaries	Accepted	docs/adr/0260-trust-boundary-error-sanitization.md
+ADR-0261	Upgrade skill-refresh ownership and legacy adoption	Accepted	docs/adr/0261-upgrade-skill-refresh-ownership.md
+ADR-0262	Skill install adopts a recognizable cypherlite bundle	Accepted	docs/adr/0262-skill-install-adopts-recognizable-bundle.md
+ADR-0263	Restrict the telemetry endpoint override to HTTPS	Accepted	docs/adr/0263-telemetry-endpoint-https-only.md
+ADR-0264	cypherlite-bolt exits on SIGINT/SIGTERM	Accepted	docs/adr/0264-bolt-signal-shutdown.md
+ADR-0265	Trigger release notes via an explicit workflow_call chain from release.yml	Accepted	docs/adr/0265-release-notes-explicit-chain.md
+ADR-0266	Bolt over WebSocket on the same bind	Accepted	docs/adr/0266-bolt-websocket-transport.md
+ADR-0267	CLI `--fetch-params NAME=SOURCE` binds fetched JSON as a query parameter	Accepted	docs/adr/0267-cli-fetch-params-flag.md
+ADR-0268	proptest dev-dependencies for property testing	Proposed	docs/adr/0268-proptest-property-testing.md
+ADR-0269	Bolt ROUTE answers with a single-server self routing table	Accepted	docs/adr/0269-bolt-route-self-routing-table.md
+ADR-0270	CLI flags parse in every build: split `--fetch-params` parsing from its fetch	Accepted	docs/adr/0270-cli-flag-parse-fetch-split.md
+ADR-0271	Stellar review as a deterministic, incremental pipeline	Proposed	docs/adr/0271-stellar-review-deterministic-pipeline.md
+ADR-0272	Bolt Path values encode as a PackStream structure	Accepted	docs/adr/0272-bolt-path-struct.md
+ADR-0273	Plumb the Bolt principal to the engine for dbms.showCurrentUser (revisits ADR-0143)	Accepted	docs/adr/0273-adr-session-plumbing.md
+ADR-0275	Stellar review: script-enforced scope and resolved-findings memory	Accepted	docs/adr/0275-stellar-review-scoped-incremental-rounds.md
+ADR-0276	Store-level databases catalog	Accepted	docs/adr/0276-store-level-databases-catalog.md
+ADR-0277	One Cypher parser	Proposed	docs/adr/0277-one-cypher-parser.md
+ADR-0278	npm distribution	Accepted	docs/adr/0278-npm-distribution.md
+ADR-0279	The `lab` command namespace	Accepted	docs/adr/0279-lab-command-namespace.md
+ADR-0280	inf/nan/infinity variable semantics and non-finite float JSON rendering	Accepted	docs/adr/0280-inf-nan-variable-semantics.md
+ADR-0281	Bolt session and PackStream are callable as a library	Accepted	docs/adr/0281-bolt-session-library.md
+ADR-0282	Clone covers the dir/`.cl` matrix; the `snapshot` command is removed	Accepted	docs/adr/0282-clone-covers-dir-bundle-matrix.md
+ADR-0283	No C ABI accessor for QueryResult.query_type in this change	Accepted	docs/adr/0283-no-c-abi-query-type-accessor.md
+ADR-0284	Shard writer stores no page statistics	Accepted	docs/adr/0284-shard-statistics-off.md
+ADR-0285	Result-metadata accessors on the C ABI	Accepted	docs/adr/0285-c-abi-result-metadata-accessors.md
+ADR-0286	`fs-to-graph` exits when `--db` is set	Accepted	docs/adr/0286-fs-to-graph-explicit-db-exits.md
+ADR-0287	Catalog DDL stages seed NEXT chains with a unit row	Accepted	docs/adr/0287-catalog-ddl-unit-output-in-next-chains.md
+ADR-0288	The cookbook navigation links the repository while it is internal	Accepted	docs/adr/0288-cookbook-nav-links-internal-repository.md
+ADR-0289	Graph-shape logical memory pins and Bolt RSS baseline	Accepted	docs/adr/0289-graph-shape-memory-pins.md
+ADR-0290	Syntax-error position: caret on stderr, `column` and `source` in the envelope	Proposed	docs/adr/0290-syntax-error-position.md
+ADR-0291	Graph-examples extras — apoc rewrites as extra queries — and schema DDL as runnable statements	Proposed	docs/adr/0291-graph-examples-extras-and-schema-ddl.md
+ADR-0292	Stellar night-shift autopilot and stale-ledger-proof scoping	Proposed	docs/adr/0292-stellar-night-shift-autopilot.md
+ADR-0293	Bolt HELLO SUCCESS metadata — configurable server identity (honest default) and a connection_id	Accepted	docs/adr/0293-configurable-bolt-hello-identity.md
+ADR-0294	the TCK corpus gate runs under cargo-nextest after all	Accepted	docs/adr/0294-tck-gate-under-nextest.md
+ADR-0300	ADR number mint via a counter branch	Accepted	docs/adr/0300-adr-number-mint-counter-branch.md
+ADR-0301	ADR claim proof via the mint ledger	Accepted	docs/adr/0301-adr-claim-proof.md
+ADR-0302	Review-agent models are overridable via environment variables	Accepted	docs/adr/0302-review-model-env-override.md
+ADR-0303	Bolt version negotiation answers from the client's proposals	Proposed	docs/adr/0303-bolt-version-negotiation-from-client-proposals.md
+ADR-0304	Bolt compatibility corpus as boltkit `.bolt` scripts, replayed against the real server	Proposed	docs/adr/0304-bolt-compat-script-replay.md
+ADR-0306	Read-only and follow opens for serve and cypherlite-mcp	Proposed	docs/adr/0306-read-only-follow-servers.md
+ADR-0307	Bolt FAILURE carries Neo4j status codes	Proposed	docs/adr/0307-bolt-failure-carries-neo4j-status-codes.md
+ADR-0308	Statements that reference an absent parameter fail with ParameterMissing before execution	Proposed	docs/adr/0308-absent-parameter-fails-before-execution.md
+ADR-0309	Bolt result summary metadata matches Neo4j 4.4: t_first on RUN SUCCESS; type, stats, t_last and db on the ending SUCCESS only	Proposed	docs/adr/0309-bolt-summary-metadata-neo4j-4-4.md
+ADR-0310	Bolt bookmarks: the auto-commit ending SUCCESS and COMMIT SUCCESS carry the engine's commit bookmark; received bookmarks are accepted	Proposed	docs/adr/0310-bolt-bookmarks.md
+ADR-0311	Bolt explicit transactions keep one open result per RUN, addressed by qid	Proposed	docs/adr/0311-bolt-tx-open-results-by-qid.md
+ADR-0312	Bolt HELLO advertises connection.recv_timeout_seconds and the server sends NOOP keep-alives during long requests	Proposed	docs/adr/0312-bolt-hello-recv-timeout-hint-and-noop-keepalive.md
+ADR-0313	Bolt HELLO requires user_agent	Proposed	docs/adr/0313-bolt-hello-requires-user-agent.md
+ADR-0314	Bolt protocol breaches answer Neo.ClientError.Request.Invalid and close the connection	Proposed	docs/adr/0314-bolt-protocol-breaches-close.md
+ADR-0315	Bolt unknown message signatures are fatal: the connection closes without a FAILURE	Proposed	docs/adr/0315-bolt-unknown-message-signature-fatal.md
+ADR-0316	Bolt accepts client NOOP chunks between messages	Proposed	docs/adr/0316-bolt-client-noop-chunks.md
+ADR-0317	Bolt RESET answers IGNORED for work queued ahead of it	Proposed	docs/adr/0317-bolt-reset-ignores-queued-work.md
+ADR-0318	Bolt ROUTE answers the home database neo4j and Neo4j's WRITE/READ/ROUTE role order	Proposed	docs/adr/0318-bolt-route-home-db-and-role-order.md
+ADR-0319	Bolt reports execution-phase failures at the first PULL or DISCARD	Proposed	docs/adr/0319-bolt-execution-failures-at-pull.md
+ADR-0325	Bolt temporal results encode as PackStream temporal structures	Proposed	docs/adr/0325-bolt-temporal-results-as-packstream-structs.md
+ADR-0326	Bolt point results encode as PackStream Point2D/Point3D structures	Proposed	docs/adr/0326-bolt-point-results-as-packstream-structs.md
+ADR-0327	The engine gains a statement-scoped byte-array value	Proposed	docs/adr/0327-engine-statement-scoped-bytes-value.md
+ADR-0328	Bolt bytes parameters round-trip through a transient engine bytes value	Proposed	docs/adr/0328-bolt-bytes-parameters-round-trip.md
+ADR-0329	Bolt 4.4 patch_bolt utc: UTC DateTime structures when the client negotiates them	Proposed	docs/adr/0329-bolt-patch-bolt-utc.md
+ADR-0330	The release run deploys the website after its gh-pages writes	Accepted	docs/adr/0330-release-chains-pages-deploy.md
+ADR-0331	sccache (content-addressed) replaces mtime normalization for CI compile caching	Accepted	docs/adr/0331-sccache-over-mtime-normalization.md
+ADR-0332	Query type w vs rw split by returned columns (Neo4j 2026.09)	Proposed	docs/adr/0332-query-type-w-rw-by-returned-columns.md
+ADR-0333	Processing memory controls	Accepted	docs/adr/0333-processing-memory-controls.md
+ADR-0334	Heartbeat invariants are enforced at the boundary (non-zero interval, tick-panic safety)	Proposed	docs/adr/0334-heartbeat-boundary-invariants.md
+ADR-0335	Unbound variables fail with UndefinedVariable instead of evaluating to null	Proposed	docs/adr/0335-unbound-variable-fails-not-null.md
+ADR-0336	round() bounds its precision argument	Proposed	docs/adr/0336-round-precision-bound.md
+ADR-0337	CREATE CONSTRAINT OPTIONS lowering and eval errors propagate	Proposed	docs/adr/0337-constraint-options-errors-propagate.md
+ADR-0338	ArithmeticFailure renders its bare payload; Error::Arithmetic composes the legacy text	Proposed	docs/adr/0338-arithmetic-failure-display-payload.md
+ADR-0339	Property-write validation is one typed verdict walk in a shared exec module	Proposed	docs/adr/0339-property-validation-verdict-walk.md
+ADR-0340	Zone resolution at a UTC instant returns the typed ZoneError vocabulary	Proposed	docs/adr/0340-zone-resolution-typed-error.md
+ADR-0341	logical_bytes_within is the one early-stopping logical-bytes walk	Proposed	docs/adr/0341-logical-bytes-within-one-walk.md
+ADR-0342	Bolt request scalar fields fail malformed values with Request.Invalid	Proposed	docs/adr/0342-bolt-request-fields-fail-malformed.md
+ADR-0343	One shared result header for QueryResult and ExecutionFailure	Proposed	docs/adr/0343-shared-result-header.md
+ADR-0344	Query plan node tree and per-operator metrics	Accepted	docs/adr/0344-query-plan-node-tree-and-per-operator-metrics.md
+ADR-0345	Plan surface alignment — CLI text rendering, Bolt and HTTP passthrough	Accepted	docs/adr/0345-plan-surface-alignment-cli-bolt-http.md
+ADR-0346	Context-unit findings are night-shift backlog, not PR verdict blockers	Accepted	docs/adr/0346-context-findings-backlog-not-verdict.md
+ADR-0347	Round-1 review scope intersects the diff hunks	Accepted	docs/adr/0347-round1-scope-intersects-diff-hunks.md
+ADR-0348	PROFILE metric fields — db hits, memory bytes, never-executed and estimate skew	Accepted	docs/adr/0348-profile-metric-fields-db-hits-memory-bytes.md
+ADR-0349	speedscope export mode for PROFILE plan trees	Accepted	docs/adr/0349-speedscope-export-mode-for-profile-plan-trees.md
+ADR-0350	Bound-node pivot for multi-pattern path expansion	Proposed	docs/adr/0350-bound-node-pivot-for-pattern-expansion.md
+ADR-0351	Cheapest-element start for unbound path patterns	Accepted	docs/adr/0351-cheapest-element-start-for-unbound-patterns.md
+ADR-0352	Drop processing byte limits	Accepted	docs/adr/0352-drop-processing-byte-limits.md
+ADR-0353	Bolt RUN SUCCESS depth-truncation marker for structured plans	Accepted	docs/adr/0353-bolt-plan-depth-truncation-marker.md
+ADR-0354	Nits never open inline threads; they ride a collapsed Low appendix	Accepted	docs/adr/0354-nits-collapsed-appendix-not-threads.md
+ADR-0355	FxHash core maps and interned-domain reads on the traversal hot path	Accepted	docs/adr/0355-fxhash-core-maps-and-interned-domain-reads.md
+ADR-0356	Unit-granular dependency-dirty expansion	Accepted	docs/adr/0356-unit-granular-dependency-expansion.md
+ADR-0357	Plan summary on the drained result, with Neo4j-shaped plan args	Accepted	docs/adr/0357-plan-summary-placement-and-neo4j-plan-args.md
+ADR-0358	Probe-then-fallback upgrade download route for the internal repository	Accepted	docs/adr/0358-upgrade-download-route.md
+ADR-0359	One plan renderer — text is rendered at the boundary, never in the engine	Proposed	docs/adr/0359-single-plan-renderer-at-the-boundary.md
+ADR-0360	Workspace rand 0.9 migration	Proposed	docs/adr/0360-rand-09-workspace-migration.md
+ADR-0363	Query notifications: vocabulary and transport	Proposed	docs/adr/0363-query-notifications.md
+ADR-0364	Bump the ontology document gate to the main graph-spec schema	Accepted	docs/adr/0364-ontology-spec-main-gate.md
+ADR-0365	The HTTP Query API v2 plan node shape	Proposed	docs/adr/0365-http-query-api-v2-plan-node-shape.md
+ADR-0367	graph values in output — the ADR-0223 wire form in JSON, id-free Display in text	Accepted	docs/adr/0367-graph-value-output-contract.md
+ADR-0368	One product binary: serve absorbs the bolt and mcp bins	Accepted	docs/adr/0368-one-product-binary-serve-absorbs-bins.md
+ADR-0371	Preview Cypher feature gating via CYPHERLITE_PREVIEW	Proposed	docs/adr/0371-preview-feature-gating.md
+ADR-0372	The schema-rule conflict is narrowed to serving index kinds	Accepted	docs/adr/0372-serving-index-conflict.md
+ADR-0373	Export the plain-JSON Query API plan field	Accepted	docs/adr/0373-export-query-plan-field.md
+ADR-0374	Plan artifacts on `QueryResult` as one structural fact	Proposed	docs/adr/0374-plan-artifacts-on-query-result.md
+ADR-0375	PROFILE names the walk's start and the store-read kinds	Proposed	docs/adr/0375-profile-walk-start-and-store-read-kinds.md
+ADR-0376	The git-to-graph import contract	Accepted	docs/adr/0376-git-to-graph-import.md
+ADR-0377	Import resource bounds for `lab git-to-graph`	Accepted	docs/adr/0377-import-resource-bounds.md
+ADR-0378	Gate the `db.ontology.*` procedures behind `CYPHERLITE_PREVIEW`	Proposed	docs/adr/0378-ontology-procedures-preview-gate.md
+ADR-0379	Hybrid search `COMBINE` behind the `hybrid-search` gate	Accepted	docs/adr/0379-hybrid-search-combine.md
+ADR-0380	First-party dependencies are not new dependencies, and the git import's recorded pair cost	Accepted	docs/adr/0380-first-party-dependency-scope.md
+ADR-0381	The agent-native plan schema (`cypherlite.plan/v1`)	Proposed	docs/adr/0381-agent-native-plan-schema.md
+ADR-0382	Local callables behind the `local-callables` gate	Accepted	docs/adr/0382-local-callables.md
+ADR-0383	The lab importers take `--database`, and `--db` is removed	Accepted	docs/adr/0383-lab-database-flag.md
+ADR-0384	Human tables wrap to a width budget	Proposed	docs/adr/0384-table-wrapping-to-a-width-budget.md
+ADR-0385	gzip response compression on the HTTP Query API	Proposed	docs/adr/0385-http-gzip-response-compression.md
+ADR-0386	chunked response streaming on the HTTP Query API	Proposed	docs/adr/0386-http-chunked-streaming.md
+ADR-0387	Statistics-backed counting operator	Proposed	docs/adr/0387-statistics-backed-counting-operator.md
+ADR-0388	The graph-type trio (optional properties, default values, implied-label inheritance) behind three preview gates	Accepted	docs/adr/0388-graph-type-trio-optional-properties-default-values-implied-labels.md
+ADR-0390	`cypherlite serve` carries the served store's `--memory-limit`	Accepted	docs/adr/0390-serve-memory-limit-flag.md
+ADR-0391	The GQL `FOR <variable> IN <expression>` clause behind the `gql-for` gate	Accepted	docs/adr/0391-gql-for-clause.md
+ADR-0392	The git import commits per batch over a streamed plan	Accepted	docs/adr/0392-git-import-per-batch-commit.md
+ADR-0394	Fresh-store imports CREATE their edges	Proposed	docs/adr/0394-fresh-store-import-create-edges.md
+ADR-0395	A per-statement nested evaluation budget	Proposed	docs/adr/0395-nested-evaluation-budget.md
+ADR-0396	PROFILE cumulative time — the `Total (ms)` column and the `total_time_ms` document field	Accepted	docs/adr/0396-profile-cumulative-time-column.md
+ADR-0397	The read kinds as their own PROFILE columns	Accepted	docs/adr/0397-reads-cell-legibility.md
+ADR-0399	The per-phase PROFILE times — seek and walk inside the fused operators	Accepted	docs/adr/0399-per-phase-profile-times.md
+ADR-0400	The plan table's presentation lives with its one consumer	Accepted	docs/adr/0400-plan-table-presentation-lives-with-consumer.md
+ADR-0401	`push` into Neo4j/Aura: constraint-keyed MERGE, batched UNWIND, additive by default	Proposed	docs/adr/0401-push-into-neo4j-aura.md
+ADR-0402	Zero-effect write notes in batch sessions	Accepted	docs/adr/0402-zero-effect-write-notes.md
+ADR-0403	In-band truncation records — a capped result never reads as complete	Accepted	docs/adr/0403-in-band-truncation-records.md
+ADR-0404	The agent-facing CLI surface — intent, principles, and the gap roadmap	Accepted	docs/adr/0404-agent-facing-cli-surface.md
+ADR-0406	Markdown vault snapshot codec — the database runs on a folder of markdown files	Proposed	docs/adr/0406-markdown-vault-snapshot-codec.md
+ADR-0407	Agent-mode override ladder and the shared detection vocabulary	Accepted	docs/adr/0407-agent-mode-override-ladder.md
+ADR-0424	Vector values carry a derived binary companion for exact pruning	Proposed	docs/adr/0424-vector-binary-companion.md
+ADR-0425	Query API request media types select typed or plain parameters	Proposed	docs/adr/0425-typed-request-wire-alignment.md
+ADR-0426	Agent-detected piped runs default to `toon`	Proposed	docs/adr/0426-toon-piped-default-for-agent-runs.md
+ADR-0427	Per-project state file (`.cypherlite/`)	Proposed	docs/adr/0427-per-project-state-file.md
+ADR-0428	The HTTP Query API is embeddable over any byte stream	Accepted	docs/adr/0428-embeddable-http-query-api.md
+ADR-0429	The CLI extension registry — manifest, discovery, and the `run` mount (LABS-470)	Proposed	docs/adr/0429-cli-extension-registry.md
+ADR-0430	The extension wire protocol v1 (LABS-470)	Proposed	docs/adr/0430-cli-extension-wire-protocol.md
+ADR-0431	Extension distribution — the first-party channel, the install verbs, and trust tiers (LABS-469)	Proposed	docs/adr/0431-cli-extension-distribution.md
+ADR-0432	The --version output states the binary's license	Accepted	docs/adr/0432-version-license-statement.md
+ADR-0433	Reinstate the Swift surface for iOS and macOS	Proposed	docs/adr/0433-reinstate-swift-surface.md
+ADR-0434	The `extensions/` workspace group — first-party extension crates	Proposed	docs/adr/0434-first-party-extension-crate-group.md
+ADR-0435	The managed-transaction lifecycle contract	Proposed	docs/adr/0435-managed-tx-lifecycle.md
+ADR-0439	Commit-time uniqueness admission	Proposed	docs/adr/0439-commit-time-uniqueness.md
+ADR-0440	In-process follower/writer toggle	Proposed	docs/adr/0440-follower-writer-toggle.md
+ADR-0441	Yield a follower gap instead of loading a second graph	Proposed	docs/adr/0441-follower-gap-yield.md
+ADR-0442	The extension mount speaks MCP stdio	Proposed	docs/adr/0442-extension-mcp-stdio-wire.md
+ADR-0443	Rust toolchain stays on MSRV 1.88	Accepted (2026-10-29)	docs/adr/0443-rust-toolchain-msrv-1-88.md
+ADR-0444	Stellar finding disposition — resolved threads deposed, non-critical findings deferred to Linear	Accepted (2026-10-29)	docs/adr/0444-stellar-finding-disposition.md
+ADR-0445	`point()` reads the `crs` key as the name spelling of `srid`	Proposed (2026-10-29)	docs/adr/0445-point-crs-key-names-the-srid.md
+ADR-0446	Temporal identity — equality, ordering and equivalence are three relations	Proposed (2026-10-29)	docs/adr/0446-temporal-identity-three-relations.md
+ADR-0447	The extension mount speaks MCP stdio only	Accepted (2026-10-29)	docs/adr/0447-extension-single-wire.md
+ADR-0448	`toString()` renders temporal values at full precision — the value layer owns the policy	Accepted (2026-10-29)	docs/adr/0448-tostring-temporal-full-precision.md
+ADR-0449	GitHub installs pinned to a commit	Proposed	docs/adr/0449-github-install-trust-pins.md
+ADR-0450	`ConstraintDef` carries the enforced label — one schema identity for every constraint kind	Proposed	docs/adr/0450-constraint-def-enforced-label.md
+ADR-0451	Bound unauthenticated HTTP and MCP connections	Proposed	docs/adr/0451-bound-unauthenticated-network-connections.md
+ADR-0452	The concurrent logical-workspace limit is the admission switch	Proposed	docs/adr/0452-workspace-limit-enables-admission.md
+ADR-0453	Aggregations in subclauses — ORDER BY/WHERE re-aggregation and DISTINCT grouping	Proposed	docs/adr/0453-aggregations-in-subclauses.md
+ADR-0454	The obfuscated literal gates at the lexer	Proposed	docs/adr/0454-obfuscated-literals-lexer-gate.md
+ADR-0455	The browser-origin guard covers every state-changing method	Proposed	docs/adr/0455-state-changing-method-origin-guard.md
+ADR-0456	GPM syntax mixing — the allowed combinations	Proposed	docs/adr/0456-gpm-syntax-mixing-allowed.md
+ADR-0457	The signed release manifest carries the release version	Proposed	docs/adr/0457-signed-manifest-carries-version.md
+ADR-0458	Misc-tail Cypher 25 forms: list predicates, DISJOINT BY, name-matched UNIONs, ORDER BY projection scope, and procedure argument options	Proposed	docs/adr/0458-misc-tail-cypher25-forms.md
+ADR-0459	The authenticated WebSocket Origin default is loopback plus the hosted Neo4j web apps	Proposed	docs/adr/0459-authenticated-websocket-origin-default.md
+ADR-0460	Ordered body properties for the markdown vault — the primary bare, the rest as `##` sections	Proposed	docs/adr/0460-markdown-body-properties.md
+ADR-0462	A fixed value-nesting depth cap of 500	Proposed	docs/adr/0462-value-nesting-depth.md
+ADR-0463	A per-allocation expression build cap	Proposed	docs/adr/0463-expression-allocation-budget.md
+ADR-0464	FLOAT16/BFLOAT16 vector coordinate types gate behind a preview row	Proposed	docs/adr/0464-float16-vector-coordinate-gate.md
+ADR-0465	Announce the release on Slack after the pipeline is green	Accepted	docs/adr/0465-slack-announce-after-pipeline.md
+ADR-0466	Traversal depth is admission-limited, not left to the stack	Proposed	docs/adr/0466-traversal-depth-admission-limit.md
+ADR-0467	Two corpus-visible preview gates: chronological comparisons and complex SEARCH patterns	Proposed	docs/adr/0467-preview-gates-chronological-and-complex-search.md
+ADR-0468	Structure-of-arrays batch substrate for clause interiors	Proposed	docs/adr/0468-soa-batch-substrate.md
+ADR-0469	Mid-path allReduce inline pruning in quantified path patterns	Proposed	docs/adr/0469-allreduce-inline-pruning.md
+ADR-0470	Durability mode selectable through serve	Proposed	docs/adr/0470-serve-durability-mode.md
+ADR-0471	One traversal engine for every var-length spelling	Proposed	docs/adr/0471-one-var-length-traversal-engine.md
+ADR-0472	Re-pin the four Cypher 25-superseded ORDER BY scenarios to Neo4j behaviour	Proposed	docs/adr/0472-repin-order-by-scenarios.md
+ADR-0473	Contracted traversal kernels over the batch substrate	Proposed	docs/adr/0473-contracted-traversal-kernels.md
+ADR-0474	Compound start cost for unindexed CONTAINS seeds	Proposed	docs/adr/0474-compound-contains-seed-start-cost.md
+ADR-0475	Early conjunct evaluation and riders in the GPM walk	Proposed	docs/adr/0475-gpm-early-conjuncts-and-riders.md
+ADR-0476	Quarantine the research kernels behind a non-default `research` cargo feature	Proposed	docs/adr/0476-quarantine-research-kernels.md
+ADR-0477	Safe mode refuses agent-typical dangerous statement shapes	Proposed	docs/adr/0477-safe-mode.md
+ADR-0478	The frontier-NFA QPP kernel	Proposed	docs/adr/0478-frontier-nfa-qpp-kernel.md
+ADR-0479	The QPP/LDBC test corpus as query-latency workloads	Proposed	docs/adr/0479-qpp-ldbc-test-corpus.md
+ADR-0480	One access flag — `--read-only[=snapshot|live]`	Proposed	docs/adr/0480-one-access-flag-read-only-freshness.md
+ADR-0481	Schema as files — the store's schema mirrored as canonical text	Proposed	docs/adr/0481-schema-as-files.md
+ADR-0482	The spec-harness coverage lane	Accepted	docs/adr/0482-spec-harness-coverage-lane.md
+ADR-0483	Python temporal results keep nanoseconds and named zones	Proposed	docs/adr/0483-python-temporal-result-fidelity.md
+ADR-0484	Speak Bolt 5.4 beside 4.4	Proposed	docs/adr/0484-bolt-5-4.md
+ADR-0485	Stream count(var) through the path fold's whole-node slot source	Proposed	docs/adr/0485-agg-fold-whole-node-slot.md
+ADR-0486	Range-index seek starts — priced in the ladder, named in the plan tree	Proposed	docs/adr/0486-range-index-starts.md
+ADR-0487	Bump the ontology document gate to Ontology Graph Spec 1.1.0	Accepted	docs/adr/0487-ontology-graph-spec-1-1-0-bump.md
+ADR-0489	DDL validation errors carry Neo4j's error classes	Proposed	docs/adr/0489-ddl-validation-error-classes.md
+ADR-0490	Java client packaging — bundled natives in a fat jar and per-platform classifier jars, the library skill in the jar, JNA kept over FFM	Proposed	docs/adr/0490-java-bundled-natives.md
+ADR-0491	Per-surface phase-timing wire contract (parse / plan / execute)	Proposed	docs/adr/0491-phase-timing-wire-contract.md
+ADR-0492	The WAL payload cap refusal is a typed error variant	Proposed	docs/adr/0492-wal-payload-cap-typed-variant.md
+ADR-0493	Range-seek crossover — low-selectivity windows serve from the label scan	Proposed	docs/adr/0493-range-seek-crossover.md
+ADR-0494	The WAL payload cap refusal is the memory-limit class on every surface	Proposed	docs/adr/0494-wal-payload-cap-memory-limit-class.md
+ADR-0495	One baseline image recipe, ceremony-owned flags	Proposed	docs/adr/0495-baseline-recipe-and-ceremony-flags.md
+ADR-0496	Run from URL — `--database` accepts a remote `.cl` bundle	Proposed	docs/adr/0496-run-database-from-url.md
+ADR-0497	Align the built-in function and procedure catalogues with the Cypher-25 corpus	Proposed	docs/adr/0497-catalogue-corpus-alignment.md
+ADR-0498	A null-bound pattern endpoint matches nothing in every engine	Proposed	docs/adr/0498-null-bound-endpoint-matches-nothing.md
+ADR-0499	Flatten the aggregate fold's per-row charge chain, keep the walk exact	Proposed	docs/adr/0499-o1-per-row-agg-fold-charge.md
+ADR-0500	Store targets and sources — `--database` + `--load`, and ephemeral opens	Proposed	docs/adr/0500-store-target-and-load-source.md
+ADR-0501	Receipts report workspace memory and carry no token schedule	Proposed	docs/adr/0501-drop-token-schedule.md
+ADR-0502	The typed C ABI v2 — a native value walker, one error shape carried with the call, the JSON paths removed	Accepted	docs/adr/0502-typed-c-abi-v2.md
+ADR-0503	Template-keyed plan cache with stats-generation replanning	Proposed	docs/adr/0503-template-keyed-plan-cache.md
+ADR-0504	Bolt serve's connection-thread fast path for small statements	Proposed	docs/adr/0504-bolt-connection-thread-fast-path.md
+ADR-0505	Parse-pipeline token and string representation — borrowed token text, owned AST strings, alloc-free keyword lookup, process-wide-seeded scope-map hasher	Proposed	docs/adr/0505-parse-pipeline-token-and-string-representation.md
+ADR-0506	The C ABI v2 gains the legacy numeric entity ids	Accepted	docs/adr/0506-ffi-numeric-entity-ids.md
+ADR-0507	One tiered distinct set under the DISTINCT sites	Proposed	docs/adr/0507-tiered-distinct-set.md
+ADR-0508	Per-statement memo for the planner's value-keyed stats consults	Accepted — user ruling 2026-11-05: "invalidation shouldn't be necessary as we have MVCC — as long as we hold a version the memo is also valid for all the transactions" (point 3 confirmed on the project's MVCC/publication-epoch grounds); points 1, 2 and 4 proceed as proposed under the 2026-11-04 "go with PR3" direction. The plan-cache analogue — when cached plans become invalid across versions — is a separate decision (PR 4, the ADR-0503 cache), with strategies to be researched and tested.	docs/adr/0508-planner-stats-consult-memo.md
+ADR-0509	SmallName — the query front-end's name representation (inline u64 / catalog id / spilled Arc<str>)	Proposed	docs/adr/0509-smallname-front-name-representation.md
+ADR-0510	The C ABI v2 commit call reports through its status	Accepted	docs/adr/0510-ffi-commit-status-convention.md
+ADR-0511	The boolean-requiring sites raise the typed `InvalidArgumentType` — Neo4j's TypeError class	Proposed	docs/adr/0511-boolean-sites-typed-invalid-argument-type.md
+ADR-0512	Single-source loadtest runner class (`vars.LOADTEST_RUNNER`)	Proposed	docs/adr/0512-single-source-loadtest-runner-class.md
+ADR-0513	Cypher 25 CREATE/INSERT entity-reference admission, and the TCK setup re-pin it forces	Proposed	docs/adr/0513-cypher25-create-entity-reference-admission.md
+ADR-0514	Fixed caps for the C ABI v2 params builder; the engine memory cap is the result-side bound	Proposed	docs/adr/0514-ffi-param-caps-and-result-bound.md
+ADR-0516	The re-arrival budget's tri-state verdict and the frontier's run-time fall-through	Proposed	docs/adr/0516-frontier-rearrival-budget-fallthrough.md
+ADR-0517	Rename the product from CypherLite to Relate	Proposed	docs/adr/0517-rename-to-relate.md
+ADR-0518	Command did-you-mean on query-run usage errors	Proposed	docs/adr/0518-command-did-you-mean-on-usage-errors.md
+ADR-0519	The diagnostic pattern-engine switch `RELATE_PATTERN_ENGINE` (auto|nfa|walk)	Proposed	docs/adr/0519-diagnostic-pattern-engine-switch.md
+ADR-0520	The spec harness owns the Cypher language corpora; the in-repo TCK gate retires	Proposed	docs/adr/0520-move-cypher-tests-to-spec-harness.md
+ADR-0521	Sparse frontier tables — per-run working memory sized by the pairs a run touches	Proposed	docs/adr/0521-sparse-frontier-tables.md
+ADR-0522	A tiered word-set utility beside the distinct set	Proposed	docs/adr/0522-tiered-word-set-utility.md
+ADR-0523	The frontier family's walk-count consumer	Proposed	docs/adr/0523-frontier-walk-count-consumer.md
+ADR-0524	The plain limit cap rides the contracted kernels — the rows mode's want halt	Proposed	docs/adr/0524-plain-cap-rides-the-contracted-kernels.md
+ADR-0526	Memory controls gate	Proposed	docs/adr/0526-memory-controls-gate.md
+ADR-0527	Write engine seam	Proposed	docs/adr/0527-write-engine-seam.md
+ADR-0528	The cookbook moves to the relate-web repository	Proposed	docs/adr/0528-cookbook-moves-to-relate-web.md
+ADR-0529	Inline single-version rows; spill to a chain on the first update	Proposed	docs/adr/0529-inline-single-version-rows.md
+ADR-0530	The playground moves to the relate-web repository	Proposed	docs/adr/0530-playground-moves-to-relate-web.md
+ADR-0532	Dense id stores for nodes, relationships, and adjacency	Proposed	docs/adr/0532-dense-id-stores.md
+ADR-0533	graduate the `FOR` clause from the `gql-for` preview gate	Accepted	docs/adr/0533-graduate-gql-for-from-preview.md
+ADR-0534	Wide-column Parquet shards	Proposed	docs/adr/0534-wide-column-parquet-shards.md
+ADR-0535	The HINT notification category and the planner-hint kinds	Proposed	docs/adr/0535-hint-notification-category.md
+ADR-0536	The frontier NFA over the regular-pattern space	Proposed	docs/adr/0536-frontier-nfa-regular-pattern-space.md
+ADR-0537	Experimental snapshot codec behind a default-off feature	Proposed	docs/adr/0537-experimental-snapshot-codecs.md
+ADR-0538	Traversal-rung observability in PROFILE and plan args	Proposed	docs/adr/0538-traversal-rung-observability.md
+ADR-0539	Memory-shape gate	Proposed	docs/adr/0539-memory-shape-gate.md
+ADR-0540	Fine phase split, plan-cache outcome, and machine-envelope timing keys	Proposed	docs/adr/0540-phase-timing-envelopes-and-fine-split.md
+ADR-0541	Resolve label, relationship-type and property-key names to token ids once per plan	Accepted	docs/adr/0541-resolve-tokens-to-ids-once-per-plan.md
+ADR-0542	Engine-only, callable, unlisted built-in functions	Proposed	docs/adr/0542-engine-only-callable-unlisted-functions.md
+ADR-0543	Hidden REPL dot commands, the `eggs` feature, and the Archie banner and prompt	Proposed	docs/adr/0543-hidden-repl-dot-commands-and-the-eggs-feature.md
+ADR-0544	Memory envelope improvements warn	Proposed	docs/adr/0544-memory-envelope-improvements-warn.md
+ADR-0545	Telemetry delivery off the exit path: local spool, next-run drain	Proposed	docs/adr/0545-telemetry-spool-delivery.md
+ADR-0546	Release discovery files ship as release assets; the website pulls	Proposed	docs/adr/0546-release-discovery-via-relate-web.md
+ADR-0547	Terminal games for the eggs: raw mode, a restoring guard, and the `games` feature	Proposed	docs/adr/0547-terminal-games-raw-mode-and-the-games-feature.md
+ADR-0548	Query engine seam	Proposed	docs/adr/0548-query-engine-seam.md
+ADR-0549	POINT index backend — R\*-tree via rstar	Proposed	docs/adr/0549-point-index-rtree-via-rstar.md
+ADR-0550	Temporary preview-host fallback for release discovery	Proposed	docs/adr/0550-preview-host-fallback-release-discovery.md
+ADR-0551	Sealed + delta adjacency store — data model and invariants	Proposed	docs/adr/0551-sealed-delta-adjacency-store.md
+ADR-0552	Proptest adjacency reference model in relate-executor	Proposed	docs/adr/0552-proptest-adjacency-model-in-executor.md
+ADR-0553	Wide-column parts are the Parquet checkpoint format	Proposed	docs/adr/0553-wide-columns-are-the-parquet-checkpoint-format.md
+ADR-0554	The element-id namespace segment is dash-bearing	Proposed	docs/adr/0554-dash-bearing-element-id-segment.md
+ADR-0555	Operators stream rows; unbounded results are never accumulated	Proposed	docs/adr/0555-operators-stream-rows-never-accumulate.md
+ADR-0556	Shortest routes search property-seekable endpoints as pairs	Proposed	docs/adr/0556-shortest-route-pair-search-for-seekable-endpoints.md
+ADR-0557	— List only the procedures an embedded engine can answer	Proposed	docs/adr/0557-drop-server-only-procedures.md
+ADR-0558	Encode each commit's redo once, at admission	Accepted	docs/adr/0558-encode-commit-redo-once-at-admission.md
+ADR-0559	Run-time argument rejections are their own error variant	Proposed	docs/adr/0559-runtime-argument-value-error-variant.md
+ADR-0560	crates.io and PyPI distribution	Proposed	docs/adr/0560-crates-io-and-pypi-distribution.md
+ADR-0561	— `dbms.listCapabilities` lists this engine's own capabilities	Proposed	docs/adr/0561-listcapabilities-lists-our-own-capabilities.md
+ADR-0562	npm platform package names carry the relate- prefix	Proposed	docs/adr/0562-npm-platform-package-names.md
+ADR-0563	The Parquet row-group cap is 1024 rows	Proposed	docs/adr/0563-parquet-row-group-cap-1024.md
+ADR-0564	Charge the workspace as the commit redo is encoded	Accepted	docs/adr/0564-charge-the-workspace-as-the-commit-redo-is-encoded.md
+ADR-0565	Argument-value and procedure rejections carry the class live Neo4j reports	Proposed	docs/adr/0565-argument-and-procedure-error-classes.md
+ADR-0566	Compile-time static rejections carry the SyntaxError class	Proposed	docs/adr/0566-compile-time-static-rejections-are-syntax-errors.md
+ADR-0567	A shortest route's endpoint listing is capped and refuses with a typed capacity error	Accepted	docs/adr/0567-shortest-route-endpoint-listing-is-capped.md
+ADR-0568	Shortest selectors are physical operators of the one pattern evaluator	Accepted	docs/adr/0568-shortest-selectors-as-physical-operators.md
+ADR-0569	Integer division overflow is a checked error	Proposed	docs/adr/0569-integer-division-overflow-checked.md
+ADR-0570	CALL { … } IN TRANSACTIONS requires an implicit transaction	Proposed	docs/adr/0570-call-in-transactions-implicit-transaction.md
+ADR-0571	The installer resolves its release via releases.json	Proposed	docs/adr/0571-installer-resolves-via-releases-json.md
+ADR-0572	Two-commit release — bump push is the cut, stamp commit is the tag target	Proposed	docs/adr/0572-two-commit-release-bump-and-stamp.md
+ADR-0573	Bulk window-local adjacency install for checkpoint load	Proposed	docs/adr/0573-bulk-window-local-adjacency-install.md
+ADR-0574	Withdraw CDC replication slots	Accepted	docs/adr/0574-withdraw-cdc-replication-slots.md
+ADR-0575	Shortest-path expressions require bound endpoint nodes	Proposed	docs/adr/0575-shortest-expressions-require-bound-endpoints.md
+ADR-0577	An over-budget Bolt message fails its request instead of closing the connection	Proposed	docs/adr/0577-over-budget-bolt-message-fails-the-request.md
+ADR-0578	Fulltext fuzzy terms and clause boost	Proposed	docs/adr/0578-fulltext-fuzzy-and-boost.md
+ADR-0579	The Bolt decode budget counts decoded bytes, not values	Proposed	docs/adr/0579-bolt-decode-budget-counts-bytes.md
+ADR-0580	Post-release workspace versioning	Proposed	docs/adr/0580-post-release-workspace-versioning.md
+ADR-0581	The jsonl terminal timing line is a `--timings` opt-in	Proposed	docs/adr/0581-jsonl-timings-opt-in.md
+ADR-0582	The frontier admits the boundary-pair comparison and names why it declined	Proposed	docs/adr/0582-frontier-boundary-pair-and-decline-reason.md
+ADR-0583	Fulltext accent folding and wildcard terms	Proposed	docs/adr/0583-fulltext-accent-folding-and-wildcards.md
+ADR-0584	One Cypher version — CYPHER 25 only, the preamble a no-op	Proposed	docs/adr/0584-one-cypher-version-cypher25-noop.md
+ADR-0585	The installer downloads release assets over the direct route	Proposed	docs/adr/0585-installer-downloads-via-direct-route.md
+ADR-0586	Windows installs through a PowerShell installer	Proposed	docs/adr/0586-windows-powershell-installer.md
+ADR-0587	Windows MSVC builds link the C runtime statically	Proposed	docs/adr/0587-windows-static-crt.md
+ADR-0588	One feedback crate owns the Mixpanel client and consent	Proposed	docs/adr/0588-feedback-crate-owns-mixpanel-and-consent.md
+ADR-0589	Label-set counts for grouped label aggregates	Proposed	docs/adr/0589-label-set-counts-for-grouped-label-aggregates.md
+ADR-0590	The administration-command composition boundary off the system database	Proposed	docs/adr/0590-administration-command-composition-boundary.md
+ADR-0591	The Java client publishes to Maven Central as `ai.relatedb:relate`	Proposed	docs/adr/0591-java-client-maven-central-coordinates.md
+ADR-0592	The Go client is a nested module that carries its header and links a consumer-supplied native library	Proposed	docs/adr/0592-go-client-nested-module-distribution.md
+ADR-0593	Hide the `system_ontologies` namespace behind the ontology preview opt-in	Proposed	docs/adr/0593-system-ontologies-visibility-preview-gate.md
+ADR-0595	Reclaim label-index postings at the apply point	Proposed	docs/adr/0595-label-index-reclamation-at-apply.md
+ADR-0596	An idiomatic layer over the Swift surface	Proposed	docs/adr/0596-swift-idiomatic-layer.md
+ADR-0597	A closed import window for git-to-graph	Proposed	docs/adr/0597-git-to-graph-closed-import-window.md
+ADR-0598	The extension stream cap guards whole-import framing only	Proposed	docs/adr/0598-extension-stream-cap-whole-import-only.md
+ADR-0599	Adjacency floor layout — node-major arena with exact-size sealed pricing	Proposed	docs/adr/0599-adjacency-floor-arena.md
+ADR-0600	A clause-level WHERE over the path post-filters keyword selectors	Proposed	docs/adr/0600-keyword-selector-where-is-a-post-filter.md
+ADR-0601	All-shortest pair partitions search from both ends	Proposed	docs/adr/0601-bidirectional-all-shortest-pair-search.md
+ADR-0602	The fs import commits per batch	Proposed	docs/adr/0602-fs-import-per-batch-commit.md
+ADR-0603	Tokenless review model, scripted posting on every lane	Proposed	docs/adr/0603-tokenless-model-scripted-posting.md
+ADR-0604	An over-cap transaction is refused at the statement that crosses the cap	Proposed	docs/adr/0604-early-commit-cap-refusal.md
+ADR-0605	Binary releases carry their third-party notices and pass a license allow-list	Proposed	docs/adr/0605-third-party-license-gate-for-binary-releases.md
+ADR-0606	The label-less scan warning carries no index suggestion	Proposed	docs/adr/0606-label-less-scan-warning-carries-no-index.md
+ADR-0607	SHORTEST k and SHORTEST k GROUPS take the shortest-path route by length class	Proposed	docs/adr/0607-route-shortest-k-and-groups-by-class.md
+ADR-0608	— Sealing restored adjacency	Proposed	docs/adr/0608-seal-restored-adjacency.md
+ADR-0609	Execute the full-text analyzer catalogue from the one analyzer table	Proposed	docs/adr/0609-analyzer-catalogue-executes-from-analyzer-table.md
+ADR-0611	Index-backed grouped and extremum aggregates over a labeled property	Accepted	docs/adr/0611-index-backed-aggregates.md
+ADR-0612	Batch the shortest-path fan with a multi-source level sweep	Proposed	docs/adr/0612-batch-the-shortest-fan-with-a-multi-source-sweep.md
+ADR-0614	Equality MATCH serves through the lazy postings without a declared index	Proposed	docs/adr/0614-equality-match-lazy-postings-serve.md
+ADR-0615	Telemetry delivery survives short runs: arming start, joined exits, once-per-version drain	Proposed	docs/adr/0615-telemetry-delivery-lifetime.md
+ADR-0616	npm platform packages resolve as file: links in the repository, registry pins injected at pack time	Proposed	docs/adr/0616-npm-platform-file-links-repo-pins-at-pack.md
+ADR-0617	Dense id-slot reservation — the smaller of a 1.5 ladder and the doubling	Proposed	docs/adr/0617-dense-slot-reservation-ladder.md
+ADR-0618	Release notes read a harvested PR corpus and fixed area groups	Accepted	docs/adr/0618-release-notes-corpus-and-area-groups.md
+ADR-0619	Source-level unicode escapes in Cypher text	Proposed	docs/adr/0619-source-level-unicode-escapes.md
+ADR-0620	The Java client publishes with every release	Proposed	docs/adr/0620-the-java-client-publishes-with-every-release.md
+ADR-0622	Fused virtual children — display-only plan steps under an index-seek MATCH	Proposed	docs/adr/0622-fused-virtual-plan-children.md
+ADR-0625	Adopt the .NET client over the typed C ABI	Proposed	docs/adr/0625-adopt-the-dotnet-client.md
