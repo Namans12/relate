@@ -33,18 +33,40 @@ uv run patch-precedent explain fixtures/installer/release-lookup.patch
 
 ## What you'll see
 
-An excerpt of a real `demo installer` run. `…` marks omitted sections (the per-patch diffs, the full evidence chains and the artifact paths).
+An excerpt of a real `demo installer` run. `…` marks omitted sections (the header, the per-patch diffs and the artifact paths).
 
 ```text
 …
 == comparison ==
 Input           Changed                  Exit  Passed/failed  #7 static  #193 runtime
 --------------  -----------------------  ----  -------------  ---------  ------------
-baseline        upstream                 0     194 / 0        ok 7       ok 193
+baseline        — (unpatched)            0     194 / 0        ok 7       ok 193
 release-lookup  distribution/install.sh  1     192 / 2        not ok 7   not ok 193
 wording         distribution/install.sh  0     194 / 0        ok 7       ok 193
 
-…
+== graph evidence ==
+distribution/install.sh
+  cites ADR-0585 · The installer downloads release assets over the direct route [Proposed]
+    rule      install.sh consults no GitHub API endpoint
+    why       Anonymous GitHub API requests are limited to 60 per hour per IP address,
+              and users behind shared egress (VPNs, corporate NAT, Cloudflare WARP)
+              exhausted that quota, so the one-line installer broke. Release assets are
+              now fetched over the direct download route instead. Only ADR-0068's
+              installer authentication clause is superseded; version selection still
+              uses releases.json.
+    citation  https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/distribution/install.sh#L120-L128
+    decision  https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/docs/adr/0585-installer-downloads-via-direct-route.md#L8-L38
+    scope     https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/docs/adr/0585-installer-downloads-via-direct-route.md#L89-L97
+    commit    5ac38808 fix(installer): download release assets over the direct route, no GitHub API (LABS-1482, ADR-0585) (https://github.com/relatedb/relate/commit/5ac38808547d11f55b02333624cc3e88b46566eb)
+    checks
+      #7    static   drift guard: install.sh consults no GitHub API endpoint (ADR-0585)
+            release-lookup → not ok 7
+            wording → ok 7
+            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/tests/test_install_sh.sh#L129-L135
+      #193  runtime  no case made a GitHub API request (ADR-0585)
+            release-lookup → not ok 193
+            wording → ok 193
+            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/tests/test_install_sh.sh#L610-L615
 
 == graph join (replay.rl) ==
 MATCH (p:Patch)-[:CHANGES]->(f:File)-[:CITES]->(d:Decision)-[:CHECKED_BY]->(t:Check),
@@ -55,12 +77,12 @@ RETURN p.id AS patch, f.path AS file, d.id AS decision, d.reason AS reason,
        p.label AS label, o.number AS tap_number
 ORDER BY patch, assertion
 
-patch           file                     decision  implementation  assertion                                                           observed
---------------  -----------------------  --------  --------------  ------------------------------------------------------------------  --------
-release-lookup  distribution/install.sh  ADR-0585  5ac38808        drift guard: install.sh consults no GitHub API endpoint (ADR-0585)  not ok
-release-lookup  distribution/install.sh  ADR-0585  5ac38808        no case made a GitHub API request (ADR-0585)                        not ok
-wording         distribution/install.sh  ADR-0585  5ac38808        drift guard: install.sh consults no GitHub API endpoint (ADR-0585)  ok
-wording         distribution/install.sh  ADR-0585  5ac38808        no case made a GitHub API request (ADR-0585)                        ok
+patch               label           file                     decision  implementation  assertion                                                           observed
+------------------  --------------  -----------------------  --------  --------------  ------------------------------------------------------------------  ----------
+patch:635b00b21f4b  release-lookup  distribution/install.sh  ADR-0585  5ac38808        drift guard: install.sh consults no GitHub API endpoint (ADR-0585)  not ok 7
+patch:635b00b21f4b  release-lookup  distribution/install.sh  ADR-0585  5ac38808        no case made a GitHub API request (ADR-0585)                        not ok 193
+patch:96278d65b413  wording         distribution/install.sh  ADR-0585  5ac38808        drift guard: install.sh consults no GitHub API endpoint (ADR-0585)  ok 7
+patch:96278d65b413  wording         distribution/install.sh  ADR-0585  5ac38808        no case made a GitHub API request (ADR-0585)                        ok 193
 
 == verdicts ==
 release-lookup: violates ADR-0585 — install.sh consults no GitHub API endpoint
@@ -69,6 +91,10 @@ release-lookup: violates ADR-0585 — install.sh consults no GitHub API endpoint
     harness exit 1, 192 passed / 2 failed
 wording: consistent with ADR-0585 as far as checks #7, #193 cover
 
+replay check: 3/3 runs match fixtures/installer/expectations.toml (by content sha256)
+  release-lookup — expected regression reproduced; demo replay succeeded
+
+…
 ```
 
 The demo shows outcomes only from observed runs and live graph queries. It prints each verdict from the harness's TAP output joined to the graph; nothing is hard-coded by filename.
