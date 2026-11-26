@@ -62,3 +62,47 @@ def _assert_no_worktrees():
         capture_output=True, text=True, check=True,
     ).stdout.strip().splitlines()
     assert len(out) == 1
+
+
+def _make_source(tmp_path):
+    src = tmp_path / "src"
+    src.mkdir()
+    env = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t",
+           "GIT_COMMITTER_EMAIL": "t@t", "PATH": __import__("os").environ["PATH"],
+           "HOME": str(tmp_path)}
+    def g(*a):
+        return subprocess.run(["git", *a], cwd=src, env=env, check=True,
+                              capture_output=True, text=True).stdout.strip()
+    g("init", "-q")
+    g("config", "uploadpack.allowfilter", "true")
+    g("config", "uploadpack.allowanysha1inwant", "true")
+    (src / "hello.txt").write_text("hi\n")
+    g("add", "hello.txt")
+    g("commit", "-q", "-m", "c")
+    return src, g("rev-parse", "HEAD")
+
+
+def test_cache_is_offline_complete_after_ensure(tmp_path, monkeypatch):
+    import shutil
+    from patch_precedent.upstream import clean_checkout
+    src, sha = _make_source(tmp_path)
+    monkeypatch.setenv("PATCH_PRECEDENT_CACHE", str(tmp_path / "cache"))
+    monkeypatch.setenv("PATCH_PRECEDENT_UPSTREAM_URL", f"file://{src}")
+    ensure_upstream(sha)
+    shutil.rmtree(src)
+    with clean_checkout(sha, tmp_path / "co") as co:
+        assert (co / "hello.txt").read_text() == "hi\n"
+
+
+def test_unwarmed_blobless_cache_offline_raises_unavailable(tmp_path, monkeypatch):
+    import shutil
+    src, sha = _make_source(tmp_path)
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    subprocess.run(["git", "clone", "-q", "--bare", "--filter=blob:none",
+                    f"file://{src}", str(cache / "relate.git")], check=True)
+    shutil.rmtree(src)
+    monkeypatch.setenv("PATCH_PRECEDENT_CACHE", str(cache))
+    monkeypatch.setenv("PATCH_PRECEDENT_UPSTREAM_URL", f"file://{src}")
+    with pytest.raises(UpstreamUnavailable):
+        ensure_upstream(sha)

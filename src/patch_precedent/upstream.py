@@ -3,6 +3,7 @@ import contextlib
 import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Iterator
 
@@ -32,6 +33,34 @@ def _has_commit(repo: Path, sha: str) -> bool:
     return r.returncode == 0
 
 
+def _tree_incomplete(repo: Path, sha: str) -> bool:
+    """True if any object of the pinned commit's tree is absent locally."""
+    out = _git(
+        "--git-dir", str(repo), "rev-list", "--objects", "--no-walk",
+        "--missing=print", sha,
+    ).stdout
+    return any(line.startswith("?") for line in out.splitlines())
+
+
+def _warm(repo: Path, sha: str) -> None:
+    """Throwaway checkout: batches the lazy blob fetch from the promisor remote."""
+    gd = str(repo)
+    tmp = Path(tempfile.mkdtemp(prefix="relate-warm-", dir=repo.parent))
+    wt = tmp / "wt"
+    try:
+        _git("--git-dir", gd, "worktree", "prune")
+        _git("--git-dir", gd, "worktree", "add", "--detach", str(wt), sha)
+    finally:
+        subprocess.run(
+            ["git", "--git-dir", gd, "worktree", "remove", "--force", str(wt)],
+            capture_output=True,
+        )
+        shutil.rmtree(tmp, ignore_errors=True)
+        subprocess.run(
+            ["git", "--git-dir", gd, "worktree", "prune"], capture_output=True
+        )
+
+
 def ensure_upstream(sha: str = pins.UPSTREAM_SHA) -> Path:
     url = os.environ.get("PATCH_PRECEDENT_UPSTREAM_URL") or pins.UPSTREAM_URL
     root = cache_dir()
@@ -54,6 +83,10 @@ def ensure_upstream(sha: str = pins.UPSTREAM_SHA) -> Path:
             _git("--git-dir", str(repo), "fetch", "origin", sha)
         if not _has_commit(repo, sha):
             raise unavailable
+        if _tree_incomplete(repo, sha):
+            _warm(repo, sha)
+            if _tree_incomplete(repo, sha):
+                raise unavailable
     except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
         raise unavailable from exc
     return repo
@@ -66,7 +99,13 @@ def clean_checkout(sha: str, dest: Path) -> Iterator[Path]:
     dest = Path(dest).resolve()
     dest.parent.mkdir(parents=True, exist_ok=True)
     _git("--git-dir", gd, "worktree", "prune")
-    _git("--git-dir", gd, "worktree", "add", "--detach", str(dest), sha)
+    try:
+        _git("--git-dir", gd, "worktree", "add", "--detach", str(dest), sha)
+    except subprocess.CalledProcessError as exc:
+        raise UpstreamUnavailable(
+            f"upstream cache {repo} cannot check out {sha[:12]}; "
+            f"the first run needs internet access to fetch {pins.UPSTREAM_URL}"
+        ) from exc
     try:
         head = _git("rev-parse", "HEAD", cwd=dest).stdout.strip()
         assert head == sha, f"checkout HEAD {head} != {sha}"
