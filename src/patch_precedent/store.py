@@ -16,7 +16,8 @@ _REQUIRED = {
     "check": ("decision", "name", "kind", "number_at_pin", "file", "lines", "evidence"),
 }
 _KEY = {"File": "path", "Decision": "id", "Check": "name",
-        "Commit": "sha", "Upstream": "revision"}
+        "Commit": "sha", "Upstream": "revision", "Patch": "id", "Run": "id",
+        "Observation": "id"}
 
 # Read-only connections handed out by open_readonly, so build_store can refuse
 # to replace a store that is still open.

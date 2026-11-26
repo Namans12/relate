@@ -1,0 +1,25 @@
+# Acceptance criteria the demo checks itself against, keyed by patch content (sha256).
+# They are never displayed as results: shown outcomes come only from observed runs.
+
+[baseline]
+exit = 0
+passed = 194
+failed = 0
+failing = []
+
+[[patch]]
+sha256 = "96278d65b413302fa666500df1941180248cf2e0eab8b3d5e67ace9bcc8cff29"  # wording.patch
+exit = 0
+passed = 194
+failed = 0
+failing = []
+
+[[patch]]
+sha256 = "635b00b21f4b918ab73a400abdda636e8923d76b2ada61ccc2bc5d17dc0217e5"  # release-lookup.patch
+exit = 1
+passed = 192
+failed = 2
+failing = [
+  "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)",
+  "no case made a GitHub API request (ADR-0585)",
+]
