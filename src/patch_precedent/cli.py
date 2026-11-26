@@ -1,4 +1,4 @@
-"""Command-line entry point. Later tasks add explain and demo."""
+"""Command-line entry point."""
 import argparse
 import sys
 import tempfile
@@ -15,8 +15,8 @@ DEFAULT_SCAN_DIR = project_root() / "evidence" / "scanned"
 def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]:
     parser = argparse.ArgumentParser(
         prog="patch-precedent",
-        description="Replay patches against an upstream installer test harness "
-        "and explain the results via a graph.",
+        description="Replay patches against upstream test harnesses (installer, release) "
+        "and explain the results via a Relate graph.",
     )
     subparsers = parser.add_subparsers(dest="command", metavar="<command>", required=True)
 
