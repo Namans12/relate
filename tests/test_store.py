@@ -92,7 +92,7 @@ def test_readonly_leaves_bytes(store):
 def test_manifest_missing_key(ev):
     bad = ev / "installer.toml"
     bad.write_text(bad.read_text().replace(
-        'rule = "install.sh consults no GitHub API endpoint"\n', ""))
+        'rule = "install.sh consults no GitHub API endpoint and does not read GITHUB_TOKEN"\n', ""))
     with pytest.raises(ValueError, match="rule"):
         load_evidence(ev)
 

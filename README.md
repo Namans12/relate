@@ -76,7 +76,7 @@ An excerpt of a real `demo all` run. `…` marks omitted sections: the baselines
 …
 
 == verdicts ==
-release-lookup: violates ADR-0585 — install.sh consults no GitHub API endpoint
+release-lookup: violates ADR-0585 — install.sh consults no GitHub API endpoint and does not read GITHUB_TOKEN
     #7 static: the script spells a GitHub API endpoint
     #193 runtime: a GitHub API request was attempted and recorded in the harness's stubbed curl log
     harness exit 1, 192 passed / 2 failed
