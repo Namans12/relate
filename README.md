@@ -9,13 +9,21 @@ Prerequisites:
 - macOS (the only platform this has been tested on)
 - git
 - [uv](https://docs.astral.sh/uv/)
-- Internet access on the first run only. The upstream repo is cached as a bare clone at `~/.cache/patch-precedent/relate.git` (override the directory with `PATCH_PRECEDENT_CACHE`). Later runs need no network.
+- Internet access on the first run only. The first run needs it for uv to fetch Python 3.12 and `relate-db==1.1.0`, and for the demo to fetch the upstream source (about 15 MB), cached as a bare clone at `~/.cache/patch-precedent/relate.git` (override the directory with `PATCH_PRECEDENT_CACHE`). Later runs need no network.
+
+Get the code:
+
+```bash
+git clone <repo-url> && cd patch-precedent
+```
 
 Replay the baseline and both fixture patches against the upstream harness and explain the results:
 
 ```bash
 uv run patch-precedent demo installer
 ```
+
+Each later `demo` run takes about 25 seconds on the tested Mac.
 
 Show the source chain behind a patch without fetching upstream or executing anything:
 
@@ -104,9 +112,9 @@ For each case the demo makes a clean checkout of the pinned upstream revision, a
 ## Evidence and provenance
 
 - `evidence/installer.toml` is a hand-curated manifest. Its links point to permalinks at the pinned upstream SHA, with line ranges checked against that revision.
-- Rebuild the store with `uv run patch-precedent build-store`; check the committed store against a fresh build of the manifest with `uv run patch-precedent verify-store` (prints `store matches manifest: 6 nodes, 4 relationships` and exits 0).
+- Check the committed store against a fresh build of the manifest with `uv run patch-precedent verify-store` (prints `store matches manifest: 6 nodes, 4 relationships` and exits 0). To experiment with a rebuild, write it elsewhere: `uv run patch-precedent build-store --out /tmp/precedent.rl`. The default output is `data/precedent.rl` and overwrites the committed store; restore it with `git checkout data/precedent.rl`.
 - Rebuilding does not reproduce identical bytes, so file hashes differ between builds. `verify-store` therefore compares sorted snapshots of all nodes and relationships, which do match.
-- `fixtures/installer/expectations.toml` holds acceptance criteria keyed by patch content sha256. The demo checks itself against it (a disagreement is reported as a mismatch) but never displays it as results.
+- `fixtures/installer/expectations.toml` holds acceptance criteria keyed by patch content sha256. The demo checks itself against it (a disagreement is reported as a mismatch). The file decides only whether the replay matched; it is never displayed as results.
 - Patch identity is content: `id = "patch:" + sha256[:12]`. File names are display labels only, so renaming a fixture does not change its verdict.
 
 ## Exit codes
@@ -117,7 +125,7 @@ For each case the demo makes a clean checkout of the pinned upstream revision, a
 |---:|---|
 | 0 | Every patch had a conclusive verdict and the observations matched `expectations.toml`. A patch that violates an ADR still exits 0 if that was expected. |
 | 2 | Inconclusive or unusable input. Causes: unknown scenario; missing fixtures directory; baseline not green; a patch that did not apply cleanly; a harness timeout; no TAP output, or truncated or malformed TAP; an empty TAP plan (no checks ran); skipped checks (e.g. `ssh-keygen` unavailable); harness exit code and TAP failure count disagreeing; or none of a patch's linked checks appearing in the TAP output. The run is reported as inconclusive, never as pass or fail. |
-| 3 | Observations disagree with `expectations.toml`. |
+| 3 | Observations disagree with `expectations.toml`, a patch's content has no entry in it, or the graph join disagrees with the TAP output it was recorded from. |
 | 4 | Upstream cache missing and the upstream repo is unreachable (first run needs internet). |
 
 `explain`:
