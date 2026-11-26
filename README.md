@@ -137,7 +137,7 @@ For each case the demo makes a clean checkout of the pinned upstream revision, a
 
 ## Evidence and provenance
 
-- `evidence/installer.toml` is a hand-curated manifest. Its links point to permalinks at the pinned upstream SHA, with line ranges checked against that revision.
+- `evidence/*.toml` are hand-curated manifests (installer, release); `evidence/scanned/*.tsv` is the generated citation index. Curated links point to permalinks at the pinned upstream SHA, with line ranges checked against that revision.
 - Check the committed store against a fresh build of the manifest with `uv run patch-precedent verify-store` (prints `store matches manifest: 6 nodes, 4 relationships` and exits 0). To experiment with a rebuild, write it elsewhere: `uv run patch-precedent build-store --out /tmp/precedent.rl`. The default output is `data/precedent.rl` and overwrites the committed store; restore it with `git checkout data/precedent.rl`.
 - Rebuilding does not reproduce identical bytes, so file hashes differ between builds. `verify-store` therefore compares sorted snapshots of all nodes and relationships, which do match.
 - `fixtures/installer/expectations.toml` holds acceptance criteria keyed by patch content sha256. The demo checks itself against it (a disagreement is reported as a mismatch). The file decides only whether the replay matched; it is never displayed as results.

@@ -1,0 +1,47 @@
+# Reviewed evidence manifest. Every line range was checked against the pinned
+# upstream revision. URLs are built from these fields as permalinks.
+
+[upstream]
+repo = "relatedb/relate"
+revision = "5f7a510713c3feac146133e77d8c5bb72bae1b11"
+
+[[decision]]
+id = "ADR-0580"
+title = "Post-release workspace versioning"
+status = "Proposed"
+rule = "An advance never rotates CHANGELOG.md; the changelog rotates only at a release cut"
+reason = "After each release the workspace advances to the next unreleased version, so main never carries a released version. The advance performs the version-surface sweep without the changelog rotation, because an advance is not a release cut and rotating then would mint a release section for a version that never shipped. The released version therefore exists only on the tagged commit and on the registries."
+source_path = "docs/adr/0580-post-release-workspace-versioning.md"
+context_lines = [26, 45]
+consequence_lines = [66, 78]
+
+[[citation]]
+file = "scripts/release-bump.sh"
+decision = "ADR-0580"
+lines = [224, 238]
+curated = true
+
+[[commit]]
+sha = "d79d8b150561f56b4940876a067d6b7e4781d2bc"
+subject = "fix(release): close the cargo package drift window with a post-release version advance (LABS-1443, ADR-0580) (#233)"
+implements = "ADR-0580"
+
+[[check]]
+decision = "ADR-0580"
+name = "advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged"
+kind = "runtime"
+number_at_pin = 2
+file = "scripts/tests/test_release_advance.sh"
+lines = [45, 46]
+evidence = "an advance rewrote CHANGELOG.md, minting a release section for a version that never shipped"
+harness = "scripts/tests/test_release_advance.sh"
+
+[[check]]
+decision = "ADR-0580"
+name = "advance: the version surfaces still advanced"
+kind = "runtime"
+number_at_pin = 3
+file = "scripts/tests/test_release_advance.sh"
+lines = [48, 49]
+evidence = "the advance did not sweep the version surfaces"
+harness = "scripts/tests/test_release_advance.sh"

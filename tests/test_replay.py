@@ -25,6 +25,7 @@ DATA = ROOT / "tests" / "data"
 FIX = ROOT / "fixtures" / "installer"
 EXPECT = FIX / "expectations.toml"
 D7 = "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)"
+CMD = "sh scripts/tests/test_install_sh.sh"
 D193 = "no case made a GitHub API request (ADR-0585)"
 
 
@@ -37,9 +38,9 @@ def _runs():
     release = read_patch(FIX / "release-lookup.patch")
     log = Path("/tmp/x.log")
     return [
-        RunResult("baseline", None, "base", "cmd", 0, _tap("baseline"), log, "pass", None),
-        RunResult("wording", wording, "base", "cmd", 0, _tap("wording"), log, "pass", None),
-        RunResult("release-lookup", release, "base", "cmd", 1, _tap("release-lookup"),
+        RunResult("baseline", None, "base", CMD, 0, _tap("baseline"), log, "pass", None),
+        RunResult("wording", wording, "base", CMD, 0, _tap("wording"), log, "pass", None),
+        RunResult("release-lookup", release, "base", CMD, 1, _tap("release-lookup"),
                   log, "fail", None),
     ]
 
@@ -275,3 +276,14 @@ def test_replay_check_baseline_not_green():
     assert rc["reproduced"] == []
     assert rc["matched"] == 1  # only the baseline run itself still matches
     assert rc["line"].startswith("replay check: 1/3 runs match")
+
+
+def test_drift_warnings_scoped_to_harness(copy):
+    runs = _runs()
+    # An installer run is never compared against release checks, and vice versa.
+    assert record_runs(copy, runs) == []
+    other = replace(runs[0], command="sh scripts/tests/test_release_advance.sh")
+    warnings = record_runs(copy, [other])
+    assert not any("install" in w or "ADR-0585" in w for w in warnings)
+    assert all("advance:" in w for w in warnings)
+    assert len(warnings) == 2

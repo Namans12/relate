@@ -34,6 +34,7 @@ number_at_pin = 7
 file = "scripts/tests/test_install_sh.sh"
 lines = [129, 135]
 evidence = "the script spells a GitHub API endpoint"
+harness = "scripts/tests/test_install_sh.sh"
 
 [[check]]
 decision = "ADR-0585"
@@ -43,3 +44,4 @@ number_at_pin = 193
 file = "scripts/tests/test_install_sh.sh"
 lines = [610, 615]
 evidence = "a GitHub API request was attempted and recorded in the harness's stubbed curl log"
+harness = "scripts/tests/test_install_sh.sh"

@@ -77,12 +77,18 @@ def record_runs(store_copy: Path, runs: Sequence[RunResult]) -> list[str]:
     warnings: list[str] = []
     conn = relate.connect(str(store_copy))
     try:
-        checks = {r.data()["n"] for r in conn.execute("MATCH (c:Check) RETURN c.name AS n")}
+        by_harness: dict[str, set[str]] = {}
+        for r in conn.execute("MATCH (c:Check) RETURN c.name AS n, c.harness AS h"):
+            d = r.data()
+            by_harness.setdefault(d["h"], set()).add(d["n"])
+        checks = set().union(*by_harness.values()) if by_harness else set()
         for run in runs:
             if run.tap is not None:
+                # Drift is judged only against checks of the harness this run executed.
+                harness = run.command.split()[-1] if run.command.split() else ""
                 seen = {r.description for r in run.tap.results}
                 warnings += [f"{run.label}: check not found in TAP: {name}"
-                             for name in sorted(checks - seen)]
+                             for name in sorted(by_harness.get(harness, set()) - seen)]
             if run.patch is not None:
                 _record_patch_run(conn, run, checks)
         conn.commit()

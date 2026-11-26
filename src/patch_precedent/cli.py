@@ -8,7 +8,7 @@ from . import pins
 from .pins import STORE_PATH, project_root
 from .scenarios import SCENARIOS
 
-DEFAULT_MANIFEST = project_root() / "evidence" / "installer.toml"
+DEFAULT_EVIDENCE = project_root() / "evidence"
 DEFAULT_SCAN_DIR = project_root() / "evidence" / "scanned"
 
 
@@ -20,14 +20,14 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
     )
     subparsers = parser.add_subparsers(dest="command", metavar="<command>", required=True)
 
-    build = subparsers.add_parser("build-store", help="build the Relate store from the manifest")
-    build.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    build = subparsers.add_parser("build-store", help="build the Relate store from the evidence directory")
+    build.add_argument("--evidence-dir", type=Path, default=DEFAULT_EVIDENCE)
     build.add_argument("--out", type=Path, default=STORE_PATH)
 
     verify = subparsers.add_parser(
-        "verify-store", help="check the committed store matches a fresh build of the manifest"
+        "verify-store", help="check the committed store matches a fresh build of the evidence"
     )
-    verify.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    verify.add_argument("--evidence-dir", type=Path, default=DEFAULT_EVIDENCE)
     verify.add_argument("--store", type=Path, default=STORE_PATH)
 
     explain = subparsers.add_parser(
@@ -64,7 +64,7 @@ def _snapshot_of(path: Path) -> list[tuple]:
 def _cmd_build(args: argparse.Namespace) -> int:
     from .store import build_store
 
-    build_store(args.manifest, args.out)
+    build_store(args.evidence_dir, args.out)
     print(f"built {args.out}")
     return 0
 
@@ -77,7 +77,7 @@ def _cmd_verify(args: argparse.Namespace) -> int:
         return 1
     with tempfile.TemporaryDirectory() as tmp:
         fresh = Path(tmp) / "fresh.rl"
-        build_store(args.manifest, fresh)
+        build_store(args.evidence_dir, fresh)
         expected = _snapshot_of(fresh)
     actual = _snapshot_of(args.store)
     if expected == actual:
