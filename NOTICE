@@ -7,7 +7,8 @@ License, Version 2.0, at commit 5f7a510713c3feac146133e77d8c5bb72bae1b11:
 
 - Decision text from ADR-0585 (docs/adr/0585-installer-downloads-via-direct-route.md),
   paraphrased in evidence/installer.toml.
-- Line references and check descriptions from scripts/tests/test_install_sh.sh.
+- Line references and check descriptions from scripts/tests/test_install_sh.sh,
+  in evidence/installer.toml and in the TAP captures under tests/data/.
 - Diff context from distribution/install.sh, appearing in the patches under
   fixtures/installer/.
 - The subject line of the implementing commit
