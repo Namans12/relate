@@ -1,5 +1,6 @@
 """Command-line entry point. Later tasks add explain and demo."""
 import argparse
+import sys
 import tempfile
 from pathlib import Path
 
@@ -25,6 +26,12 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
     )
     verify.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     verify.add_argument("--store", type=Path, default=STORE_PATH)
+
+    explain = subparsers.add_parser(
+        "explain", help="show the decision, commit and checks behind a patch's files (read-only)"
+    )
+    explain.add_argument("patch_file", type=Path, metavar="PATCH_FILE")
+    explain.add_argument("--store", type=Path, default=STORE_PATH)
     return parser, subparsers
 
 
@@ -71,6 +78,34 @@ def _cmd_verify(args: argparse.Namespace) -> int:
     return 1
 
 
+def _cmd_explain(args: argparse.Namespace) -> int:
+    from .diffparse import read_patch
+    from .report import render_evidence_chain
+    from .store import evidence_for_paths, open_readonly
+
+    if not args.patch_file.is_file():
+        print(f"patch file not found: {args.patch_file}", file=sys.stderr)
+        return 2
+    if not args.store.is_file():
+        print(f"store not found: {args.store}", file=sys.stderr)
+        return 2
+    patch = read_patch(args.patch_file)
+    print(f"patch    {patch.label} (sha256 {patch.sha256[:12]})")
+    print(f"changes  {', '.join(patch.changed_files)}")
+    print("mode     read-only: no upstream fetch, no patch executed")
+    print()
+    if not patch.changed_files:
+        print("no changed files found in patch")
+        return 0
+    conn = open_readonly(args.store)
+    try:
+        evidence = evidence_for_paths(conn, patch.changed_files)
+    finally:
+        conn.close()
+    print("\n\n".join(render_evidence_chain(f, evidence[f]) for f in patch.changed_files))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser, _subparsers = build_parser()
     args = parser.parse_args(argv)
@@ -78,4 +113,6 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_build(args)
     if args.command == "verify-store":
         return _cmd_verify(args)
+    if args.command == "explain":
+        return _cmd_explain(args)
     return 0
