@@ -14,7 +14,7 @@ Prerequisites:
 Get the code:
 
 ```bash
-git clone <repo-url> && cd patch-precedent
+git clone https://github.com/Namans12/relate.git && cd relate
 ```
 
 Replay the baseline and both fixture patches against the upstream harness and explain the results:
