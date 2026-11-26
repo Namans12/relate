@@ -36,7 +36,7 @@ uv run patch-precedent demo installer
 uv run patch-precedent demo release
 ```
 
-Each later `demo` run takes about 25 seconds on the tested Mac.
+`demo all` takes about 44 seconds on the tested Mac once the upstream cache is warm.
 
 Show the source chain behind a patch without fetching upstream or executing anything:
 
@@ -65,15 +65,25 @@ The release scenario's rotation patch drops the `--skip-changelog` guard in `scr
 
 ## What you'll see
 
-An excerpt of a real `demo all` run. `…` marks omitted sections (per-scenario headers, the baselines, the per-patch diffs, the graph join tables, the artifact paths and the installer's comparison and graph evidence).
+An excerpt of a real `demo all` run. `…` marks omitted sections (the baselines, the per-patch diffs, the graph join tables, the artifact paths and the installer's comparison and graph evidence).
 
 ```text
-== overall ==
-scenario   runs  matched  exit
-installer  3     3/3      0
-release    4     4/4      0
-overall exit 0
+### scenario: installer
+…
 
+== verdicts ==
+release-lookup: violates ADR-0585 — install.sh consults no GitHub API endpoint
+    #7 static: the script spells a GitHub API endpoint
+    #193 runtime: a GitHub API request was attempted and recorded in the harness's stubbed curl log
+    harness exit 1, 192 passed / 2 failed
+wording: consistent with ADR-0585 as far as checks #7, #193 cover
+
+replay check: 3/3 runs match fixtures/installer/expectations.toml (by content sha256)
+  release-lookup — expected regression reproduced; demo replay succeeded
+
+…
+
+### scenario: release
 …
 
 == comparison ==
@@ -126,17 +136,11 @@ replay check: 4/4 runs match fixtures/release/expectations.toml (by content sha2
 
 …
 
-== verdicts ==
-release-lookup: violates ADR-0585 — install.sh consults no GitHub API endpoint
-    #7 static: the script spells a GitHub API endpoint
-    #193 runtime: a GitHub API request was attempted and recorded in the harness's stubbed curl log
-    harness exit 1, 192 passed / 2 failed
-wording: consistent with ADR-0585 as far as checks #7, #193 cover
-
-replay check: 3/3 runs match fixtures/installer/expectations.toml (by content sha256)
-  release-lookup — expected regression reproduced; demo replay succeeded
-
-…
+== overall ==
+scenario   runs  matched  exit
+installer  3     3/3      0
+release    4     4/4      0
+overall exit 0
 ```
 
 The demo shows outcomes only from observed runs and live graph queries. It prints each verdict from the harness's TAP output joined to the graph; nothing is hard-coded by filename.

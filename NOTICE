@@ -12,6 +12,10 @@ License, Version 2.0, at commit 5f7a510713c3feac146133e77d8c5bb72bae1b11:
   fixtures/installer/.
 - The subject line of the implementing commit
   5ac38808547d11f55b02333624cc3e88b46566eb, quoted in evidence/installer.toml.
+- Check descriptions and line references from scripts/tests/test_release_advance.sh,
+  in evidence/release.toml and in the TAP captures under tests/data/release/.
+- The subject line of the implementing commit
+  d79d8b150561f56b4940876a067d6b7e4781d2bc, quoted in evidence/release.toml.
 - ADR titles and statuses for all decisions, quoted in
   evidence/scanned/decisions.tsv.
 - File paths and line numbers of ADR citations, recorded in
