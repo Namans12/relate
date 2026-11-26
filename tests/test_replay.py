@@ -12,8 +12,10 @@ from patch_precedent.replay import (
     JOIN_QUERY,
     check_expectations,
     join_rows,
+    join_tap_disagreements,
     load_expectations,
     record_runs,
+    replay_check,
 )
 from patch_precedent.store import open_readonly, snapshot
 from patch_precedent.tap import parse_tap
@@ -186,3 +188,72 @@ def test_rerecord_replaces_stale_state(copy):
         assert "passed" not in run[0] and run[0]["status"] == "inconclusive"
     finally:
         conn.close()
+
+
+# --- join/TAP cross-check and replay check (pure) --------------------------
+
+def _linked(rows_for=(D7, D193)):
+    return [{"check": c} for c in rows_for]
+
+
+def _join(runs, flip=None, drop=False):
+    out = []
+    for run in runs:
+        if run.patch is None or drop:
+            continue
+        for res in run.tap.results:
+            if res.description in (D7, D193):
+                tap = "ok" if res.ok else "not ok"
+                if flip == (run.label, res.description):
+                    tap = "ok" if tap == "not ok" else "not ok"
+                out.append({"patch": run.patch.id, "label": run.label,
+                            "assertion": res.description, "observed": tap})
+    return out
+
+
+def _evidence(runs):
+    return {r.patch.id: _linked() for r in runs if r.patch is not None}
+
+
+def test_join_tap_agree():
+    runs = _runs()
+    assert join_tap_disagreements(runs, _evidence(runs), _join(runs)) == []
+
+
+def test_join_tap_disagree_is_reported():
+    runs = _runs()
+    out = join_tap_disagreements(runs, _evidence(runs), _join(runs, flip=("wording", D7)))
+    assert out == [f"join/TAP disagree: wording {D7}: join=not ok tap=ok"]
+
+
+def test_join_tap_zero_rows_is_mismatch():
+    runs = _runs()
+    out = join_tap_disagreements(runs, _evidence(runs), _join(runs, drop=True))
+    assert len(out) == 2
+    assert all("no join rows" in m for m in out)
+
+
+def test_join_tap_ignores_inconclusive_and_unlinked():
+    runs = _runs()
+    runs[2] = replace(runs[2], tap=None, exit_code=None, status="inconclusive", reason="x")
+    ev = _evidence(runs)
+    ev[runs[1].patch.id] = []
+    assert join_tap_disagreements(runs, ev, []) == []
+
+
+def test_replay_check_all_match():
+    ok = replay_check(_runs(), load_expectations(EXPECT))
+    assert (ok["matched"], ok["total"], ok["mismatches"]) == (3, 3, [])
+    assert ok["reproduced"] == ["release-lookup"]
+    assert ok["line"].startswith("replay check: 3/3 runs match fixtures/installer/expectations.toml")
+    assert "(by content sha256)" in ok["line"]
+
+
+def test_replay_check_lists_mismatches():
+    runs = _runs()
+    runs[1] = replace(runs[1], exit_code=1)
+    rc = replay_check(runs, load_expectations(EXPECT))
+    assert (rc["matched"], rc["total"]) == (2, 3)
+    assert rc["mismatches"] == ["wording: exit expected 0, observed 1"]
+    assert rc["reproduced"] == ["release-lookup"]
+    assert "2/3" in rc["line"]

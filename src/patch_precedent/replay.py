@@ -125,3 +125,57 @@ def check_expectations(runs: Sequence[RunResult], expectations: dict) -> list[st
         else:
             out += _compare(run.label, run, by_sha[run.patch.sha256])
     return out
+
+
+def join_tap_disagreements(
+    runs: Sequence[RunResult],
+    evidence_by_patch: dict[str, list[dict]],
+    joined: Sequence[dict],
+) -> list[str]:
+    """Compare graph-join observations with what each run's TAP says.
+
+    The join is the displayed source of truth, so it must agree with the TAP it was
+    recorded from. Only conclusive patch runs with linked evidence are compared.
+    """
+    in_join = {(r["patch"], r["assertion"]): r["observed"] for r in joined}
+    out: list[str] = []
+    for run in runs:
+        if run.patch is None or run.status == "inconclusive" or run.tap is None:
+            continue
+        linked = {r["check"] for r in evidence_by_patch.get(run.patch.id, [])}
+        if not linked:
+            continue
+        pid = run.patch.id
+        if not any(p == pid for p, _ in in_join):
+            out.append(f"join/TAP disagree: {run.label}: "
+                       "no join rows for a patch with linked evidence")
+            continue
+        tap = {(pid, r.description): "ok" if r.ok else "not ok"
+               for r in run.tap.results if r.description in linked}
+        for key in sorted(set(tap) | {k for k in in_join if k[0] == pid}):
+            j, t = in_join.get(key, "absent"), tap.get(key, "absent")
+            if j != t:
+                out.append(f"join/TAP disagree: {run.label} {key[1]}: join={j} tap={t}")
+    return out
+
+
+def replay_check(runs: Sequence[RunResult], expectations: dict) -> dict:
+    """Per-run comparison against expectations.toml, for the explicit replay-success line."""
+    by_sha = {p["sha256"]: p for p in expectations.get("patch", [])}
+    mismatches: list[str] = []
+    matched = 0
+    reproduced: list[str] = []
+    for run in runs:
+        found = check_expectations([run], expectations)
+        mismatches += found
+        if found:
+            continue
+        matched += 1
+        exp = expectations["baseline"] if run.patch is None else by_sha[run.patch.sha256]
+        if run.patch is not None and exp["exit"] != 0:
+            reproduced.append(run.label)
+    total = len(runs)
+    line = (f"replay check: {matched}/{total} runs match "
+            "fixtures/installer/expectations.toml (by content sha256)")
+    return {"line": line, "matched": matched, "total": total,
+            "mismatches": mismatches, "reproduced": reproduced}

@@ -56,8 +56,10 @@ def run_demo(
         JOIN_QUERY,
         check_expectations,
         join_rows,
+        join_tap_disagreements,
         load_expectations,
         record_runs,
+        replay_check,
     )
     from .store import evidence_for_paths, open_readonly
     from .upstream import UpstreamUnavailable, ensure_upstream
@@ -125,7 +127,9 @@ def run_demo(
         joined = join_rows(jconn)
     finally:
         jconn.close()
+    rcheck = replay_check(runs, expectations)
     mismatches = check_expectations(runs, expectations)
+    mismatches += join_tap_disagreements(runs, evidence_by_patch, joined)
 
     print("== comparison ==")
     print(comparison_table(runs, evidence_by_patch))
@@ -153,6 +157,10 @@ def run_demo(
     verdicts, exit_code = compute_verdicts(runs, evidence_by_patch, mismatches)
     print("== verdicts ==")
     print("\n".join(verdicts))
+    print()
+    print(rcheck["line"])
+    for label in rcheck["reproduced"]:
+        print(f"  {label} — expected regression reproduced; demo replay succeeded")
     if warnings:
         print("\nwarnings")
         print("\n".join(f"  {w}" for w in warnings))
@@ -198,6 +206,7 @@ def run_demo(
         "warnings": warnings,
         "mismatches": mismatches,
         "verdicts": verdicts,
+        "replay_check": {k: rcheck[k] for k in ("matched", "total", "mismatches", "reproduced")},
         "exit_code": exit_code,
     }
     summary_path.write_text(json.dumps(summary, indent=2) + "\n")
