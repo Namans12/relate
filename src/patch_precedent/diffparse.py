@@ -4,6 +4,8 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+from .identity import patch_key
+
 _HEADER = re.compile(r"^diff --git a/(?P<a>.+?) (?:b/(?P<b>.+)|(?P<null>/dev/null))$")
 
 
@@ -14,9 +16,10 @@ class PatchInfo:
     sha256: str
     id: str
     changed_files: tuple[str, ...]
+    patch_key: str
 
 
-def _changed_files(text: str) -> tuple[str, ...]:
+def changed_files_from_text(text: str) -> tuple[str, ...]:
     seen: list[str] = []
     for line in text.splitlines():
         m = _HEADER.match(line)
@@ -34,4 +37,5 @@ def read_patch(path: Path) -> PatchInfo:
     data = path.read_bytes()
     sha = hashlib.sha256(data).hexdigest()
     text = data.decode("utf-8", errors="replace")
-    return PatchInfo(path, path.stem, sha, "patch:" + sha[:12], _changed_files(text))
+    return PatchInfo(path, path.stem, sha, "patch:" + sha[:12],
+                     changed_files_from_text(text), patch_key(text))
