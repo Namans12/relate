@@ -40,16 +40,17 @@ def test_build_and_query(store):
         rows = evidence_for_paths(conn, ["distribution/install.sh"])["distribution/install.sh"]
     finally:
         conn.close()
-    assert len(rows) == 2
+    assert len(rows) == 3
     assert {r["decision"] for r in rows} == {"ADR-0585"}
     assert all(r["implementation"] == IMPLEMENTING_SHA for r in rows)
-    assert [r["check_number_at_pin"] for r in rows] == [7, 193]
+    assert [r["check_number_at_pin"] for r in rows] == [7, 64, 193]
     assert rows[0]["status"] == "Proposed"
-    assert rows[0]["check_kind"] == "static" and rows[1]["check_kind"] == "runtime"
+    assert [r["check_kind"] for r in rows] == ["static", "runtime", "runtime"]
+    assert rows[1]["check_url"].endswith("test_install_sh.sh#L314-L315")
     assert rows[0]["citation_url"].endswith("/distribution/install.sh#L120-L128")
     assert rows[0]["decision_url"].endswith(".md#L8-L38")
     assert rows[0]["consequences_url"].endswith(".md#L89-L97")
-    assert rows[1]["check_url"].endswith("test_install_sh.sh#L610-L615")
+    assert rows[2]["check_url"].endswith("test_install_sh.sh#L610-L615")
 
 
 def test_unlinked_path_empty(store):

@@ -60,14 +60,14 @@ def _rows(path):
         conn.close()
 
 
-def test_join_four_rows(copy):
+def test_join_six_rows(copy):
     record_runs(copy, _runs())
     rows = _rows(copy)
     a, b = _runs()[1].patch.id, _runs()[2].patch.id
     got = [(r["patch"], r["tap_number"], r["observed"]) for r in rows]
-    assert sorted(got) == sorted([(a, 7, "ok"), (a, 193, "ok"),
-                                  (b, 7, "not ok"), (b, 193, "not ok")])
-    assert len(rows) == 4
+    assert sorted(got) == sorted([(a, 7, "ok"), (a, 64, "ok"), (a, 193, "ok"),
+                                  (b, 7, "not ok"), (b, 64, "ok"), (b, 193, "not ok")])
+    assert len(rows) == 6
     for r in rows:
         assert r["file"] == "distribution/install.sh"
         assert r["decision"] == "ADR-0585"
@@ -75,17 +75,25 @@ def test_join_four_rows(copy):
     assert {r["label"] for r in rows} == {"wording", "release-lookup"}
 
 
+def test_join_token_header_fails_only_64(copy):
+    token = RunResult("token-header", read_patch(FIX / "token-header.patch"), "base", CMD, 1,
+                      _tap("token-header"), Path("/tmp/x.log"), "fail", None)
+    record_runs(copy, [token])
+    got = sorted((r["tap_number"], r["observed"]) for r in _rows(copy))
+    assert got == [(7, "ok"), (64, "not ok"), (193, "ok")]
+
+
 def test_record_twice_no_duplicates(copy):
     record_runs(copy, _runs())
     record_runs(copy, _runs())
-    assert len(_rows(copy)) == 4
+    assert len(_rows(copy)) == 6
     conn = relate.connect(str(copy))
     try:
         for p in (_runs()[1].patch.id, _runs()[2].patch.id):
             n = [r.data()["n"] for r in conn.execute(
                 "MATCH (:Patch {id: $i})-[:PRODUCED]->(o:Observation) RETURN count(o) AS n",
                 {"i": p})]
-            assert n == [2]
+            assert n == [3]
         assert [r.data()["n"] for r in conn.execute(
             "MATCH (r:Run) RETURN count(r) AS n")] == [2]
     finally:

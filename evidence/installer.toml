@@ -45,3 +45,13 @@ file = "scripts/tests/test_install_sh.sh"
 lines = [610, 615]
 evidence = "a GitHub API request was attempted and recorded in the harness's stubbed curl log"
 harness = "scripts/tests/test_install_sh.sh"
+
+[[check]]
+decision = "ADR-0585"
+name = "token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)"
+kind = "runtime"
+number_at_pin = 64
+file = "scripts/tests/test_install_sh.sh"
+lines = [314, 315]
+evidence = "an install with GITHUB_TOKEN set sent an Authorization header"
+harness = "scripts/tests/test_install_sh.sh"

@@ -23,3 +23,10 @@ failing = [
   "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)",
   "no case made a GitHub API request (ADR-0585)",
 ]
+
+[[patch]]
+sha256 = "5146b525a26dbcaf1cba5c3fa781d77a5ffd5085b1295a3c68faec6f565906ba"  # token-header.patch
+exit = 1
+passed = 193
+failed = 1
+failing = ["token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)"]

@@ -11,6 +11,8 @@ from patch_precedent.tap import TapResult
 FIXTURES = project_root() / "fixtures" / "installer"
 RELEASE = FIXTURES / "release-lookup.patch"
 WORDING = FIXTURES / "wording.patch"
+TOKEN = FIXTURES / "token-header.patch"
+D64 = "token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)"
 
 
 def _row(check, number, kind="static"):
@@ -32,6 +34,9 @@ def test_explain_release_lookup(capsys):
     assert "ADR-0585" in out
     assert "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)" in out
     assert "no case made a GitHub API request (ADR-0585)" in out
+    assert D64 in out
+    assert "#64" in out and "test_install_sh.sh#L314-L315" in out
+    assert out.count("test_install_sh.sh#L") == 3
     assert "5ac38808" in out
     assert "60" in out
     assert "mode     read-only: no upstream fetch, no patch executed" in out
@@ -44,6 +49,15 @@ def test_explain_wording_same_chain(capsys):
     main(["explain", str(WORDING)])
     b = capsys.readouterr().out.split("\n\n", 1)[1]
     assert a == b
+
+
+def test_explain_token_header_same_chain(capsys):
+    main(["explain", str(RELEASE)])
+    a = capsys.readouterr().out.split("\n\n", 1)[1]
+    assert main(["explain", str(TOKEN)]) == 0
+    out = capsys.readouterr().out
+    assert out.split("\n\n", 1)[1] == a
+    assert "(sha256 5146b525a26d)" in out and D64 in out
 
 
 def test_explain_unlinked(tmp_path, capsys):

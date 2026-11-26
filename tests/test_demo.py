@@ -11,6 +11,7 @@ pytestmark = pytest.mark.upstream
 
 FIX = pins.project_root() / "fixtures" / "installer"
 D7 = "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)"
+D64 = "token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)"
 D193 = "no case made a GitHub API request (ADR-0585)"
 
 
@@ -31,10 +32,21 @@ def test_demo_matches_acceptance(tmp_path, capsys):
     assert triple(runs["baseline"]) == (194, 0, 0)
     assert triple(runs["wording"]) == (194, 0, 0)
     assert triple(runs["release-lookup"]) == (192, 2, 1)
+    assert triple(runs["token-header"]) == (193, 1, 1)
+    assert len(runs) == 4
     assert all(r["skipped"] == 0 for r in runs.values())
     assert runs["release-lookup"]["failing"] == [D7, D193]
     assert runs["release-lookup"]["failing_numbers"] == [7, 193]
-    assert len(s["join_rows"]) == 4
+    assert runs["token-header"]["failing"] == [D64]
+    assert runs["token-header"]["failing_numbers"] == [64]
+    assert runs["wording"]["failing_numbers"] == []
+    assert len(s["join_rows"]) == 9
+    observed = {(r["label"], r["tap_number"]): r["observed"] for r in s["join_rows"]}
+    assert {k: v for k, v in observed.items() if v == "not ok"} == {
+        ("release-lookup", 7): "not ok", ("release-lookup", 193): "not ok",
+        ("token-header", 64): "not ok"}
+    assert observed[("release-lookup", 64)] == "ok"
+    assert observed[("wording", 64)] == "ok"
     assert s["exit_code"] == 0
     assert "violates ADR-0585" in capsys.readouterr().out
 

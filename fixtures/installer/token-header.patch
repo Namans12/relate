@@ -1,0 +1,17 @@
+diff --git a/distribution/install.sh b/distribution/install.sh
+index 331db68..752a1f3 100755
+--- a/distribution/install.sh
++++ b/distribution/install.sh
+@@ -135,7 +135,12 @@ trap 'rm -rf "$tmp"; [ -z "$tmp_out" ] || rm -f "$tmp_out"' EXIT
+ # dies with its own sentence around that cause.
+ fetch_url() { # $1 = URL, $2 = destination
+ 	fetch_error=""
++	# Send GITHUB_TOKEN when set, so users behind shared IPs get the
++	# authenticated rate limit instead of the anonymous one.
++	auth=""
++	[ -n "${GITHUB_TOKEN:-}" ] && auth="Authorization: Bearer $GITHUB_TOKEN"
+ 	status=$(curl --proto '=https' --proto-redir '=https' -sSL \
++		${auth:+-H "$auth"} \
+ 		-o "$2" -w '%{http_code}' "$1") || {
+ 		fetch_error="failed to fetch $1; check the connection and retry"
+ 		return 1

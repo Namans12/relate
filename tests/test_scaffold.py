@@ -9,6 +9,7 @@ from patch_precedent.pins import project_root
 HASHES = {
     "wording.patch": "96278d65b413302fa666500df1941180248cf2e0eab8b3d5e67ace9bcc8cff29",
     "release-lookup.patch": "635b00b21f4b918ab73a400abdda636e8923d76b2ada61ccc2bc5d17dc0217e5",
+    "token-header.patch": "5146b525a26dbcaf1cba5c3fa781d77a5ffd5085b1295a3c68faec6f565906ba",
 }
 
 

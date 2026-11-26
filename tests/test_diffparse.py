@@ -9,7 +9,7 @@ from patch_precedent.pins import project_root
 FIX = project_root() / "fixtures" / "installer"
 
 
-@pytest.mark.parametrize("name", ["wording.patch", "release-lookup.patch"])
+@pytest.mark.parametrize("name", ["wording.patch", "release-lookup.patch", "token-header.patch"])
 def test_read_patch_changed_files(name):
     info = read_patch(FIX / name)
     assert info.changed_files == ("distribution/install.sh",)
