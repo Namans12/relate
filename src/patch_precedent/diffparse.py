@@ -22,7 +22,7 @@ class PatchInfo:
 def changed_files_from_text(text: str) -> tuple[str, ...]:
     seen: list[str] = []
     for line in text.splitlines():
-        m = _HEADER.match(line)
+        m = _HEADER.match(line.rstrip())
         if not m:
             continue
         name = m.group("a") if m.group("null") else m.group("b")

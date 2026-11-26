@@ -202,3 +202,28 @@ def test_demo_and_explain_do_not_import_mcp(tmp_path):
                        timeout=TIMEOUT)
     assert r.returncode == 0, r.stderr
     assert "MCP False" in r.stdout
+
+
+NO_HEADERS = 'no "diff --git a/... b/..." file headers found; pass the full unified diff'
+
+
+@pytest.mark.parametrize("diff", [
+    "hello world", "distribution/install.sh",
+    "--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b\n"])
+def test_non_diff_input_is_an_error(server, diff):
+    server.initialize()
+    res = server.call(diff)
+    assert res["isError"] is True
+    assert res["content"][0]["text"] == NO_HEADERS
+
+
+def test_whitespace_mangled_diff_still_matches(server):
+    server.initialize()
+    mangled = "".join(line.rstrip("\r\n") + "   \r\n"
+                      for line in _text("installer", "token-header").splitlines())
+    res = server.call(mangled)
+    assert not res.get("isError")
+    checks, payload = _checks(res)
+    assert payload["changed_files"] == ["distribution/install.sh"]
+    assert payload["replay"]["label"] == "token-header"
+    assert checks == {64: "not ok", 7: "ok", 193: "ok"}

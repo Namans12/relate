@@ -12,6 +12,7 @@ from mcp.server.mcpserver import MCPServer
 from pydantic import WithJsonSchema
 from mcp.types import CallToolResult, TextContent, ToolAnnotations
 
+from .diffparse import changed_files_from_text
 from .evidence import precedent_for_patch
 
 INSTRUCTIONS = ("Call precedent_for_patch with the full unified diff to get the decisions, "
@@ -22,6 +23,7 @@ DESCRIPTION = (
     "the regression checks that guard them, and each check's observed result from Patch "
     "Precedent's replay of this exact patch. Read-only.")
 EMPTY_DIFF = "diff must be a non-empty unified diff"
+NO_HEADERS = 'no "diff --git a/... b/..." file headers found; pass the full unified diff'
 
 
 def _error(message: str) -> CallToolResult:
@@ -41,6 +43,8 @@ def build_server(store: Path, runs_root: Path) -> MCPServer:
         if not isinstance(diff, str) or not diff.strip():
             return _error(EMPTY_DIFF)
         try:
+            if not changed_files_from_text(diff):
+                return _error(NO_HEADERS)
             result = precedent_for_patch(diff, store, runs_root)
             text = json.dumps(result, indent=2, ensure_ascii=False)
         except Exception as exc:  # one clean line for the agent, never a traceback

@@ -48,3 +48,10 @@ def test_b_side_dev_null_uses_a_side_and_dedupes(tmp_path):
         "diff --git a/new.txt b/new.txt\n"
     )
     assert read_patch(p).changed_files == ("old.txt", "gone.txt", "new.txt")
+
+
+def test_header_trailing_whitespace_is_stripped():
+    from patch_precedent.diffparse import changed_files_from_text
+    assert changed_files_from_text("diff --git a/x b/x   \t\n--- a/x\n") == ("x",)
+    assert changed_files_from_text("diff --git a/x b/x   \r\n") == ("x",)
+    assert changed_files_from_text("diff --git a/x /dev/null  \n") == ("x",)
