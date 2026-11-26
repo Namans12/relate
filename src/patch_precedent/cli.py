@@ -44,6 +44,13 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
     demo.add_argument("--fixtures", type=Path, default=None, help="directory of *.patch files")
     demo.add_argument("--runs-dir", type=Path, default=None, help="where run directories go")
 
+    mcp = subparsers.add_parser(
+        "mcp", help="serve the read-only precedent_for_patch tool over stdio (MCP)"
+    )
+    mcp.add_argument("--store", type=Path, default=STORE_PATH)
+    mcp.add_argument("--runs-dir", type=Path, default=project_root() / "runs",
+                     help="where demo run directories (replay evidence) live")
+
     scan = subparsers.add_parser(
         "scan-citations", help="scan upstream for ADR-NNNN mentions into evidence/scanned/"
     )
@@ -134,6 +141,16 @@ def _cmd_demo(args: argparse.Namespace) -> int:
     return run_demo(args.scenario, args.fixtures, args.runs_dir)
 
 
+def _cmd_mcp(args: argparse.Namespace) -> int:
+    if not args.store.is_file():
+        print(f"store not found: {args.store}", file=sys.stderr)
+        return 2
+    from .mcp_server import serve  # lazy: demo and explain never import the SDK
+
+    serve(args.store, args.runs_dir)
+    return 0
+
+
 def _cmd_scan(args: argparse.Namespace) -> int:
     from .scan import write_index
     from .upstream import UpstreamUnavailable
@@ -164,4 +181,10 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_scan(args)
     if args.command == "demo":
         return _cmd_demo(args)
+    if args.command == "mcp":
+        return _cmd_mcp(args)
     return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

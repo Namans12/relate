@@ -1,6 +1,8 @@
 """Read-only evidence query: decision chains, citations and observed replay results."""
 from pathlib import Path
 
+import relate
+
 from .diffparse import changed_files_from_text
 from .identity import patch_key
 from .scenarios import SCENARIOS
@@ -8,7 +10,8 @@ from .store import cited_decisions, evidence_for_paths, open_readonly
 
 NOTE = ('"observed" is the check\'s result in Patch Precedent\'s replay of this exact patch '
         '(matched by a whitespace-insensitive key) against the unmodified upstream harness; '
-        '"not observed" means no replay of this patch was found.')
+        '"not observed" means no replay of this patch was found, or that replay produced no result '
+        'for this check.')
 
 
 def _replays_newest_first(runs_root: Path) -> list[tuple[str, str, Path]]:
@@ -34,21 +37,31 @@ _OBSERVED_QUERY = (
 
 
 def _find_replay(key: str, runs_root: Path):
+    """Newest replay holding this patch key: (replay, observed, skipped replay paths).
+
+    A replay store that cannot be opened or queried is skipped and reported, so one bad
+    newest replay never hides older good ones.
+    """
+    skipped: list[str] = []
     for run, scenario, path in _replays_newest_first(runs_root):
-        conn = open_readonly(path)
         try:
-            label = [r.data()["label"] for r in conn.execute(
-                "MATCH (p:Patch {patch_key: $key}) RETURN p.label AS label", {"key": key})]
-            if not label:
-                continue
-            observed = {}
-            for r in conn.execute(_OBSERVED_QUERY, {"key": key}):
-                d = r.data()
-                observed[d["check"]] = (d["tap"], d["number"])
-            return {"scenario": scenario, "run": run, "label": label[0]}, observed
-        finally:
-            conn.close()
-    return None, {}
+            conn = open_readonly(path)
+            try:
+                label = [r.data()["label"] for r in conn.execute(
+                    "MATCH (p:Patch {patch_key: $key}) RETURN p.label AS label", {"key": key})]
+                if not label:
+                    continue
+                observed = {}
+                for r in conn.execute(_OBSERVED_QUERY, {"key": key}):
+                    d = r.data()
+                    observed[d["check"]] = (d["tap"], d["number"])
+            finally:
+                conn.close()
+        except (relate.Error, relate.OperationalError):
+            skipped.append(str(path))
+            continue
+        return {"scenario": scenario, "run": run, "label": label[0]}, observed, skipped
+    return None, {}, skipped
 
 
 def precedent_for_patch(diff: str, store: Path, runs_root: Path) -> dict:
@@ -58,7 +71,7 @@ def precedent_for_patch(diff: str, store: Path, runs_root: Path) -> dict:
     """
     key = patch_key(diff)
     files = list(changed_files_from_text(diff))
-    replay, observed = _find_replay(key, Path(runs_root))
+    replay, observed, skipped = _find_replay(key, Path(runs_root))
     conn = open_readonly(store)
     try:
         chains = evidence_for_paths(conn, files)
@@ -87,5 +100,12 @@ def precedent_for_patch(diff: str, store: Path, runs_root: Path) -> dict:
                 for c in cited[path] if c["decision"] not in decisions]
         out_files.append({"path": path, "decisions": list(decisions.values()),
                           "also_cites": also})
-    return {"patch_key": key, "changed_files": files, "replay": replay,
-            "files": out_files, "note": NOTE}
+    out = {"patch_key": key, "changed_files": files, "replay": replay,
+           "files": out_files, "note": NOTE}
+    if skipped:
+        out["skipped_replays"] = skipped
+    if replay is None:
+        out["hint"] = (f"No replay of this patch was found under {runs_root}. Run "
+                       "`uv run patch-precedent demo all` in the Patch Precedent project "
+                       "to produce observed results.")
+    return out

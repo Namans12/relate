@@ -18,7 +18,8 @@ REL_CMD = "sh scripts/tests/test_release_advance.sh"
 INS_CMD = "sh scripts/tests/test_install_sh.sh"
 NOTE = ('"observed" is the check\'s result in Patch Precedent\'s replay of this exact patch '
         '(matched by a whitespace-insensitive key) against the unmodified upstream harness; '
-        '"not observed" means no replay of this patch was found.')
+        '"not observed" means no replay of this patch was found, or that replay produced no result '
+        'for this check.')
 
 
 def _text(scn, name):
@@ -54,6 +55,9 @@ def test_precedent_without_replay(tmp_path):
     assert res["replay"] is None
     assert res["changed_files"] == ["distribution/install.sh"]
     assert res["note"] == NOTE
+    assert res["hint"] == (
+        f"No replay of this patch was found under {tmp_path}. Run `uv run patch-precedent "
+        "demo all` in the Patch Precedent project to produce observed results.")
     (f,) = res["files"]
     (d,) = f["decisions"]
     assert d["id"] == "ADR-0585" and len(d["commit"]) == 8
@@ -87,6 +91,7 @@ def test_precedent_with_replay(tmp_path):
     assert c1["replay"] == {"scenario": "installer", "run": "20260101T000000Z",
                             "label": "release-lookup"}
     assert _checks(c1) == {7: "not ok", 193: "not ok", 64: "ok"}
+    assert "hint" not in c1 and "skipped_replays" not in c1
     c3 = precedent_for_patch(_text("installer", "token-header"), pins.STORE_PATH, tmp_path)
     assert _checks(c3) == {64: "not ok", 7: "ok", 193: "ok"}
     c4 = precedent_for_patch(_text("release", "always-rotate"), pins.STORE_PATH, tmp_path)
@@ -115,6 +120,30 @@ def test_older_replay_without_patch_key_does_not_match(tmp_path):
     conn.close()
     res = precedent_for_patch(_text("installer", "release-lookup"), pins.STORE_PATH, tmp_path)
     assert res["replay"]["run"] == "20260101T000000Z"
+
+
+def test_garbage_newest_replay_is_skipped(tmp_path):
+    _make_replays(tmp_path, "20260101T000000Z")
+    bad = tmp_path / "20260202T000000Z" / "installer" / "replay.rl"
+    bad.parent.mkdir(parents=True)
+    bad.write_bytes(b"this is not a relate database" * 50)
+    res = precedent_for_patch(_text("installer", "release-lookup"), pins.STORE_PATH, tmp_path)
+    assert res["replay"]["run"] == "20260101T000000Z"
+    assert _checks(res) == {7: "not ok", 193: "not ok", 64: "ok"}
+    assert res["skipped_replays"] == [str(bad)]
+    # when nothing matches, skipped replays are still reported alongside the hint
+    other = _text("installer", "release-lookup").replace("api.github.com", "api.example.com")
+    res = precedent_for_patch(other, pins.STORE_PATH, tmp_path)
+    assert res["replay"] is None and res["skipped_replays"] == [str(bad)] and "hint" in res
+
+
+def test_hint_only_when_replay_is_null(tmp_path):
+    _make_replays(tmp_path)
+    found = precedent_for_patch(_text("installer", "wording"), pins.STORE_PATH, tmp_path)
+    assert found["replay"] is not None and "hint" not in found
+    missing = precedent_for_patch(_text("installer", "wording"), pins.STORE_PATH,
+                                  tmp_path / "none")
+    assert missing["replay"] is None and str(tmp_path / "none") in missing["hint"]
 
 
 def test_precedent_readonly(tmp_path):
