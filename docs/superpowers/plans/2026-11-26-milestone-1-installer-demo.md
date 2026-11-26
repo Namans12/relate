@@ -15,7 +15,7 @@
 - Project root: `/Users/naman/Documents/ChatGPT/Buildathon/patch-precedent/` (its own git repo).
 - Upstream: `https://github.com/relatedb/relate.git` at `5f7a510713c3feac146133e77d8c5bb72bae1b11`; implementing commit `5ac38808547d11f55b02333624cc3e88b46566eb`.
 - `relate-db==1.1.0` exactly; `requires-python = ">=3.12,<3.13"`; `.python-version` = `3.12`; commit `uv.lock`.
-- Fixtures are byte-exact. `sha256(fixtures/installer/wording.patch) = 96278d65b413302fa666500df1941180248cf2e0eab8b3d5e67ace9bcc8cff29`, `sha256(fixtures/installer/release-lookup.patch) = 635b00b21f4b918ab73a400abdda636e8923d76b2ada61ccc2bc5d17dc0217e5`. The release-lookup diff contains 7 tab characters.
+- Fixtures are byte-exact. `sha256(fixtures/installer/wording.patch) = 96278d65b413302fa666500df1941180248cf2e0eab8b3d5e67ace9bcc8cff29`, `sha256(fixtures/installer/release-lookup.patch) = 635b00b21f4b918ab73a400abdda636e8923d76b2ada61ccc2bc5d17dc0217e5`. The release-lookup diff has 8 tab characters on 7 lines.
 - Harness command, run from each checkout root: `sh scripts/tests/test_install_sh.sh`. Never modify upstream files except via `git apply` of a fixture.
 - The committed store is only ever opened with `relate.connect(path, read_only=True)`. **Spike finding:** a read-write open rewrites the file even for a read-only query. Replays write to a copy.
 - **Spike finding:** rebuilding the store does not reproduce identical bytes. Reproducibility is proven by comparing sorted query snapshots, never file hashes.
