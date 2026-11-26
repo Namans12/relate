@@ -1,0 +1,45 @@
+# Reviewed evidence manifest. Every line range was checked against the pinned
+# upstream revision. URLs are built from these fields as permalinks.
+
+[upstream]
+repo = "relatedb/relate"
+revision = "5f7a510713c3feac146133e77d8c5bb72bae1b11"
+
+[[decision]]
+id = "ADR-0585"
+title = "The installer downloads release assets over the direct route"
+status = "Proposed"
+rule = "install.sh consults no GitHub API endpoint"
+reason = "Anonymous GitHub API requests are limited to 60 per hour per IP address, and users behind shared egress (VPNs, corporate NAT, Cloudflare WARP) exhausted that quota, so the one-line installer broke. Release assets are now fetched over the direct download route instead. Only ADR-0068's installer authentication clause is superseded; version selection still uses releases.json."
+source_path = "docs/adr/0585-installer-downloads-via-direct-route.md"
+context_lines = [8, 38]
+consequence_lines = [89, 97]
+
+[[citation]]
+file = "distribution/install.sh"
+decision = "ADR-0585"
+lines = [120, 128]
+curated = true
+
+[[commit]]
+sha = "5ac38808547d11f55b02333624cc3e88b46566eb"
+subject = "fix(installer): download release assets over the direct route, no GitHub API (LABS-1482, ADR-0585)"
+implements = "ADR-0585"
+
+[[check]]
+decision = "ADR-0585"
+name = "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)"
+kind = "static"
+number_at_pin = 7
+file = "scripts/tests/test_install_sh.sh"
+lines = [129, 135]
+evidence = "the script spells a GitHub API endpoint"
+
+[[check]]
+decision = "ADR-0585"
+name = "no case made a GitHub API request (ADR-0585)"
+kind = "runtime"
+number_at_pin = 193
+file = "scripts/tests/test_install_sh.sh"
+lines = [610, 615]
+evidence = "a GitHub API request was attempted and recorded in the harness's stubbed curl log"
