@@ -48,9 +48,9 @@ def test_explain_wording_same_chain(capsys):
 
 def test_explain_unlinked(tmp_path, capsys):
     p = tmp_path / "x.patch"
-    p.write_text("diff --git a/README.md b/README.md\n--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-a\n+b\n")
+    p.write_text("diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md\n--- a/CONTRIBUTING.md\n+++ b/CONTRIBUTING.md\n@@ -1 +1 @@\n-a\n+b\n")
     assert main(["explain", str(p)]) == 0
-    assert "README.md: no linked decision" in capsys.readouterr().out
+    assert "CONTRIBUTING.md: no linked decision" in capsys.readouterr().out
 
 
 def test_explain_no_changed_files(tmp_path, capsys):
@@ -105,3 +105,48 @@ def test_render_observed():
 
 def test_render_no_rows():
     assert render_evidence_chain("a.sh", []) == "a.sh: no linked decision"
+
+
+REL = project_root() / "fixtures" / "release"
+
+
+def _cited_lines(out):
+    return [ln for ln in out.splitlines() if ln.startswith("    ADR-")]
+
+
+def test_explain_install_shows_scanned_block(capsys):
+    assert main(["explain", str(RELEASE)]) == 0
+    out = capsys.readouterr().out
+    assert "  also cites (scanned from source, not reviewed)" in out
+    lines = _cited_lines(out)
+    assert len(lines) == 5
+    assert not any(ln.startswith("    ADR-0585") for ln in lines)
+    assert out.count("cites ADR-0585") == 1
+
+
+def test_explain_release_bump(capsys):
+    assert main(["explain", str(REL / "always-rotate.patch")]) == 0
+    out = capsys.readouterr().out
+    assert "scripts/release-bump.sh" in out
+    assert "cites ADR-0580" in out
+    assert len(_cited_lines(out)) == 3
+    assert not any(ln.startswith("    ADR-0580") for ln in _cited_lines(out))
+
+
+def test_explain_control(capsys):
+    assert main(["explain", str(REL / "docs-only.patch")]) == 0
+    out = capsys.readouterr().out
+    assert "CONTRIBUTING.md: no linked decision" in out.splitlines()
+    assert "also cites" not in out
+
+
+def test_explain_readme_scanned_only(tmp_path, capsys):
+    p = tmp_path / "r.patch"
+    p.write_text("diff --git a/README.md b/README.md\n--- a/README.md\n+++ b/README.md\n@@ -1 +1 @@\n-a\n+b\n")
+    assert main(["explain", str(p)]) == 0
+    out = capsys.readouterr().out
+    assert "\nREADME.md\n  also cites (scanned from source, not reviewed)\n" in out
+    assert any(ln.startswith("    ADR-0585") for ln in _cited_lines(out))
+    assert "no linked decision" not in out
+    assert "  cites ADR" not in out
+    assert "violates" not in out and "consistent with" not in out

@@ -9,7 +9,9 @@ from patch_precedent.report import (
     compute_verdicts,
     join_table,
     observed_map,
+    render_cited_block,
     render_evidence_chain,
+    shorten_status,
 )
 from patch_precedent.tap import parse_tap
 
@@ -141,3 +143,44 @@ def test_join_table_columns_match_query():
     assert "patch:abc" in lines[2]
     assert "5ac38808 " in lines[2] and "5ac388085" not in lines[2]
     assert lines[2].rstrip().endswith("not ok 7")
+
+
+def _cited(decision, title="Some title", status="Accepted", curated=False, has_checks=False):
+    return {"file": "a.sh", "decision": decision, "title": title, "status": status,
+            "decision_url": "du", "citation_url": f"http://c/{decision}",
+            "curated": curated, "scanned": True, "has_checks": has_checks}
+
+
+def test_verdict_scanned_only():
+    cited = {WORDING.id: [_cited("ADR-0300"), _cited("ADR-0115"), _cited("ADR-0300")],
+             RELEASE.id: []}
+    lines, code = compute_verdicts(_runs(), {WORDING.id: [], RELEASE.id: ROWS}, [], cited)
+    assert "wording: cites ADR-0115, ADR-0300 (scanned, unreviewed); no linked checks" in lines
+    assert not any("consistent with" in ln and ln.startswith("wording") for ln in lines)
+    assert code == 0
+
+
+def test_verdict_control_no_linked_decision():
+    lines, code = compute_verdicts(
+        _runs(), {WORDING.id: [], RELEASE.id: ROWS}, [], {WORDING.id: [], RELEASE.id: []})
+    assert "wording: no linked decision" in lines
+    assert code == 0
+
+
+def test_render_cited_block():
+    out = render_cited_block("a.sh", [_cited("ADR-0115", status="Accepted"),
+                                      _cited("ADR-0116", title="")])
+    assert out.splitlines() == [
+        "  also cites (scanned from source, not reviewed)",
+        "    ADR-0115 · Some title [Accepted]  http://c/ADR-0115",
+        "    ADR-0116 · (no record) [Accepted]  http://c/ADR-0116",
+    ]
+    assert render_cited_block("a.sh", []) == ""
+
+
+def test_shorten_status():
+    assert shorten_status("Accepted") == "Accepted"
+    assert shorten_status("Accepted\nsecond line") == "Accepted"
+    long = "x" * 50
+    assert shorten_status(long) == "x" * 40 + "…"
+    assert shorten_status("y" * 40) == "y" * 40

@@ -46,6 +46,44 @@ def _patch_observed_lines(
     return lines
 
 
+def shorten_status(status: str) -> str:
+    """First line only, at most 40 characters, `…` if cut (display only)."""
+    lines = status.strip().splitlines()
+    first = lines[0].strip() if lines else ""
+    return first[:40] + "…" if len(first) > 40 else first
+
+
+def render_cited_block(path: str, cited: Sequence[Mapping]) -> str:
+    """Scanned-only decisions (not already a chain) as an indented block; "" if none."""
+    if not cited:
+        return ""
+    lines = ["  also cites (scanned from source, not reviewed)"]
+    for c in cited:
+        title = c["title"] or "(no record)"
+        lines.append(
+            f"    {c['decision']} · {title} [{shorten_status(c['status'])}]  {c['citation_url']}")
+    return "\n".join(lines)
+
+
+def render_file_evidence(
+    path: str,
+    chain_rows: list[dict],
+    cited: Sequence[Mapping],
+    observed: dict[str, TapResult] | None = None,
+    patch_observed: Sequence[tuple[str, Mapping[str, TapResult]]] | None = None,
+) -> str:
+    """Per-file layout: curated chains, then scanned citations not shown as a chain."""
+    shown = {r["decision"] for r in chain_rows}
+    extra = [c for c in cited if c["decision"] not in shown]
+    if not chain_rows and not extra:
+        return f"{path}: no linked decision"
+    parts = [render_evidence_chain(path, chain_rows, observed, patch_observed)] if chain_rows \
+        else [path]
+    if extra:
+        parts.append(render_cited_block(path, extra))
+    return "\n".join(parts)
+
+
 def render_evidence_chain(
     path: str,
     rows: list[dict],
@@ -60,7 +98,7 @@ def render_evidence_chain(
     lines = [path]
     for decision, group in groups.items():
         first = group[0]
-        lines.append(f"  cites {decision} · {first['title']} [{first['status']}]")
+        lines.append(f"  cites {decision} · {first['title']} [{shorten_status(first['status'])}]")
         lines.append(_field("rule", first["rule"]))
         lines.append(_why(first["reason"]))
         lines.append(_field("citation", first["citation_url"]))
@@ -139,6 +177,7 @@ def compute_verdicts(
     runs: Sequence[RunResult],
     evidence_by_patch: Mapping[str, list[dict]],
     mismatches: Sequence[str],
+    cited_by_patch: Mapping[str, list[dict]] | None = None,
 ) -> tuple[list[str], int]:
     """Derive one verdict per patch purely from observed runs and graph evidence."""
     baseline = next((r for r in runs if r.patch is None), None)
@@ -155,7 +194,12 @@ def compute_verdicts(
             continue
         rows = evidence_by_patch.get(run.patch.id, [])
         if not rows:
-            lines.append(f"{run.label}: no linked decision")
+            ids = sorted({c["decision"] for c in (cited_by_patch or {}).get(run.patch.id, [])})
+            if ids:
+                lines.append(f"{run.label}: cites {', '.join(ids)} "
+                             "(scanned, unreviewed); no linked checks")
+            else:
+                lines.append(f"{run.label}: no linked decision")
             lines += _unlinked_failures(run, set())
             continue
         obs = observed_map(run)

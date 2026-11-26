@@ -96,8 +96,8 @@ def _cmd_verify(args: argparse.Namespace) -> int:
 
 def _cmd_explain(args: argparse.Namespace) -> int:
     from .diffparse import read_patch
-    from .report import render_evidence_chain
-    from .store import evidence_for_paths, open_readonly
+    from .report import render_file_evidence
+    from .store import cited_decisions, evidence_for_paths, open_readonly
 
     if not args.patch_file.is_file():
         print(f"patch file not found: {args.patch_file}", file=sys.stderr)
@@ -116,9 +116,10 @@ def _cmd_explain(args: argparse.Namespace) -> int:
     conn = open_readonly(args.store)
     try:
         evidence = evidence_for_paths(conn, patch.changed_files)
+        cited = cited_decisions(conn, patch.changed_files)
     finally:
         conn.close()
-    print("\n\n".join(render_evidence_chain(f, evidence[f]) for f in patch.changed_files))
+    print("\n\n".join(render_file_evidence(f, evidence[f], cited[f]) for f in patch.changed_files))
     return 0
 
 

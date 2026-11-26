@@ -12,7 +12,7 @@ from .report import (
     compute_verdicts,
     join_table,
     observed_map,
-    render_evidence_chain,
+    render_file_evidence,
 )
 
 
@@ -62,7 +62,7 @@ def run_demo(
         record_runs,
         replay_check,
     )
-    from .store import evidence_for_paths, open_readonly
+    from .store import cited_decisions, evidence_for_paths, open_readonly
     from .upstream import UpstreamUnavailable, ensure_upstream
 
     root = pins.project_root()
@@ -126,6 +126,14 @@ def run_demo(
             r.patch.id: evidence_for_paths(conn, r.patch.changed_files)
             for r in runs if r.patch is not None
         }
+        cited_per_file = {
+            r.patch.id: cited_decisions(conn, r.patch.changed_files)
+            for r in runs if r.patch is not None
+        }
+        cited_by_patch = {
+            pid: [row for rows in files.values() for row in rows]
+            for pid, files in cited_per_file.items()
+        }
     finally:
         conn.close()
 
@@ -153,8 +161,9 @@ def run_demo(
             for f in run.patch.changed_files:
                 by_file.setdefault(f, []).append(run)
     for f, file_runs in by_file.items():
-        print(render_evidence_chain(
-            f, per_file[file_runs[0].patch.id][f],
+        pid = file_runs[0].patch.id
+        print(render_file_evidence(
+            f, per_file[pid][f], cited_per_file[pid][f],
             patch_observed=[(r.label, observed_map(r)) for r in file_runs]))
         print()
 
@@ -164,7 +173,7 @@ def run_demo(
     print(join_table(joined))
     print()
 
-    verdicts, exit_code = compute_verdicts(runs, evidence_by_patch, mismatches)
+    verdicts, exit_code = compute_verdicts(runs, evidence_by_patch, mismatches, cited_by_patch)
     print("== verdicts ==")
     print("\n".join(verdicts))
     print()
