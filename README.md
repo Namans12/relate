@@ -452,7 +452,7 @@ uv run pytest -m upstream # runs the real upstream harness, about 2-3 minutes
 - Only tested on macOS.
 - Only the supplied fixtures run; there is no arbitrary patch execution. `explain` reads any patch but executes nothing.
 - Decision rules, reasons and check links are curated by hand; file→ADR citations are scanned automatically from explicit `ADR-NNNN` mentions and are not reviewed. Only ADR-0585 and ADR-0580 have curated checks.
-- No browser explorer yet.
+- The website is static: it shows the committed evidence and replays a recorded demo run. It does not run patches or live queries in the browser.
 - The evaluation covers 6 cases on one repository with one model, so its figures are counts over few runs. The graph arm's observed results come from Patch Precedent's own replay of the same fixtures that define the ground truth.
 - `fetch-relate-cli` is for macOS arm64 only.
 - If the upstream harness skips any check on your machine (for example, `ssh-keygen` is unavailable), the demo reports the run as inconclusive (exit 2) instead of trusting it.

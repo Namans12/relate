@@ -68,5 +68,6 @@ under the SIL Open Font License 1.1; the fonts are not redistributed here.
 Dependencies installed by uv are not redistributed here and keep their own
 licenses. They include the `mcp` Python SDK (version 2.3.0, MIT License), used
 by `patch-precedent mcp`, and `relate-db` (version 1.1.0, Apache License 2.0), the
-Python package used to read and write the Relate store. The site generator and styled terminal output use Jinja2 (version 3.1.6,
-BSD-3-Clause License) and Rich (version 15.0.0, MIT License), also installed by uv.
+Python package used to read and write the Relate store. The site generator and
+styled terminal output use Jinja2 (version 3.1.6, BSD-3-Clause License) and Rich
+(version 15.0.0, MIT License), also installed by uv.
