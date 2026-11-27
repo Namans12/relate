@@ -1,9 +1,13 @@
 // Intro page: the pixelcraft lockup, and the Enter, Escape and click routes to home.html.
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const slot = document.getElementById('artslot');
+// The inline 1.5 s fallback in intro.html may already have swapped #artslot for the still
+// lockup, so always look the slot up again rather than holding the original node.
+const currentSlot = () => document.getElementById('artslot');
 const ready = () => requestAnimationFrame(() => document.body.classList.add('ready'));
 
 function showStill() {
+  const slot = currentSlot();
+  if (!slot || slot.classList.contains('still')) return;
   const img = new Image();
   img.src = 'lockup.png';
   img.alt = 'Patch Precedent';
@@ -23,13 +27,13 @@ try {
     const { drawC, drawCStacked, FONTS } = await import('./c-art.js');
     const stacked = matchMedia('(max-width: 599px)').matches;
     const canvas = await (stacked ? drawCStacked : drawC)(FONTS.playfair);
-    slot.style.aspectRatio = `${canvas.width}/${canvas.height}`;
     const art = document.createElement('pixelcraft-banner');
     art.setAttribute('variant', 'hover-drift');
     art.setAttribute('block-size', stacked ? '6' : '8');
     art.setAttribute('alt', 'Patch Precedent');
     art.setAttribute('src', canvas.toDataURL('image/png'));
-    slot.replaceWith(art);
+    // A late banner upgrades the fallback still in place.
+    currentSlot().replaceWith(art);
   }
 } catch (err) {
   console.error(err);
