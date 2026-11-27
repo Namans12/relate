@@ -138,6 +138,7 @@
       stop();
       pre.classList.remove('replaying');
       lines.forEach(l => l.classList.remove('on'));
+      pre.scrollTop = pre.scrollHeight;
       play.textContent = played ? 'Replay' : 'Play';
     };
     const start = () => {
