@@ -300,3 +300,87 @@ def test_errored_run_excluded_and_parse_error_counted():
                                "error": "spawn failed: boom", "class": "infrastructure",
                                "cost_usd": 9.0}]
     assert sm["cases"]["C1"]["baseline"]["n"] == 2 and sm["cases"]["C2"]["baseline"]["n"] == 1
+
+
+def _call(diff="x", name="mcp__precedent__precedent_for_patch", tid="t9"):
+    return {"type": "assistant", "message": {"content": [
+        {"type": "tool_use", "id": tid, "name": name, "input": {"diff": diff}}]}}
+
+
+def _reply(payload, tid="t9"):
+    ev = _tool_result(payload)
+    ev["message"]["content"][0]["tool_use_id"] = tid
+    return ev
+
+
+def test_catching_checks_recall():
+    c1, c2, c4 = CASES["C1"], CASES["C2"], CASES["C4"]
+    fails = [k for k, v in c1.check_outcomes.items() if v == "fails"]
+    assert len(fails) == 2
+    only_pass = [k for k, v in c1.check_outcomes.items() if v == "passes"]
+    ev = _wrap([_asst(text="x")])
+    # all three linked checks listed: both recalls are 1.0
+    s = score_run(c1, ev, json.loads(_final_line(checks=list(c1.check_outcomes))))
+    assert s["checks_recall"] == 1.0 and s["catching_checks_recall"] == 1.0
+    # only the passing check listed: checks recall 1/3, catching recall 0
+    s = score_run(c1, ev, json.loads(_final_line(checks=only_pass)))
+    assert s["checks_recall"] == 1 / 3 and s["catching_checks_recall"] == 0.0
+    # one of two failing checks, whitespace-mangled name: catching 0.5
+    s = score_run(c1, ev, json.loads(_final_line(checks=["  " + fails[0].replace(" ", "  ")])))
+    assert s["catching_checks_recall"] == 0.5
+    # a case with no check expected to fail is null even with every check listed
+    assert score_run(c2, ev, json.loads(_final_line(checks=list(c2.check_outcomes))))[
+        "catching_checks_recall"] is None
+    assert score_run(CASES["C6"], ev, json.loads(_final_line()))["catching_checks_recall"] is None
+    # C4 has one failing and one passing check
+    s = score_run(c4, ev, json.loads(_final_line(checks=[k for k, v in c4.check_outcomes.items()
+                                                         if v == "fails"])))
+    assert s["catching_checks_recall"] == 1.0 and s["checks_recall"] == 0.5
+    # parse error: null
+    assert score_run(c1, ev, None)["catching_checks_recall"] is None
+
+
+def test_tool_replay_found_true_false_null():
+    from patch_precedent.eval.score import tool_replay_found
+    found = {"files": [], "replay": {"scenario": "installer", "run": "r", "label": "l"}}
+    missed = {"files": [], "replay": None}
+    assert tool_replay_found(_wrap([_asst(text="x")])) is None  # no tool call
+    assert tool_replay_found(_wrap([_asst(tool_input={"pattern": "a"})])) is None  # other tool
+    assert tool_replay_found(_wrap([_call(), _reply(found)])) is True
+    assert tool_replay_found(_wrap([_call(), _reply(missed)])) is False
+    # list-shaped content works
+    ev = _reply(found)
+    ev["message"]["content"][0]["content"] = [{"type": "text", "text": json.dumps(found)}]
+    assert tool_replay_found(_wrap([_call(), ev])) is True
+    # the LAST call decides
+    assert tool_replay_found(_wrap([_call(tid="a"), _reply(missed, "a"),
+                                    _call(tid="b"), _reply(found, "b")])) is True
+    assert tool_replay_found(_wrap([_call(tid="a"), _reply(found, "a"),
+                                    _call(tid="b"), _reply(missed, "b")])) is False
+    # a call with no usable result counts as not found
+    assert tool_replay_found(_wrap([_call()])) is False
+    assert tool_replay_found(_wrap([_call(), _reply("not json")])) is False
+    # score_run records it, including on a parse error; baseline-style runs get null
+    s = score_run(CASES["C1"], _wrap([_call(), _reply(missed)]), json.loads(_final_line()))
+    assert s["tool_replay_found"] is False
+    assert score_run(CASES["C1"], _wrap([_call(), _reply(found)]), None)["tool_replay_found"] is True
+    assert score_run(CASES["C1"], _wrap([_asst(text="x")]),
+                     json.loads(_final_line()))["tool_replay_found"] is None
+
+
+def test_summarise_new_aggregates():
+    rows = [
+        _scored("C1", "graph", 1, catching_checks_recall=1.0, decisions_recall=1.0,
+                tool_replay_found=True),
+        _scored("C1", "graph", 2, catching_checks_recall=0.5, decisions_recall=1.0,
+                tool_replay_found=False),
+        _scored("C2", "graph", 1, catching_checks_recall=None, decisions_recall=0.0,
+                tool_replay_found=None),
+        _scored("C1", "baseline", 1, catching_checks_recall=1.0, decisions_recall=0.0,
+                tool_replay_found=None),
+    ]
+    m = summarise(rows)["arms"]
+    assert m["graph"]["catching_recall_mean"] == 0.75 and m["graph"]["catching_recall_n"] == 2
+    assert m["graph"]["decisions_recall_n"] == 3
+    assert m["graph"]["replay_found_k"] == 1 and m["graph"]["replay_found_n"] == 2
+    assert m["baseline"]["replay_found_n"] == 0 and m["baseline"]["catching_recall_n"] == 1

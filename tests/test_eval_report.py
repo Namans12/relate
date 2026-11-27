@@ -39,9 +39,16 @@ def _wrapped(final, ev_extra=(), turns=5, cost=0.25):
 def _tool_result():
     payload = {"files": [{"decisions": [{"checks": [
         {"name": C1_CHECKS[0], "observed": "not ok"}, {"name": C1_CHECKS[1], "observed": "not ok"},
-        {"name": C1_CHECKS[2], "observed": "ok"}]}]}], "changed_files": ["distribution/install.sh"]}
+        {"name": C1_CHECKS[2], "observed": "ok"}]}]}], "changed_files": ["distribution/install.sh"],
+               "replay": {"scenario": "installer", "run": "r1", "label": "release-lookup"}}
     return {"type": "user", "message": {"content": [
         {"type": "tool_result", "tool_use_id": "t", "content": json.dumps(payload)}]}}
+
+
+def _tool_call():
+    return {"type": "assistant", "message": {"content": [
+        {"type": "tool_use", "id": "t", "name": "mcp__precedent__precedent_for_patch",
+         "input": {"diff": "x"}}]}}
 
 
 def make_results(root: Path) -> Path:
@@ -59,7 +66,7 @@ def make_results(root: Path) -> Path:
                      "num_turns": turns, "total_cost_usd": cost, "argv": _argv(arm),
                      "transcript": rel, "claude_version": META["claude_version"]})
 
-    add("C1", "graph", 1, _wrapped(c1_final, [_tool_result()]))
+    add("C1", "graph", 1, _wrapped(c1_final, [_tool_call(), _tool_result()]))
     add("C1", "baseline", 1, _wrapped(c1_final, turns=7, cost=0.4), turns=7, cost=0.4)
     shutil.copy2(EV / "spike-run.jsonl", root / "transcripts" / "C4-baseline-r1.jsonl")
     rows.append({"case": "C4", "arm": "baseline", "repeat": 1, "error": None,
@@ -204,3 +211,31 @@ def test_all_meta_arms_rendered_even_with_zero_runs(tmp_path):
     cli.main(["eval", "score", "--results", str(root)])
     cli.main(["eval", "report", "--results", str(root)])
     assert "graph (n=0)" in (root / "RESULTS.md").read_text()
+
+
+def test_headline_has_added_rows_and_disclosures(tmp_path):
+    root, md = _render(tmp_path)
+    text = md.decode()
+    head = text.split("## Headline")[1].split("## Per case")[0]
+    for label in ("Decision recall (mean)",
+                  "Catching-checks recall (mean; cases with a check expected to fail)",
+                  "Graph tool returned observed results (k/n runs that called it)"):
+        assert f"| {label} |" in head
+    rows = {ln.split(" | ")[0].strip("| "): ln for ln in head.splitlines() if ln.startswith("| ")}
+    replay = rows["Graph tool returned observed results (k/n runs that called it)"]
+    assert replay.split("|")[2].strip() == "n/a"  # the baseline never calls the tool
+    assert replay.split("|")[3].strip() == "1/1"  # the one graph run that called it found a replay
+    assert "| Catching-checks recall |" in text and "| Tool replay found |" in text
+    assert 'checks recall" counts every linked check' in text
+    assert '"consistent" and "no_decision"' in text
+    assert "Expected decisions are Patch Precedent's curated per-file decisions" in text
+
+
+def test_replay_limitation_lists_runs_with_no_replay():
+    from patch_precedent.eval.report import _replay_limitation
+    assert _replay_limitation([{"arm": "baseline", "tool_replay_found": None}]) == []
+    runs = [{"case": "C1", "arm": "graph", "repeat": 1, "tool_replay_found": False},
+            {"case": "C1", "arm": "graph", "repeat": 2, "tool_replay_found": True},
+            {"case": "C3", "arm": "graph", "repeat": 1, "tool_replay_found": False}]
+    (line,) = _replay_limitation(runs)
+    assert line.startswith("- In 2/3 runs") and "C1 r1 (graph), C3 r1 (graph)" in line

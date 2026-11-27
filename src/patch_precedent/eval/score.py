@@ -147,6 +147,43 @@ def supported_checks(events: list[dict]) -> set[str]:
     return out
 
 
+def tool_replay_found(events: list[dict]) -> bool | None:
+    """Did the LAST precedent_for_patch call return an observed replay?
+
+    None when the run made no such call (always so for the baseline). Otherwise True when that
+    call's tool_result JSON has a non-null `replay`, False when `replay` is null or the result
+    is missing or unparseable.
+    """
+    ids, last = [], None
+    for e in events:
+        ev = e["event"]
+        if ev.get("type") == "assistant":
+            for b in _content_blocks(ev):
+                if b.get("type") == "tool_use" and isinstance(b.get("name"), str) \
+                        and b["name"].endswith("precedent_for_patch"):
+                    ids.append(b.get("id"))
+    if not ids:
+        return None
+    for e in events:
+        ev = e["event"]
+        if ev.get("type") != "user":
+            continue
+        for b in _content_blocks(ev):
+            if b.get("type") == "tool_result" and b.get("tool_use_id") == ids[-1]:
+                last = b
+    if last is None:
+        return False
+    c = last.get("content")
+    text = c if isinstance(c, str) else "".join(
+        x["text"] for x in c if isinstance(x, dict) and isinstance(x.get("text"), str)) \
+        if isinstance(c, list) else ""
+    try:
+        payload = json.loads(text)
+    except ValueError:
+        return False
+    return isinstance(payload, dict) and payload.get("replay") is not None
+
+
 def _first_citation_ms(case: Case, events: list[dict]) -> int | None:
     """t_ms of the first assistant TEXT block naming the expected ADR (tool inputs never count:
     a patch passed to a tool can itself contain the ADR id)."""
@@ -176,10 +213,11 @@ def score_run(case: Case, events: list[dict], final: dict | None, row: dict | No
     cost = row.get("total_cost_usd") if row.get("total_cost_usd") is not None \
         else res.get("total_cost_usd")
     keys = ("decisions_exact", "decisions_precision", "decisions_recall", "checks_recall",
-            "outcome_marked", "outcome_correct", "outcome_accuracy", "unsupported_claims",
-            "time_to_first_correct_citation_ms")
+            "catching_checks_recall", "tool_replay_found", "outcome_marked", "outcome_correct",
+            "outcome_accuracy", "unsupported_claims", "time_to_first_correct_citation_ms")
     out = {"parse_error": final is None, "verdict": None, "verdict_correct": False,
            **{k: None for k in keys}, "turns": turns, "cost_usd": cost}
+    out["tool_replay_found"] = tool_replay_found(events)  # a transcript fact: kept on failures
     if final is None:
         return out
 
@@ -197,6 +235,11 @@ def score_run(case: Case, events: list[dict], final: dict | None, row: dict | No
     if truth:
         out["checks_recall"] = len({norm(c) for c in _str_list(final.get("checks"))} & set(truth)) \
             / len(truth)
+
+    catching = {k for k, v in truth.items() if v == "fails"}
+    if catching:
+        out["catching_checks_recall"] = len(
+            {norm(c) for c in _str_list(final.get("checks"))} & catching) / len(catching)
 
     claims = final.get("check_outcomes")
     claims = {norm(k): v for k, v in claims.items()} if isinstance(claims, dict) else {}
@@ -221,7 +264,8 @@ def score_row(case: Case, row: dict, results_dir: Path) -> dict:
     scored = score_run(case, events, final_from_events(events), row)
     cls = error_class(row.get("error"))
     if cls == "agent":
-        scored = {k: (None if k not in ("turns", "cost_usd") else v) for k, v in scored.items()}
+        scored = {k: (None if k not in ("turns", "cost_usd", "tool_replay_found") else v)
+                  for k, v in scored.items()}
         scored.update(parse_error=False, verdict_correct=False)
     return {"case": row["case"], "arm": row["arm"], "repeat": row["repeat"],
             "error": row.get("error"), "error_class": cls, "model": row.get("model"),
@@ -239,11 +283,16 @@ def _metrics(runs: list[dict]) -> dict:
     unsup, cites = vals("unsupported_claims"), vals("time_to_first_correct_citation_ms")
     marked, correct = sum(vals("outcome_marked")), sum(vals("outcome_correct"))
     recalls, turns, costs = vals("checks_recall"), vals("turns"), vals("cost_usd")
+    catching, dec_recalls = vals("catching_checks_recall"), vals("decisions_recall")
+    replays = vals("tool_replay_found")
     return {
         "n": len(runs),
         "verdict_k": sum(1 for r in runs if r.get("verdict_correct") is True),
         "decisions_exact_k": sum(1 for r in runs if r.get("decisions_exact") is True),
         "checks_recall_mean": _mean(recalls), "checks_recall_n": len(recalls),
+        "catching_recall_mean": _mean(catching), "catching_recall_n": len(catching),
+        "decisions_recall_mean": _mean(dec_recalls), "decisions_recall_n": len(dec_recalls),
+        "replay_found_k": sum(1 for v in replays if v is True), "replay_found_n": len(replays),
         "unsupported_total": sum(unsup), "unsupported_n": len(unsup),
         "unsupported_mean": _mean(unsup),
         "outcome_marked": marked, "outcome_correct": correct,

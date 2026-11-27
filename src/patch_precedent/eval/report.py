@@ -98,7 +98,10 @@ def _headline_rows(m: dict) -> list[str]:
     return [
         _kn(m["verdict_k"], m["n"]),
         _kn(m["decisions_exact_k"], m["n"]),
+        f"{_pct(m['decisions_recall_mean'])} (n={m['decisions_recall_n']})",
         f"{_pct(m['checks_recall_mean'])} (n={m['checks_recall_n']})",
+        f"{_pct(m['catching_recall_mean'])} (n={m['catching_recall_n']})",
+        NA if not m["replay_found_n"] else _kn(m["replay_found_k"], m["replay_found_n"]),
         _kn(m["outcome_marked"], m["outcome_linked"]),
         f"{m['unsupported_total']} (n={m['unsupported_n']})",
         f"{_num(m['unsupported_mean'], 2)} (n={m['unsupported_n']})",
@@ -112,7 +115,10 @@ def _headline_rows(m: dict) -> list[str]:
 HEADLINE_LABELS = [
     "Verdict correct (k/n runs)",
     "Decisions exact (k/n runs)",
+    "Decision recall (mean)",
     "Mean checks recall (cases with linked checks)",
+    "Catching-checks recall (mean; cases with a check expected to fail)",
+    "Graph tool returned observed results (k/n runs that called it)",
     "Outcomes marked (of linked checks)",
     "Unsupported claims, total",
     "Unsupported claims, mean per run",
@@ -136,6 +142,19 @@ def _commands(case: str, base: dict | None, graph: dict | None) -> list[str]:
         cmd = shlex.join(argv).replace(shlex.quote(PLACEHOLDER), PLACEHOLDER)
         out += ["```sh", cmd, "```", ""]
     return out
+
+
+def _replay_limitation(runs: list[dict]) -> list[str]:
+    called = [r for r in runs if r.get("tool_replay_found") is not None]
+    missed = [r for r in called if r["tool_replay_found"] is False]
+    if not missed:
+        return []
+    ids = ", ".join(f"{r['case']} r{r['repeat']} ({r['arm']})" for r in missed)
+    return [f"- In {len(missed)}/{len(called)} runs that called the graph tool, the tool reported "
+            f"no replay ({ids}). In those runs the agent had altered the patch while copying it "
+            "into the tool call (a context line was rewritten as an added line), so the "
+            "changed-lines key did not match, and those agents answered \"unknown\" for the "
+            "check outcomes they gave."]
 
 
 def render_results_md(summary: dict, scored_runs: list[dict], meta: dict,
@@ -177,12 +196,13 @@ def render_results_md(summary: dict, scored_runs: list[dict], meta: dict,
                 continue
             rows.append([case, arm, m["n"], _kn(m["verdict_k"], m["n"]),
                          _kn(m["decisions_exact_k"], m["n"]), _pct(m["checks_recall_mean"]),
+                         _pct(m["catching_recall_mean"]),
                          _kn(m["outcome_marked"], m["outcome_linked"]),
                          m["unsupported_total"],
                          f"{_pct(m['outcome_accuracy'])} ({_kn(m['outcome_correct'], m['outcome_marked'])})",
                          f"{_num(m['citation_median_s'])} (n={m['citation_n']})",
                          _num(m["turns_mean"]), _usd(m["cost_total"])])
-    L += _table(["Case", "Arm", "n", "Verdict", "Decisions exact", "Checks recall",
+    L += _table(["Case", "Arm", "n", "Verdict", "Decisions exact", "Checks recall", "Catching-checks recall",
                  "Marked/linked", "Unsupported", "Outcome acc.", "Median citation s", "Mean turns", "Cost"], rows)
     L.append("")
 
@@ -196,12 +216,14 @@ def render_results_md(summary: dict, scored_runs: list[dict], meta: dict,
         rows.append([r["case"], r["arm"], r["repeat"], given,
                      "yes" if r.get("verdict_correct") else "no",
                      NA if r.get("unsupported_claims") is None else r["unsupported_claims"],
+                     NA if r.get("tool_replay_found") is None
+                     else ("yes" if r["tool_replay_found"] else "no"),
                      NA if ms is None else f"{ms / 1000:.1f}",
                      NA if r.get("turns") is None else r["turns"],
                      NA if r.get("cost_usd") is None else f"${r['cost_usd']:.4f}",
                      cls or "-", r.get("error") or ""])
     L += _table(["Case", "Arm", "Repeat", "Verdict given", "Correct", "Unsupported",
-                 "Citation s", "Turns", "Cost", "Class", "Error"], rows)
+                 "Tool replay found", "Citation s", "Turns", "Cost", "Class", "Error"], rows)
     L.append("")
 
     L += ["## Excluded runs", ""]
@@ -230,6 +252,14 @@ def render_results_md(summary: dict, scored_runs: list[dict], meta: dict,
           "stripping the ends.",
           "- Checks recall: the share of the case's linked checks that the agent listed. Cases "
           "with no linked checks (C6) are left out of this mean.",
+          "- Catching-checks recall: the same share, restricted to the case's checks whose "
+          "expected outcome is `fails`. Cases with no such check (C2, C5, C6) are left out of "
+          "this mean.",
+          "- Decision recall: the share of the case's expected ADR ids that the agent listed; "
+          "C6 has none and is left out of the mean.",
+          "- Graph tool returned observed results: for a run that called "
+          "`precedent_for_patch`, whether the last such call's result had a non-null `replay`. "
+          "Runs that made no call (every baseline run) are not counted.",
           "- Outcome accuracy: among the case's linked checks that the agent marked `fails` or "
           "`passes` in `check_outcomes`, the share equal to ground truth. Pooled over all marked "
           "checks; blank when none were marked. A missing `check_outcomes` means none marked.",
@@ -273,6 +303,17 @@ def render_results_md(summary: dict, scored_runs: list[dict], meta: dict,
           "define the ground truth, so what that arm is shown matches what it is scored against.",
           "- Neither arm can run the test suite (its tools are Read, Grep and Glob only), so any "
           "outcome an agent reports without tool evidence is an inference from reading files.",
+          '- The prompt asks for the checks "that would catch it"; "checks recall" counts every '
+          'linked check, including checks expected to pass, and the graph tool lists all linked '
+          'checks. "Catching-checks recall" counts only the checks expected to fail.',
+          '- eval/prompt.md does not define the difference between "consistent" and '
+          '"no_decision". Both baseline verdict misses are choices on that boundary (C2 r2 '
+          'answered no_decision; C6 r1 answered consistent with no ADR), and C2 r1 gave the same '
+          'answer as C6 r1 but was scored correct.',
+          *_replay_limitation(runs),
+          "- Expected decisions are Patch Precedent's curated per-file decisions, which the graph "
+          'tool returns directly; listing extra ADRs lowers "decisions exact" but not decision '
+          "recall.",
           "- Elapsed times include model and tool latency and vary between runs.",
           ""]
     dirs = {os.path.dirname(r["argv"][r["argv"].index("--mcp-config") + 1])

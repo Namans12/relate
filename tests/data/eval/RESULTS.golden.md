@@ -8,7 +8,10 @@ Model: claude-sonnet-5-5. Claude Code CLI: 2.1.0 (Claude Code). Run date: 2026-1
 |---|---|---|
 | Verdict correct (k/n runs) | 2/2 | 1/2 |
 | Decisions exact (k/n runs) | 2/2 | 1/2 |
+| Decision recall (mean) | 100% (n=2) | 100% (n=1) |
 | Mean checks recall (cases with linked checks) | 75% (n=2) | 100% (n=1) |
+| Catching-checks recall (mean; cases with a check expected to fail) | 100% (n=2) | 100% (n=1) |
+| Graph tool returned observed results (k/n runs that called it) | n/a | 1/1 |
 | Outcomes marked (of linked checks) | 3/5 | 3/5 |
 | Unsupported claims, total | 3 (n=2) | 0 (n=1) |
 | Unsupported claims, mean per run | 1.50 (n=2) | 0.00 (n=1) |
@@ -19,22 +22,22 @@ Model: claude-sonnet-5-5. Claude Code CLI: 2.1.0 (Claude Code). Run date: 2026-1
 
 ## Per case
 
-| Case | Arm | n | Verdict | Decisions exact | Checks recall | Marked/linked | Unsupported | Outcome acc. | Median citation s | Mean turns | Cost |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| C1 | baseline | 1 | 1/1 | 1/1 | 100% | 3/3 | 3 | 100% (3/3) | 1.5 (n=1) | 7.0 | $0.40 |
-| C1 | graph | 1 | 1/1 | 1/1 | 100% | 3/3 | 0 | 100% (3/3) | 1.5 (n=1) | 5.0 | $0.25 |
-| C4 | baseline | 1 | 1/1 | 1/1 | 50% | 0/2 | 0 | n/a (0/0) | n/a (n=0) | 6.0 | $0.03 |
-| C4 | graph | 1 | 0/1 | 0/1 | n/a | 0/2 | 0 | n/a (0/0) | n/a (n=0) | 3.0 | $0.10 |
+| Case | Arm | n | Verdict | Decisions exact | Checks recall | Catching-checks recall | Marked/linked | Unsupported | Outcome acc. | Median citation s | Mean turns | Cost |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| C1 | baseline | 1 | 1/1 | 1/1 | 100% | 100% | 3/3 | 3 | 100% (3/3) | 1.5 (n=1) | 7.0 | $0.40 |
+| C1 | graph | 1 | 1/1 | 1/1 | 100% | 100% | 3/3 | 0 | 100% (3/3) | 1.5 (n=1) | 5.0 | $0.25 |
+| C4 | baseline | 1 | 1/1 | 1/1 | 50% | 100% | 0/2 | 0 | n/a (0/0) | n/a (n=0) | 6.0 | $0.03 |
+| C4 | graph | 1 | 0/1 | 0/1 | n/a | n/a | 0/2 | 0 | n/a (0/0) | n/a (n=0) | 3.0 | $0.10 |
 
 ## Every run
 
-| Case | Arm | Repeat | Verdict given | Correct | Unsupported | Citation s | Turns | Cost | Class | Error |
-|---|---|---|---|---|---|---|---|---|---|---|
-| C1 | baseline | 1 | violates | yes | 3 | 1.5 | 7 | $0.4000 | - |  |
-| C1 | graph | 1 | violates | yes | 0 | 1.5 | 5 | $0.2500 | - |  |
-| C4 | baseline | 1 | violates | yes | 0 | n/a | 6 | $0.0307 | - |  |
-| C4 | graph | 1 | (agent failure) | no | n/a | n/a | 3 | $0.1000 | agent | exit code 1 |
-| C4 | graph | 2 | (parse error) | no | n/a | n/a | n/a | n/a | infrastructure | no init event: tool set not verified |
+| Case | Arm | Repeat | Verdict given | Correct | Unsupported | Tool replay found | Citation s | Turns | Cost | Class | Error |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| C1 | baseline | 1 | violates | yes | 3 | n/a | 1.5 | 7 | $0.4000 | - |  |
+| C1 | graph | 1 | violates | yes | 0 | yes | 1.5 | 5 | $0.2500 | - |  |
+| C4 | baseline | 1 | violates | yes | 0 | n/a | n/a | 6 | $0.0307 | - |  |
+| C4 | graph | 1 | (agent failure) | no | n/a | n/a | n/a | 3 | $0.1000 | agent | exit code 1 |
+| C4 | graph | 2 | (parse error) | no | n/a | n/a | n/a | n/a | n/a | infrastructure | no init event: tool set not verified |
 
 ## Excluded runs
 
@@ -53,6 +56,9 @@ Scoring is deterministic and offline: it reads each run's final JSON and transcr
 - Decisions exact: the set of listed ADR ids equals the case's set. Precision and recall are stored per run in scored.jsonl.
 - Check names are compared after collapsing whitespace runs to single spaces and stripping the ends.
 - Checks recall: the share of the case's linked checks that the agent listed. Cases with no linked checks (C6) are left out of this mean.
+- Catching-checks recall: the same share, restricted to the case's checks whose expected outcome is `fails`. Cases with no such check (C2, C5, C6) are left out of this mean.
+- Decision recall: the share of the case's expected ADR ids that the agent listed; C6 has none and is left out of the mean.
+- Graph tool returned observed results: for a run that called `precedent_for_patch`, whether the last such call's result had a non-null `replay`. Runs that made no call (every baseline run) are not counted.
 - Outcome accuracy: among the case's linked checks that the agent marked `fails` or `passes` in `check_outcomes`, the share equal to ground truth. Pooled over all marked checks; blank when none were marked. A missing `check_outcomes` means none marked.
 - Unsupported claims: the number of `check_outcomes` entries marked `fails` or `passes` with no support. Support means a tool result in the transcript that parses as the `precedent_for_patch` JSON and contains a check of the same normalised name with `observed` equal to `ok` or `not ok`. Text that merely mentions a check is not support, and `not observed` is not support. Entries marked `unknown` are not counted.
 - Time to first correct citation: seconds from run start to the first assistant message text that contains the case's expected ADR id. Blank for C6 and when the ADR is never cited.
@@ -83,4 +89,7 @@ claude -p <prompt from eval/prompt.md> --restricted --mcp-config <results>/mcp-g
 - 2 cases, 1 repeat(s) per case and arm, one model, one repository: the figures are counts over few runs, not estimates of general behaviour.
 - The graph arm's evidence is Patch Precedent's own replay of the same fixtures that define the ground truth, so what that arm is shown matches what it is scored against.
 - Neither arm can run the test suite (its tools are Read, Grep and Glob only), so any outcome an agent reports without tool evidence is an inference from reading files.
+- The prompt asks for the checks "that would catch it"; "checks recall" counts every linked check, including checks expected to pass, and the graph tool lists all linked checks. "Catching-checks recall" counts only the checks expected to fail.
+- eval/prompt.md does not define the difference between "consistent" and "no_decision". Both baseline verdict misses are choices on that boundary (C2 r2 answered no_decision; C6 r1 answered consistent with no ADR), and C2 r1 gave the same answer as C6 r1 but was scored correct.
+- Expected decisions are Patch Precedent's curated per-file decisions, which the graph tool returns directly; listing extra ADRs lowers "decisions exact" but not decision recall.
 - Elapsed times include model and tool latency and vary between runs.
