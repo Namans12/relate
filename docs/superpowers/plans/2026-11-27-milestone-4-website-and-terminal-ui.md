@@ -2,14 +2,14 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A static website generated from the project's real data, plus styled terminal output for `demo` and `explain`. The site is published on GitHub Pages and is the hackathon's "working demo" link.
+**Goal:** A static website generated from the project's real data, plus styled terminal output for `demo` and `explain`. The site is hosted on Vercel and is the hackathon's "working demo" link.
 
 **Architecture:**
 - A `site` subcommand renders Jinja2 templates and vanilla JS/CSS into `_site/`. Its inputs are the committed Relate store, a committed recording of a styled `demo all` run, the published eval results and one content file.
 - `demo` gets a reporter seam. `PlainReporter` prints today's output byte for byte; `StyledReporter` prints with Rich.
 - The graph on each patch page is SVG generated in Python.
 
-**Tech Stack:** Python 3.12, uv, relate-db 1.1.0, Jinja2, Rich, vanilla JS, CSS, GitHub Actions Pages.
+**Tech Stack:** Python 3.12, uv, relate-db 1.1.0, Jinja2, Rich, vanilla JS, CSS. The site is hosted on Vercel, deployed from a local build with the Vercel CLI (user's direction, 2026-11-27, replacing GitHub Pages).
 
 **Spec:** `docs/superpowers/specs/2026-11-27-website-and-terminal-ui-design.md`. Mockups (layout and style reference only) are in `docs/superpowers/specs/2026-11-27-site-mockups/`.
 
@@ -35,7 +35,7 @@
   - `https://github.com/relatedb/relate/` with paths at the pinned SHA, or commit URLs;
   - `https://fonts.googleapis.com` and `https://fonts.gstatic.com`;
   - `https://relate.devpost.com`;
-  - `https://namans12.github.io/relate/lockup.png` (the `og:image` only).
+  - `<base-url>/lockup.png` for the `og:image` only. It is emitted only when `site build --base-url URL` is given.
 - **Licence.** Nothing GPL ships: no `neo4j-viz`, no NVL. The Uiverse credit comment is kept verbatim. Pixelcraft is vendored without `pixelcraft.jpg` and without any "Hack4Hack" string.
 - **Relate naming.** "Built with Relate" appears exactly once on the site (the home hero eyebrow). Relate is named only to identify the product. No Relate or Neo4j logo.
 - **Copy.** No filler copy. Every hand-written sentence lives in `site/content.toml`. A `{placeholder}` without a computed value fails the build.
@@ -52,7 +52,7 @@
    - the demo panel shows the full transcript as static text;
    - the graph's `<title>` elements still label nodes;
    - nothing is invisible because a reveal animation never ran (reveal hiding is applied only after JS adds `js` to `<html>`).
-2. **Pages served under `/relate/` or from `file://`.** Every link, script and image resolves, because all of them are relative. Pinned by the link test (Task 6) and the Task 10 browser pass.
+2. **Pages served under a subpath or from `file://`.** Every link, script and image resolves, because all of them are relative. Pinned by the link test (Task 6) and the Task 10 browser pass.
 3. **A 320px-wide phone.** No horizontal page scroll; long commands and diffs scroll inside their own box; the intro uses the stacked lockup. Pinned by the Task 10 browser pass, plus CSS min-width rules named in Tasks 6 and 7.
 4. **Output piped, `NO_COLOR` set, or run in CI.** Identical to today. Pinned by the golden test (Task 1) and `should_style` tests (Task 2).
 5. **The recording leaks local data.** No `/Users/`, home directory or absolute project path in `recorded/demo-all.json` or anywhere in `_site/`. Pinned by Task 3 and Task 6 tests.
@@ -577,7 +577,7 @@ git commit -m "feat: patch and schema graphs as SVG"
 **Interfaces:**
 - Consumes: `load_site_data`, `SiteData` (Task 4); `patch_graph_svg`, `schema_svg` (Task 5).
 - Produces:
-  - `build.build_site(root: Path, out: Path) -> list[Path]`. It:
+  - `build.build_site(root: Path, out: Path, base_url: str | None = None) -> list[Path]`. It:
     - deletes and recreates `out`;
     - renders every page;
     - copies `static/` to `out/assets/`;
@@ -594,13 +594,13 @@ git commit -m "feat: patch and schema graphs as SVG"
   - Site map, as paths relative to the out root:
     - `index.html`, `home.html`, `results.html`, `use.html`, `relate.html`, `scenarios/<slug>.html`;
     - `assets/...`, `lockup.png` at the root (for `og:image`), `.nojekyll`.
-  - CLI: `uv run patch-precedent site [build|record] [--out PATH]`. `build` defaults `--out` to `<root>/_site`, prints `wrote N pages to <out>`, and exits 0. On `SiteDataError` it prints the message to stderr and exits 2.
+  - CLI: `uv run patch-precedent site [build|record] [--out PATH] [--base-url URL]`. `build` defaults `--out` to `<root>/_site`, prints `wrote N pages to <out>`, and exits 0. On `SiteDataError` it prints the message to stderr and exits 2. `--base-url` must start with `https://`; a trailing `/` is stripped.
 
 **Intro page.** `index.html` is built from `intro-v2.html` as-is: dots, corner GitHub icon, Uiverse `pp-enter` with its credit comment verbatim, Enter/Escape/click going to `home.html`. Changes from the mockup:
 - `<noscript>` shows `<img src="lockup.png" alt="Patch Precedent">` and a plain `<a href="home.html">Enter</a>` styled as the button.
 - Under `prefers-reduced-motion`, `intro.js` uses the PNG and does not create the pixelcraft element.
 - Below 600px, `intro.js` draws with `drawCStacked` and sets the slot's aspect ratio to match.
-- `<head>` carries `og:title`, `og:description` (the home lede), and `og:image`=`https://namans12.github.io/relate/lockup.png`.
+- `<head>` carries `og:title` and `og:description` (the home lede). When `build_site(..., base_url=...)` is given, it also carries `og:image` = `<base_url>/lockup.png` and `og:url` = `<base_url>/`. Without a base URL, both are omitted.
 
 **`lockup.png`.** `site/tools/render-lockup.html` imports `c-art.js` and draws `drawC(FONTS.playfair)` on the page. Render it at 2160x760 with headless Chrome:
 
@@ -631,7 +631,8 @@ def site(tmp_path_factory):
 
 PAGES = ["index.html","home.html","results.html","use.html","relate.html"] + [f"scenarios/{s}.html" for s in SLUGS]
 ALLOWED = ("https://github.com/Namans12/relate", "https://github.com/relatedb/relate/", "https://fonts.googleapis.com",
-           "https://fonts.gstatic.com", "https://relate.devpost.com", "https://namans12.github.io/relate/lockup.png")
+           "https://fonts.gstatic.com", "https://relate.devpost.com")
+def test_og_image_only_with_base_url(tmp_path): ...   # no og:image by default; build_site(root, out, base_url="https://x.example") -> og:image "https://x.example/lockup.png"
 
 def test_all_pages_exist(site): assert all((site / p).is_file() for p in PAGES)   # pages from later tasks: xfail until built
 def test_relative_links_resolve(site): ...   # every href/src without a scheme or "#" resolves from its page's directory; "#id" targets exist
@@ -865,54 +866,28 @@ git commit -m "feat: site results, use and relate pages"
 
 ---
 
-### Task 10: Pages workflow, docs and browser pass
+### Task 10: Deploy docs, notices and browser pass
+
+**Hosting (Ruling, user's direction 2026-11-27).** The site deploys to Vercel from a local build with the Vercel CLI. That needs no repo-owner action and no workflow-scope token. No GitHub workflow file is added. The deploy itself is run by the user, or by the controller with the user's go-ahead: it publishes content, and it needs the user's own Vercel login.
 
 **Files:**
-- Create: `.github/workflows/pages.yml`
+- Create: `vercel.json` at the repo root: `{"cleanUrls": false, "trailingSlash": false}`. Plain static output; Vercel serves `index.html` at `/`.
 - Modify: `README.md` (a "Website" section and a "Terminal output" note), `NOTICE` (Pixelcraft, Uiverse, Jinja2, Rich)
 - Test: the existing suite, plus a manual browser pass (controller)
 
-**`.github/workflows/pages.yml`:**
-
-```yaml
-name: pages
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: pages
-  cancel-in-progress: true
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-      - run: uv run patch-precedent site --out _site
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
-```
-
 **README.**
 - A "Website" section, placed after "Run it":
-  - the Pages URL `https://namans12.github.io/relate/`;
-  - `uv run patch-precedent site` to build it locally, then `python3 -m http.server -d _site` to view it;
-  - `uv run patch-precedent site record` to refresh the recording.
+  - the deployed URL, filled in after the first deploy (`<deployed URL>` until then);
+  - `uv run patch-precedent site` to build locally, then `python3 -m http.server -d _site` to view;
+  - `uv run patch-precedent site record` to refresh the recording;
+  - the deploy commands:
+
+```bash
+uv run patch-precedent site --out _site --base-url https://<project>.vercel.app
+npx vercel deploy _site --prod
+```
+
+    Use `npx` here; Node is needed only for this optional deploy step.
 - A "Terminal output" note: styled in a terminal; plain when piped, with `NO_COLOR`, or with `--plain`; and `explain --links`.
 
 **NOTICE.** Add:
@@ -920,14 +895,11 @@ jobs:
 - "Enter button adapted from Uiverse.io by adamgiebl (MIT)."
 - Jinja2 (BSD-3-Clause) and Rich (MIT).
 
-- [ ] **Step 1: Write the workflow, README and NOTICE changes.**
+- [ ] **Step 1: Write `vercel.json`, the README and the NOTICE changes.**
 - [ ] **Step 2: Run the full test suites.** Run `uv run pytest -q` and `uv run pytest -m upstream -q`. Expected: all pass.
-- [ ] **Step 3: Check the README excerpt against real output.**
-
-  Run `uv run patch-precedent demo all | diff - <(normalised golden)`; the README's quoted plain output must still match the real piped output. Expected: no diff in the lines the README quotes.
-
+- [ ] **Step 3: Check the README excerpt against real output.** The README's quoted plain output must still match the real piped `demo all` output, compared with the golden normalisation. Expected: no diff in the lines the README quotes.
 - [ ] **Step 4: Browser pass (controller, with the built-in browser).**
-  - Build with `uv run patch-precedent site --out _site` and serve it at `/relate/`: `mkdir -p /tmp/pp-pages && ln -sfn $PWD/_site /tmp/pp-pages/relate && python3 -m http.server 8766 -d /tmp/pp-pages`.
+  - Build with `uv run patch-precedent site --out _site`. Serve it under a subpath, to prove the links are relative: `mkdir -p /tmp/pp-pages && ln -sfn $PWD/_site /tmp/pp-pages/relate && python3 -m http.server 8766 -d /tmp/pp-pages`.
   - Visit every page at 320, 375, 768, 1024, 1440 and 1920 wide, and check that `document.documentElement.scrollWidth <= innerWidth`.
   - Check:
     - the intro's stacked lockup below 600;
@@ -938,13 +910,11 @@ jobs:
     - demo play, skip and auto-play from `#demo`;
     - graph hover and focus;
     - the menu below 720.
-  - Repeat with JS disabled (CSP or devtools) and with reduced motion emulated.
-  - Fix and re-test anything that fails. Each fix goes in its own commit with a test where one can pin it.
+  - Repeat with JS disabled and with reduced motion emulated.
+  - Fix and re-test anything that fails, each fix in its own commit with a test where one can pin it.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add .github/workflows/pages.yml README.md NOTICE
-git commit -m "docs: pages workflow, website and terminal sections, notices"
+git add vercel.json README.md NOTICE
+git commit -m "docs: website deploy, terminal output, notices"
 ```
-
-**After merge (owner action, not in this plan).** `Namans12` sets Settings → Pages → Source to "GitHub Actions". Pushing `.github/workflows/` needs a token with the `workflow` scope; if the push is refused, the owner adds the file.
