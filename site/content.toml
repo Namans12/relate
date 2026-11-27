@@ -6,6 +6,8 @@
 eyebrow = "Built with Relate"
 title = "Every patch has a precedent."
 lede = "Check every patch against the architecture decisions behind the code, and the tests that prove it."
+how_title = "How it works"
+demo_title = "Run the demo"
 scenarios_title = "Six patches, two decisions."
 results_title = "Agents with and without the graph."
 use_title = "Run it in a minute."

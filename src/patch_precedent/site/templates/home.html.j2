@@ -43,7 +43,7 @@
 
 <section class="sec" id="how">
   <div class="wrap">
-    <div class="section-head reveal"><h2>How it works</h2></div>
+    <div class="section-head reveal"><h2>{{ h["how_title"] }}</h2></div>
     <div class="steps">
       {% for s in h["steps"] %}
       <div class="step reveal"><h3>{{ s["name"] }}</h3><p>{{ s["text"] }}</p></div>
@@ -87,7 +87,7 @@
 
 <section class="sec" id="demo">
   <div class="wrap">
-    <div class="section-head reveal"><h2>Run the demo</h2></div>
+    <div class="section-head reveal"><h2>{{ h["demo_title"] }}</h2></div>
     <div class="term reveal">
       <div class="term-bar">
         <span class="term-cmd mono"><span class="t-accent">$</span> uv run patch-precedent demo all</span>
@@ -128,17 +128,16 @@
   <div class="wrap use-grid">
     <div class="reveal">
       <h2>{{ h["use_title"] }}</h2>
-      <p class="muted use-note">{{ c["use"]["steps"][0]["text"] }}</p>
     </div>
     <div class="reveal" data-tabs>
       <div class="tabs" role="tablist" aria-label="Ways to use Patch Precedent">
-        <button class="tab" role="tab" type="button" id="tab-demo" aria-controls="panel-demo" aria-selected="true">Run the demo</button>
+        <button class="tab" role="tab" type="button" id="tab-clone" aria-controls="panel-clone" aria-selected="true">Clone</button>
         <button class="tab" role="tab" type="button" id="tab-explain" aria-controls="panel-explain" aria-selected="false" tabindex="-1">Explain a patch</button>
         <button class="tab" role="tab" type="button" id="tab-claude" aria-controls="panel-claude" aria-selected="false" tabindex="-1">Add to Claude Code</button>
       </div>
-      <div class="panel" role="tabpanel" id="panel-demo" aria-labelledby="tab-demo">
-        <p class="muted">{{ c["use"]["steps"][1]["text"] }}</p>
-        {{ m.copy_block("uv run patch-precedent demo all") }}
+      <div class="panel" role="tabpanel" id="panel-clone" aria-labelledby="tab-clone">
+        <p class="muted">{{ c["use"]["steps"][0]["text"] }}</p>
+        {{ m.copy_block("git clone https://github.com/Namans12/relate.git\ncd relate") }}
       </div>
       <div class="panel" role="tabpanel" id="panel-explain" aria-labelledby="tab-explain">
         <p class="muted">{{ c["use"]["steps"][2]["text"] }}</p>

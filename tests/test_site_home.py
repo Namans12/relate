@@ -66,3 +66,23 @@ def test_hooks_and_links(site):
 
 def test_docs_only_card_summarises_tests(site):
     assert "6 of 6 tests ok" in _read(site, "home.html")
+
+
+def test_tab_labels(site):
+    t = _read(site, "home.html")
+    for label in ("Clone", "Explain a patch", "Add to Claude Code"):
+        assert f">{label}</button>" in t
+    assert "git clone https://github.com/Namans12/relate.git\ncd relate" in t
+
+
+def test_demo_command_blocks_exactly_twice(site):
+    assert _read(site, "home.html").count("<pre data-verbatim>uv run patch-precedent demo all</pre>") == 2
+
+
+def test_headings_come_from_content(site):
+    from patch_precedent.site.data import load_site_data
+    h = load_site_data(pins.project_root()).content["home"]
+    t = _read(site, "home.html")
+    assert f"<h2>{h['how_title']}</h2>" in t and f"<h2>{h['demo_title']}</h2>" in t
+    tpl = (pins.project_root() / "src/patch_precedent/site/templates/home.html.j2").read_text()
+    assert "<h2>How it works</h2>" not in tpl

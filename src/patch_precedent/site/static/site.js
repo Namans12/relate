@@ -81,8 +81,8 @@
       return best;
     };
     const sync = () => {
-      const i = index();
       const max = track.scrollWidth - track.clientWidth - 2;
+      const i = track.scrollLeft >= max ? cards.length - 1 : index();
       dots.forEach((d, j) => d.setAttribute('aria-current', String(j === i)));
       prev.disabled = track.scrollLeft <= 2;
       next.disabled = track.scrollLeft >= max;
@@ -150,10 +150,10 @@
       lines.forEach(l => {
         timers.push(setTimeout(() => {
           l.classList.add('on');
-          pre.scrollTop = Math.max(0, l.offsetTop + l.offsetHeight - pre.clientHeight);
+          pre.scrollTop = Math.max(0, l.offsetTop + l.offsetHeight + 20 - pre.clientHeight);
         }, (parseFloat(l.dataset.t) || 0) * scale * 1000));
       });
-      timers.push(setTimeout(() => { pre.classList.remove('replaying'); lines.forEach(l => l.classList.remove('on')); pre.scrollTop = 0; }, TOTAL * 1000 + 300));
+      timers.push(setTimeout(() => { pre.classList.remove('replaying'); lines.forEach(l => l.classList.remove('on')); pre.scrollTop = pre.scrollHeight; }, TOTAL * 1000 + 300));
     };
     play.addEventListener('click', start);
     skip.addEventListener('click', () => { played = true; showAll(); });
