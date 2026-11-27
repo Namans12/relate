@@ -248,7 +248,10 @@ The headline table from [`eval/results/20261127T040059Z/RESULTS.md`](eval/result
 |---|---|---|
 | Verdict correct (k/n runs) | 16/18 | 18/18 |
 | Decisions exact (k/n runs) | 13/18 | 18/18 |
+| Decision recall (mean) | 87% (n=15) | 100% (n=15) |
 | Mean checks recall (cases with linked checks) | 37% (n=15) | 91% (n=15) |
+| Catching-checks recall (mean; cases with a check expected to fail) | 100% (n=9) | 100% (n=9) |
+| Graph tool returned observed results (k/n runs that called it) | n/a | 15/18 |
 | Outcomes marked (of linked checks) | 4/39 | 30/39 |
 | Unsupported claims, total | 4 (n=18) | 0 (n=18) |
 | Unsupported claims, mean per run | 0.22 (n=18) | 0.00 (n=18) |
@@ -259,20 +262,36 @@ The headline table from [`eval/results/20261127T040059Z/RESULTS.md`](eval/result
 
 Setup: 6 cases (three installer patches, two release patches and one docs-only control; ground truth in `eval/cases.toml`), 3 repeats per case and arm, 36 runs in all, with Claude Sonnet through Claude Code. Both arms get the identical prompt and tools (`Read`, `Grep`, `Glob`) in a clean worktree of the pinned upstream; the graph arm adds one MCP tool, `precedent_for_patch`.
 
-In this run the graph arm used fewer turns (2.1 vs 6.2 mean) and listed exactly the expected decisions in 18/18 runs against 13/18, and the baseline made 4 unsupported claims against 0 (all 4 matched the observed results; see outcome accuracy). The method note in RESULTS.md says:
+In this run the graph arm used fewer turns (2.1 vs 6.2 mean) and listed exactly the expected decisions in 18/18 runs against 13/18, and the baseline made 4 unsupported claims against 0 (all 4 matched the observed results; see outcome accuracy). Four disclosures qualify those numbers; each is also in the RESULTS.md limitations:
+
+- Checks recall counts every linked check, including checks expected to pass, and the graph tool lists all linked checks. The catching-checks recall row counts only the checks expected to fail: 100% (n=9) for both arms.
+- Decision recall is 87% (n=15) for the baseline and 100% (n=15) for the graph arm. Expected decisions are Patch Precedent's curated per-file decisions, which the graph tool returns directly; listing extra ADRs lowers "decisions exact" but not decision recall.
+- The graph tool returned observed results in 15 of the 18 runs. In the 3 runs where it reported no replay (C1 r1, C1 r2, C3 r1), the agent had altered the patch while copying it into the tool call (a context line was rewritten as an added line), so the changed-lines key did not match, and those agents answered "unknown" for the check outcomes they gave.
+- eval/prompt.md does not define the difference between "consistent" and "no_decision". Both baseline verdict misses are choices on that boundary (C2 r2 answered no_decision; C6 r1 answered consistent with no ADR), and C2 r1 gave the same answer as C6 r1 but was scored correct.
+
+The method note in RESULTS.md says:
 
 > The baseline arm has no tool that reports observed test results, so any "fails" or "passes" it gives is unsupported by construction. Answering "unknown" never counts as unsupported and never lowers outcome accuracy. A claim is "supported" when the agent saw an observed result for that check; whether the claim matches that result is measured separately by outcome accuracy. Medians of time to first correct citation skip runs that never cite the expected ADR; their count is shown as n.
 
 Read the full per-case table, every run, the exact command lines and the limitations in [RESULTS.md](eval/results/20261127T040059Z/RESULTS.md); the agent transcripts are in [`eval/results/20261127T040059Z/transcripts/`](eval/results/20261127T040059Z/transcripts/).
 
-To reproduce, with a logged-in Claude Code CLI:
+Re-score the published run (offline, no usage):
+
+```bash
+uv run patch-precedent eval score --results eval/results/20261127T040059Z
+uv run patch-precedent eval report --results eval/results/20261127T040059Z
+```
+
+Run your own evaluation (uses Claude Code usage; needs a logged-in Claude Code CLI):
 
 ```bash
 uv run patch-precedent demo all
 uv run patch-precedent eval run --repeats 3
-uv run patch-precedent eval score --results eval/results/20261127T040059Z
-uv run patch-precedent eval report --results eval/results/20261127T040059Z
+uv run patch-precedent eval score
+uv run patch-precedent eval report
 ```
+
+`eval score` and `eval report` without `--results` pick up the newest directory under `eval/results/`.
 
 `eval run` needs a logged-in Claude Code CLI and spends usage (the published run cost $1.11 in total, per RESULTS.md); it writes a new directory `eval/results/<UTC timestamp>/`. `demo`, `explain` and `mcp` need neither the CLI nor an API key. `eval score` and `eval report` are offline; on the committed results they rewrite `scored.jsonl`, `results.json` and `RESULTS.md` with identical bytes (`git diff --exit-code` stays clean).
 
