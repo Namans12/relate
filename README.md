@@ -2,11 +2,13 @@
 
 Two scenarios, each replaying authored patches against an unmodified upstream test harness and explaining the results through a Relate graph.
 
-**installer.** Two patches touch the same installer file, `distribution/install.sh`. The Relate graph links that file to ADR-0585 ("the installer downloads release assets over the direct route"), the commit that implemented it, and the two regression checks that guard it. Replaying both patches through the unmodified upstream test harness shows that only the release-lookup patch, which probes the GitHub release API to improve an error message, breaks the ADR's no-GitHub-API rule. The wording patch passes.
+**installer.** Three patches touch the same installer file, `distribution/install.sh`. The Relate graph links that file to ADR-0585 ("the installer downloads release assets over the direct route"), the commit that implemented it, and the three regression checks that guard it. Replaying the patches through the unmodified upstream test harness shows that two of them break the ADR: the release-lookup patch probes the GitHub release API to improve an error message, and the token-header patch sends `GITHUB_TOKEN` as an `Authorization` header for a better rate limit. The wording patch passes.
 
 **release.** ADR-0580 says a post-release version advance must never rotate `CHANGELOG.md`. A patch to `scripts/release-bump.sh` that always rotates looks harmless because rotation is idempotent, but it breaks that rule and fails check #2 of the release harness. A rewording patch passes, and a docs-only patch to `CONTRIBUTING.md`, which cites no decision, is the control.
 
 Evidence (graph) and observation (test runs) stay separate: the committed graph is usable before any patch runs, and the replay adds observations on a copy.
+
+The graph is also exposed to coding agents as a read-only MCP tool, and its effect on an agent's answers is measured; see [Give your coding agent the graph](#give-your-coding-agent-the-graph) and [Does the graph help? (measured)](#does-the-graph-help-measured).
 
 ## Run it
 
@@ -36,7 +38,7 @@ uv run patch-precedent demo installer
 uv run patch-precedent demo release
 ```
 
-`demo all` takes about 44 seconds on the tested Mac once the upstream cache is warm.
+`demo all` takes about 46 seconds on the tested Mac once the upstream cache is warm.
 
 Show the source chain behind a patch without fetching upstream or executing anything:
 
@@ -62,8 +64,10 @@ CONTRIBUTING.md: no linked decision
 
 | Scenario | Decision | Harness | Patches | Observed outcome |
 |---|---|---|---|---|
-| `installer` | ADR-0585, the installer downloads release assets over the direct route | `sh scripts/tests/test_install_sh.sh` (194 checks) | `release-lookup`, `wording` | `release-lookup` violates (exit 1, 192 / 2, fails #7 and #193); `wording` consistent (exit 0, 194 / 0) |
+| `installer` | ADR-0585, the installer downloads release assets over the direct route | `sh scripts/tests/test_install_sh.sh` (194 checks) | `release-lookup`, `token-header`, `wording` | `release-lookup` violates (exit 1, 192 / 2, fails #7 and #193); `token-header` violates ADR-0585 (exit 1, 193 / 1, fails only #64); `wording` consistent (exit 0, 194 / 0) |
 | `release` | ADR-0580, post-release workspace versioning: an advance never rotates `CHANGELOG.md` | `sh scripts/tests/test_release_advance.sh` (6 checks) | `always-rotate`, `wording`, `docs-only` | `always-rotate` violates (exit 1, 5 / 1, fails #2); `wording` consistent (exit 0, 6 / 0); `docs-only` has no linked decision (exit 0, 6 / 0) |
+
+The token-header patch makes `fetch_url` send `Authorization: Bearer $GITHUB_TOKEN` when the variable is set, "for the authenticated rate limit". ADR-0585 says `GITHUB_TOKEN` is not read, and check #64 (`token set: no Authorization header anywhere`) fails; the static check #7 and the runtime check #193 still pass, so only the linked check that watches that clause catches it.
 
 The release scenario's rotation patch drops the `--skip-changelog` guard in `scripts/release-bump.sh` on the argument that rotation is idempotent. Check #2 shows that an advance then rewrites `CHANGELOG.md`.
 
@@ -80,10 +84,14 @@ release-lookup: violates ADR-0585 — install.sh consults no GitHub API endpoint
     #7 static: the script spells a GitHub API endpoint
     #193 runtime: a GitHub API request was attempted and recorded in the harness's stubbed curl log
     harness exit 1, 192 passed / 2 failed
-wording: consistent with ADR-0585 as far as checks #7, #193 cover
+token-header: violates ADR-0585 — install.sh consults no GitHub API endpoint and does not read GITHUB_TOKEN
+    #64 runtime: an install with GITHUB_TOKEN set sent an Authorization header
+    harness exit 1, 193 passed / 1 failed
+wording: consistent with ADR-0585 as far as checks #7, #64, #193 cover
 
-replay check: 3/3 runs match fixtures/installer/expectations.toml (by content sha256)
+replay check: 4/4 runs match fixtures/installer/expectations.toml (by content sha256)
   release-lookup — expected regression reproduced; demo replay succeeded
+  token-header — expected regression reproduced; demo replay succeeded
 
 …
 
@@ -144,12 +152,129 @@ replay check: 4/4 runs match fixtures/release/expectations.toml (by content sha2
 
 == overall ==
 scenario   runs  matched  exit
-installer  3     3/3      0
+installer  4     4/4      0
 release    4     4/4      0
 overall exit 0
 ```
 
 The demo shows outcomes only from observed runs and live graph queries. It prints each verdict from the harness's TAP output joined to the graph; nothing is hard-coded by filename.
+
+## Give your coding agent the graph
+
+`patch-precedent mcp` serves one read-only [MCP](https://modelcontextprotocol.io) tool over stdio, `precedent_for_patch(diff)`. Give it a unified diff against Relate at the pinned commit and it returns the decisions (ADRs) governing each changed file with their rule and reason, the regression checks that guard them, and each check's observed result from Patch Precedent's replay of that exact patch. It opens the committed store with `read_only=True`, never runs a harness and writes nothing.
+
+For Claude Code, add this to a `.mcp.json` in the project where you want the tool, replacing `<path-to-relate-clone>` with the absolute path of this repository's clone:
+
+```json
+{"mcpServers": {"precedent": {"command": "uv", "args": ["run", "--project", "<path-to-relate-clone>", "--quiet", "patch-precedent", "mcp"]}}}
+```
+
+The equivalent one-liner:
+
+```bash
+claude mcp add precedent -- uv run --project <path-to-relate-clone> --quiet patch-precedent mcp
+```
+
+The tool needs a prior `uv run patch-precedent demo all` to report observed results; without a replay, every check reads `"not observed"`. Matching is by the patch's changed lines, ignoring whitespace and context, so a diff whose tabs or trailing spaces were altered in transit still finds its replay.
+
+A trimmed real result for `fixtures/installer/token-header.patch` (`…` marks omitted fields and the omitted "also cites" list):
+
+```json
+{
+  "patch_key": "pk:c864bd567ac3290b",
+  "changed_files": ["distribution/install.sh"],
+  "replay": {"scenario": "installer", "run": "20261127T040959Z", "label": "token-header"},
+  "files": [{
+    "path": "distribution/install.sh",
+    "decisions": [{
+      "id": "ADR-0585",
+      "title": "The installer downloads release assets over the direct route",
+      "status": "Proposed",
+      "rule": "install.sh consults no GitHub API endpoint and does not read GITHUB_TOKEN",
+      …
+      "checks": [
+        {"name": "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)",
+         "kind": "static", "number_at_pin": 7, "observed": "ok", …},
+        {"name": "token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)",
+         "kind": "runtime", "number_at_pin": 64, "observed": "not ok", …},
+        {"name": "no case made a GitHub API request (ADR-0585)",
+         "kind": "runtime", "number_at_pin": 193, "observed": "ok", …}
+      ]
+    }],
+    …
+  }],
+  …
+}
+```
+
+Each check also carries a permalink at the pinned upstream SHA and what a failure means. The `run` timestamp and `patch_key` come from the local `runs/` directory, so yours will differ.
+
+### Relate's own MCP server
+
+Relate ships an MCP server of its own, which can query the store directly. This is optional and separate from the tool above. `fetch-relate-cli` downloads the pinned v1.3.0 `relate` binary for macOS arm64, verifies its SHA-256 and prints its path (cached under `~/.cache/patch-precedent/`):
+
+```bash
+uv run patch-precedent fetch-relate-cli
+```
+
+Point the server at a copy of the store, not at `data/precedent.rl` itself (opening a Relate file read-write rewrites it, as noted under How it works):
+
+```bash
+cp data/precedent.rl /tmp/precedent-copy.rl
+~/.cache/patch-precedent/relate-cli-1.3.0/relate-darwin-arm64 serve --mcp stdio --read-only --database /tmp/precedent-copy.rl
+```
+
+As an `.mcp.json` entry (use absolute paths):
+
+```json
+{"mcpServers": {"relate": {"command": "<path printed by fetch-relate-cli>", "args": ["serve", "--mcp", "stdio", "--read-only", "--database", "<copy of data/precedent.rl>"]}}}
+```
+
+It exposes two tools, `read_cypher` and `get_schema`. A sample `read_cypher` call, with the statement in `statement` and bound values in `parameters`:
+
+```text
+statement:  MATCH (d:Decision {id: $id})-[:CHECKED_BY]->(c:Check)
+            RETURN c.number_at_pin AS n, c.name AS name ORDER BY n
+parameters: {"id": "ADR-0585"}
+```
+
+It returns three rows: #7 `drift guard: install.sh consults no GitHub API endpoint (ADR-0585)`, #64 `token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)` and #193 `no case made a GitHub API request (ADR-0585)`. This server knows only the committed graph; it has no replay results, which is what `precedent_for_patch` adds.
+
+## Does the graph help? (measured)
+
+The headline table from [`eval/results/20261127T040059Z/RESULTS.md`](eval/results/20261127T040059Z/RESULTS.md), copied verbatim:
+
+| Metric | baseline (n=18) | graph (n=18) |
+|---|---|---|
+| Verdict correct (k/n runs) | 16/18 | 18/18 |
+| Decisions exact (k/n runs) | 13/18 | 18/18 |
+| Mean checks recall (cases with linked checks) | 37% (n=15) | 91% (n=15) |
+| Outcomes marked (of linked checks) | 4/39 | 30/39 |
+| Unsupported claims, total | 4 (n=18) | 0 (n=18) |
+| Unsupported claims, mean per run | 0.22 (n=18) | 0.00 (n=18) |
+| Outcome accuracy (pooled over marked checks) | 100% (4/4 marked checks) | 100% (30/30 marked checks) |
+| Median time to first correct citation, seconds | 12.4 (n=13) | 7.5 (n=15) |
+| Mean turns | 6.2 (n=18) | 2.1 (n=18) |
+| Total cost, USD | $0.73 (n=18) | $0.38 (n=18) |
+
+Setup: 6 cases (three installer patches, two release patches and one docs-only control; ground truth in `eval/cases.toml`), 3 repeats per case and arm, 36 runs in all, with Claude Sonnet through Claude Code. Both arms get the identical prompt and tools (`Read`, `Grep`, `Glob`) in a clean worktree of the pinned upstream; the graph arm adds one MCP tool, `precedent_for_patch`.
+
+In this run the graph arm used fewer turns (2.1 vs 6.2 mean) and listed the expected decisions in 18/18 runs against 13/18, and the baseline made 4 unsupported claims against 0. The method note in RESULTS.md says:
+
+> The baseline arm has no tool that reports observed test results, so any "fails" or "passes" it gives is unsupported by construction. Answering "unknown" never counts as unsupported and never lowers outcome accuracy. A claim is "supported" when the agent saw an observed result for that check; whether the claim matches that result is measured separately by outcome accuracy. Medians of time to first correct citation skip runs that never cite the expected ADR; their count is shown as n.
+
+Read the full per-case table, every run, the exact command lines and the limitations in [RESULTS.md](eval/results/20261127T040059Z/RESULTS.md); the agent transcripts are in [`eval/results/20261127T040059Z/transcripts/`](eval/results/20261127T040059Z/transcripts/).
+
+To reproduce, with a logged-in Claude Code CLI:
+
+```bash
+uv run patch-precedent demo all
+uv run patch-precedent eval run --repeats 3
+uv run patch-precedent eval score
+uv run patch-precedent eval report
+```
+
+`eval run` needs a logged-in Claude Code CLI and spends usage (the published run cost $1.11 in total, per RESULTS.md); it writes a new directory `eval/results/<UTC timestamp>/`. `demo`, `explain` and `mcp` need neither the CLI nor an API key. `eval score` and `eval report` are offline; on the committed results they rewrite `scored.jsonl`, `results.json` and `RESULTS.md` with identical bytes (`git diff --exit-code` stays clean).
 
 ## How it works
 
@@ -204,7 +329,7 @@ Commands:
 
 - `uv run patch-precedent scan-citations [--out-dir DIR]` regenerates the two TSVs from the upstream cache (default `evidence/scanned/`). It prints `scanned 6837 citations across 1982 files and 514 ADRs; 567 decisions (567 with records) at 5f7a510713c3`. Of the store and evidence commands, only this one needs the upstream cache.
 - `uv run patch-precedent build-store [--evidence-dir DIR] [--out PATH]` builds the store from the curated and scanned files. It reads only `evidence/` and needs no network.
-- `uv run patch-precedent verify-store [--evidence-dir DIR] [--store PATH]` compares the committed store with a fresh build of the evidence. It prints `store matches manifest: 2556 nodes, 6843 relationships` and exits 0.
+- `uv run patch-precedent verify-store [--evidence-dir DIR] [--store PATH]` compares the committed store with a fresh build of the evidence. It prints `store matches manifest: 2557 nodes, 6844 relationships` and exits 0.
 - To experiment with a rebuild, write it elsewhere: `uv run patch-precedent build-store --out /tmp/precedent.rl`. The default output is `data/precedent.rl` and overwrites the committed store; restore it with `git checkout data/precedent.rl`. The committed store is about 3 MB.
 - Rebuilding does not reproduce identical bytes, so file hashes differ between builds. `verify-store` therefore compares sorted snapshots of all nodes and relationships, which do match.
 - `fixtures/<scenario>/expectations.toml` holds acceptance criteria keyed by patch content sha256. The demo checks itself against it (a disagreement is reported as a mismatch). The file decides only whether the replay matched; it is never displayed as results.
@@ -234,6 +359,25 @@ Why the overall exit is 0 when patches fail: the demo's exit says whether the re
 
 `build-store` returns 0 on success. `verify-store` returns 0 when the store matches the manifest and 1 when it does not or is missing.
 
+`mcp`:
+
+| Code | Meaning |
+|---:|---|
+| 0 | The server ran and its client closed the connection. |
+| 2 | Store file not found. |
+
+`fetch-relate-cli` prints the path of the verified binary and exits 0. It exits 4 when the download, the checksum verification or the file write fails.
+
+`eval run`:
+
+| Code | Meaning |
+|---:|---|
+| 0 | Results directory written. |
+| 2 | Refused or unusable input: unknown case id, `--repeats` below 1, or a precondition the runner refuses (for example, no prior `demo all`). |
+| 4 | Upstream cache missing and the upstream repo is unreachable. |
+
+`eval score` and `eval report` return 0 on success and 2 when the results directory, or a file they need in it (`runs.jsonl`, `scored.jsonl`, `meta.json`), is missing, or when `runs.jsonl` names an unknown case.
+
 ## Run artifacts
 
 Runs are git-ignored. `demo installer` or `demo release` writes `runs/<UTC timestamp>/<scenario>/`; `demo all` writes `runs/<UTC timestamp>/{installer,release}/` plus `runs/<UTC timestamp>/summary.json` (each scenario's summary and the overall exit). Each scenario directory contains, per case, `<label>.log` (the harness output) and `<label>.exit` (its exit code, `none` or `timeout`), plus `replay.rl` (the store copy with replay nodes) and `summary.json` (runs, join rows, warnings, mismatches, verdicts and exit code).
@@ -248,6 +392,8 @@ uv run pytest -m upstream # runs the real upstream harness, about 2-3 minutes
 ## Pins
 
 - Upstream: `https://github.com/relatedb/relate.git` at `5f7a510713c3feac146133e77d8c5bb72bae1b11`
+- Relate CLI (optional, for Relate's own MCP server): v1.3.0, `relate-darwin-arm64`, checksum-verified
+- `mcp==2.3.0` (Python SDK)
 - Implementing commits: `5ac38808547d11f55b02333624cc3e88b46566eb` (ADR-0585), `d79d8b150561f56b4940876a067d6b7e4781d2bc` (ADR-0580)
 - `relate-db==1.1.0`, Python 3.12
 
@@ -256,7 +402,9 @@ uv run pytest -m upstream # runs the real upstream harness, about 2-3 minutes
 - Only tested on macOS.
 - Only the supplied fixtures run; there is no arbitrary patch execution. `explain` reads any patch but executes nothing.
 - Decision rules, reasons and check links are curated by hand; file→ADR citations are scanned automatically from explicit `ADR-NNNN` mentions and are not reviewed. Only ADR-0585 and ADR-0580 have curated checks.
-- No MCP server or browser explorer yet.
+- No browser explorer yet.
+- The evaluation covers 6 cases on one repository with one model, so its figures are counts over few runs. The graph arm's observed results come from Patch Precedent's own replay of the same fixtures that define the ground truth.
+- `fetch-relate-cli` is for macOS arm64 only.
 - If the upstream harness skips any check on your machine (for example, `ssh-keygen` is unavailable), the demo reports the run as inconclusive (exit 2) instead of trusting it.
 - ADR-0585 and ADR-0580 have status "Proposed" upstream.
 
@@ -267,7 +415,7 @@ Patch Precedent was built with significant AI assistance, disclosed here as the 
 - **Claude Code (Anthropic)** turned the project plan into an implementation plan and ran the build. Claude Opus planned each task and reviewed every change and the final branch. Claude Sonnet subagents wrote the code, tests and documentation.
 - **The project owner** chose the idea, approved the plan, and made the integration, licensing and publication decisions.
 - **Not AI-generated:** Relate, the upstream installer, its test harness and ADR-0585, ADR-0580 and the release script come from relatedb/relate at the pinned commit (see [NOTICE](NOTICE)).
-- **No model at run time:** the demo and `explain` call no AI service and need no API key.
+- **No model at run time:** the demo, `explain` and `mcp` call no AI service and need no API key. The one exception is `eval run`, which runs Claude Sonnet through Claude Code as the agent under test.
 - **Verified, not described:** every result, test count and output excerpt in this README comes from real local runs of the code in this repository.
 
 ## License and attribution

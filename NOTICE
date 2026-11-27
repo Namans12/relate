@@ -25,6 +25,19 @@ License, Version 2.0, at commit 5f7a510713c3feac146133e77d8c5bb72bae1b11:
   paraphrased in evidence/release.toml, plus the release fixtures' diff context
   from scripts/release-bump.sh and CONTRIBUTING.md, appearing in the patches
   under fixtures/release/.
+- Diff context from distribution/install.sh (the fetch_url function) in the
+  token-header fixture, fixtures/installer/token-header.patch, which adds an
+  Authorization header sent when GITHUB_TOKEN is set.
+- The description of check #64 of scripts/tests/test_install_sh.sh ("token set:
+  no Authorization header anywhere (GITHUB_TOKEN never rides a request)") and
+  the line reference to lines 314-315 of that file, in evidence/installer.toml
+  and in the TAP capture tests/data/token-header.tap.
+- Relate CLI v1.3.0 (relate-darwin-arm64), Apache License 2.0. It is downloaded
+  at run time, only when `patch-precedent fetch-relate-cli` is run, into a local
+  cache after its SHA-256 is verified. It is not vendored in this repository.
+- Agent transcripts under eval/results/ contain model outputs (Claude Sonnet)
+  and excerpts of relatedb/relate files that the agents read, such as ADR text,
+  install.sh and the test harness, at the pinned commit.
 
 The patches in fixtures/installer/ and fixtures/release/ are authored
 demonstration inputs written against Relate's code. They are not upstream
@@ -39,3 +52,7 @@ https://www.apache.org/licenses/LICENSE-2.0
 Patch Precedent's own code and documentation are licensed under the MIT
 License; see LICENSE. That license does not cover the Relate material
 described above, which remains under Apache License 2.0.
+
+Dependencies installed by uv are not redistributed here and keep their own
+licenses. They include the `mcp` Python SDK (version 2.3.0, MIT License), used
+by `patch-precedent mcp`.
