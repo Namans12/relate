@@ -47,7 +47,7 @@ function markTop(g, m) {
 }
 
 function loadType(type) {
-  const t = Object.assign({ family: 'Fraunces', w1: 600, w2: 700, s1: 122, s2: 210, k1: -2.4, k2: -5.4, cap: 0.70, varSettings: '' }, type);
+  const t = Object.assign({ family: 'Playfair Display', w1: 600, w2: 800, s1: 120, s2: 205, k1: -1.5, k2: -4.5, cap: 0.71, varSettings: '' }, type);
   return Promise.all([document.fonts.load(`${t.w1} ${t.s1}px "${t.family}"`), document.fonts.load(`${t.w2} ${t.s2}px "${t.family}"`)]).then(() => t);
 }
 
@@ -115,8 +115,5 @@ export async function drawCStacked(type) {
 }
 
 export const FONTS = {
-  fraunces: { label: 'Fraunces (current)', family: 'Fraunces', w1: 600, w2: 700, s1: 122, s2: 210, k1: -2.4, k2: -5.4, cap: 0.70 },
-  instrument: { label: 'Instrument Serif', family: 'Instrument Serif', w1: 400, w2: 400, s1: 140, s2: 250, k1: -1.5, k2: -4, cap: 0.66 },
   playfair: { label: 'Playfair Display', family: 'Playfair Display', w1: 600, w2: 800, s1: 120, s2: 205, k1: -1.5, k2: -4.5, cap: 0.71 },
-  dmserif: { label: 'DM Serif Display', family: 'DM Serif Display', w1: 400, w2: 400, s1: 124, s2: 214, k1: -1, k2: -4, cap: 0.70 },
 };

@@ -7,11 +7,13 @@ from pathlib import Path
 
 import jinja2
 
-from .data import SiteData, load_site_data, prose
+from .data import SiteData, SiteDataError, load_site_data, prose
 
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates"
 STATIC = HERE / "static"
+REQUIRED = ("intro.html.j2", "home.html.j2", "results.html.j2", "use.html.j2", "relate.html.j2",
+            "scenario.html.j2")
 
 
 def _rel(ctx: jinja2.runtime.Context, target: str) -> str:
@@ -40,6 +42,7 @@ def _env() -> jinja2.Environment:
 
 def _pages(data: SiteData, available: set[str]) -> list[tuple[str, str, dict]]:
     """(output path, template, extra context) for every page whose template exists."""
+    # a missing required template is an error unless allow_missing (see build_site)
     pages: list[tuple[str, str, dict]] = [("index.html", "intro.html.j2", {})]
     for out, tpl in (("home.html", "home.html.j2"), ("results.html", "results.html.j2"),
                      ("use.html", "use.html.j2"), ("relate.html", "relate.html.j2")):
@@ -49,13 +52,17 @@ def _pages(data: SiteData, available: set[str]) -> list[tuple[str, str, dict]]:
     return [pg for pg in pages if pg[1] in available]
 
 
-def build_site(root: Path, out: Path, base_url: str | None = None) -> list[Path]:
+def build_site(root: Path, out: Path, base_url: str | None = None,
+               allow_missing: bool = False) -> list[Path]:
     root, out = Path(root), Path(out)
     if base_url is not None:
         base_url = base_url.rstrip("/")
     data = load_site_data(root)
     env = _env()
     available = {p.name for p in TEMPLATES.glob("*.j2")}
+    missing = [t for t in REQUIRED if t not in available]
+    if missing and not allow_missing:
+        raise SiteDataError(f"missing template: {missing[0]}")
 
     if out.exists():
         shutil.rmtree(out)

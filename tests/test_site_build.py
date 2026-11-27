@@ -7,7 +7,9 @@ import pytest
 
 from patch_precedent import pins
 from patch_precedent.cli import main
+from patch_precedent.site import build as build_mod
 from patch_precedent.site.build import build_site
+from patch_precedent.site.data import SiteDataError
 
 SLUGS = ["installer-release-lookup", "installer-token-header", "installer-wording",
          "release-always-rotate", "release-wording", "release-docs-only"]
@@ -22,7 +24,8 @@ pending = pytest.mark.xfail(strict=False, reason="page built in a later task")
 @pytest.fixture(scope="module")
 def site(tmp_path_factory):
     out = tmp_path_factory.mktemp("site")
-    build_site(pins.project_root(), out)
+    # until Task 9 adds the remaining templates
+    build_site(pins.project_root(), out, allow_missing=True)
     return out
 
 
@@ -76,9 +79,9 @@ def _scan(path: Path) -> _Scan:
 
 def test_og_image_only_with_base_url(tmp_path):
     root = pins.project_root()
-    build_site(root, tmp_path / "a")
+    build_site(root, tmp_path / "a", allow_missing=True)
     assert "og:image" not in (tmp_path / "a" / "index.html").read_text()
-    build_site(root, tmp_path / "b", base_url="https://x.example/")
+    build_site(root, tmp_path / "b", base_url="https://x.example/", allow_missing=True)
     t = (tmp_path / "b" / "index.html").read_text()
     assert 'content="https://x.example/lockup.png"' in t and 'content="https://x.example/"' in t
     assert 'property="og:title"' in t and 'property="og:description"' in t
@@ -108,9 +111,8 @@ def test_relative_links_resolve(site):
                 assert frag == "" or frag in sc.ids, (page.name, url)
                 continue
             target = (here / path.split("?")[0]).resolve()
-            rel = posixpath.normpath(str(target.relative_to(site.resolve())))
-            if not target.exists() and rel in PAGES:
-                continue  # page belongs to a later task
+            if not target.exists() and target.relative_to(site.resolve()).as_posix() in LATER:
+                continue  # xfail-equivalent allowance until Task 9 builds these pages
             assert target.exists(), (page.name, url)
             if frag and target.suffix == ".html":
                 assert frag in _scan(target).ids, (page.name, url)
@@ -196,6 +198,23 @@ def test_shared_layout(site):
 @pending
 def test_copy_announces(site):
     assert 'aria-live="polite"' in (site / "home.html").read_text()
+
+
+def test_missing_required_template_raises(tmp_path, monkeypatch):
+    monkeypatch.setattr(build_mod, "REQUIRED", ("intro.html.j2", "nope.html.j2"))
+    with pytest.raises(SiteDataError, match="nope.html.j2"):
+        build_site(pins.project_root(), tmp_path / "s")
+
+
+def test_cli_fails_while_templates_missing(tmp_path):
+    assert main(["site", "--out", str(tmp_path / "s")]) == 2
+
+
+def test_no_fraunces_and_visible_focus(site):
+    for f in site.rglob("*"):
+        if f.suffix in {".html", ".js", ".css"}:
+            body = f.read_text(errors="ignore")
+            assert "Fraunces" not in body and "F2C9B9" not in body, f.name
 
 
 def test_cli_site_build(tmp_path, capsys):
