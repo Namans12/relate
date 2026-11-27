@@ -67,7 +67,7 @@ CONTRIBUTING.md: no linked decision
 | `installer` | ADR-0585, the installer downloads release assets over the direct route | `sh scripts/tests/test_install_sh.sh` (194 checks) | `release-lookup`, `token-header`, `wording` | `release-lookup` violates (exit 1, 192 / 2, fails #7 and #193); `token-header` violates ADR-0585 (exit 1, 193 / 1, fails only #64); `wording` consistent (exit 0, 194 / 0) |
 | `release` | ADR-0580, post-release workspace versioning: an advance never rotates `CHANGELOG.md` | `sh scripts/tests/test_release_advance.sh` (6 checks) | `always-rotate`, `wording`, `docs-only` | `always-rotate` violates (exit 1, 5 / 1, fails #2); `wording` consistent (exit 0, 6 / 0); `docs-only` has no linked decision (exit 0, 6 / 0) |
 
-The token-header patch makes `fetch_url` send `Authorization: Bearer $GITHUB_TOKEN` when the variable is set, "for the authenticated rate limit". ADR-0585 says `GITHUB_TOKEN` is not read, and check #64 (`token set: no Authorization header anywhere`) fails; the static check #7 and the runtime check #193 still pass, so only the linked check that watches that clause catches it.
+The token-header patch makes `fetch_url` send `Authorization: Bearer $GITHUB_TOKEN` when the variable is set, for the authenticated rate limit. ADR-0585 says `GITHUB_TOKEN` is not read, and check #64 (`token set: no Authorization header anywhere`) fails; the static check #7 and the runtime check #193 still pass, so only the linked check that watches that clause catches it.
 
 The release scenario's rotation patch drops the `--skip-changelog` guard in `scripts/release-bump.sh` on the argument that rotation is idempotent. Check #2 shows that an advance then rewrites `CHANGELOG.md`.
 
@@ -172,14 +172,14 @@ For Claude Code, add this to a `.mcp.json` in the project where you want the too
 The equivalent one-liner:
 
 ```bash
-claude mcp add precedent -- uv run --project <path-to-relate-clone> --quiet patch-precedent mcp
+claude mcp add --scope project precedent -- uv run --project <path-to-relate-clone> --quiet patch-precedent mcp
 ```
 
 The tool needs a prior `uv run patch-precedent demo all` to report observed results; without a replay, every check reads `"not observed"`. Matching is by the patch's changed lines, ignoring whitespace and context, so a diff whose tabs or trailing spaces were altered in transit still finds its replay.
 
 A trimmed real result for `fixtures/installer/token-header.patch` (`…` marks omitted fields and the omitted "also cites" list):
 
-```json
+```text
 {
   "patch_key": "pk:c864bd567ac3290b",
   "changed_files": ["distribution/install.sh"],
@@ -207,7 +207,7 @@ A trimmed real result for `fixtures/installer/token-header.patch` (`…` marks o
 }
 ```
 
-Each check also carries a permalink at the pinned upstream SHA and what a failure means. The `run` timestamp and `patch_key` come from the local `runs/` directory, so yours will differ.
+Each check also carries a permalink at the pinned upstream SHA and what a failure means. The `run` timestamp comes from your local `runs/` directory, so yours will differ; `patch_key` is computed from the diff's changed lines and is the same everywhere.
 
 ### Relate's own MCP server
 
@@ -221,7 +221,7 @@ Point the server at a copy of the store, not at `data/precedent.rl` itself (open
 
 ```bash
 cp data/precedent.rl /tmp/precedent-copy.rl
-~/.cache/patch-precedent/relate-cli-1.3.0/relate-darwin-arm64 serve --mcp stdio --read-only --database /tmp/precedent-copy.rl
+<path printed by fetch-relate-cli> serve --mcp stdio --read-only --database /tmp/precedent-copy.rl
 ```
 
 As an `.mcp.json` entry (use absolute paths):
@@ -259,7 +259,7 @@ The headline table from [`eval/results/20261127T040059Z/RESULTS.md`](eval/result
 
 Setup: 6 cases (three installer patches, two release patches and one docs-only control; ground truth in `eval/cases.toml`), 3 repeats per case and arm, 36 runs in all, with Claude Sonnet through Claude Code. Both arms get the identical prompt and tools (`Read`, `Grep`, `Glob`) in a clean worktree of the pinned upstream; the graph arm adds one MCP tool, `precedent_for_patch`.
 
-In this run the graph arm used fewer turns (2.1 vs 6.2 mean) and listed the expected decisions in 18/18 runs against 13/18, and the baseline made 4 unsupported claims against 0. The method note in RESULTS.md says:
+In this run the graph arm used fewer turns (2.1 vs 6.2 mean) and listed exactly the expected decisions in 18/18 runs against 13/18, and the baseline made 4 unsupported claims against 0 (all 4 matched the observed results; see outcome accuracy). The method note in RESULTS.md says:
 
 > The baseline arm has no tool that reports observed test results, so any "fails" or "passes" it gives is unsupported by construction. Answering "unknown" never counts as unsupported and never lowers outcome accuracy. A claim is "supported" when the agent saw an observed result for that check; whether the claim matches that result is measured separately by outcome accuracy. Medians of time to first correct citation skip runs that never cite the expected ADR; their count is shown as n.
 
@@ -270,8 +270,8 @@ To reproduce, with a logged-in Claude Code CLI:
 ```bash
 uv run patch-precedent demo all
 uv run patch-precedent eval run --repeats 3
-uv run patch-precedent eval score
-uv run patch-precedent eval report
+uv run patch-precedent eval score --results eval/results/20261127T040059Z
+uv run patch-precedent eval report --results eval/results/20261127T040059Z
 ```
 
 `eval run` needs a logged-in Claude Code CLI and spends usage (the published run cost $1.11 in total, per RESULTS.md); it writes a new directory `eval/results/<UTC timestamp>/`. `demo`, `explain` and `mcp` need neither the CLI nor an API key. `eval score` and `eval report` are offline; on the committed results they rewrite `scored.jsonl`, `results.json` and `RESULTS.md` with identical bytes (`git diff --exit-code` stays clean).
@@ -366,7 +366,7 @@ Why the overall exit is 0 when patches fail: the demo's exit says whether the re
 | 0 | The server ran and its client closed the connection. |
 | 2 | Store file not found. |
 
-`fetch-relate-cli` prints the path of the verified binary and exits 0. It exits 4 when the download, the checksum verification or the file write fails.
+`fetch-relate-cli` prints the path of the verified binary and exits 0. It exits 4 when the download, the checksum verification or the file write fails, or when the platform is not macOS arm64.
 
 `eval run`:
 
