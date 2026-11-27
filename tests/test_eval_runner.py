@@ -40,19 +40,42 @@ def runs_root(tmp_path):
     return root
 
 
-class FakeSpawn:
-    """Replays a recorded spike transcript; never runs claude."""
+SPIKE_WT = "/private/tmp/claude-501/-Users-naman--claude-spares-spare-zlhnQL/93e0637a-f31b-4e1e-a996-0118460b3a22/scratchpad/m3/wt"
 
-    def __init__(self, dirty=False, exit_code=0, timed_out=False, extra=("not json at all",)):
+
+def _read_event(path):
+    return json.dumps({"type": "assistant", "message": {"content": [
+        {"type": "tool_use", "name": "Read", "input": {"file_path": path}}]}})
+
+
+class FakeSpawn:
+    """Replays a recorded spike transcript; never runs claude.
+
+    The spike's worktree path is rewritten to the real cwd; for the graph arm the init event
+    is patched to carry the precedent tool, unless graph_tool=False.
+    """
+
+    def __init__(self, dirty=False, exit_code=0, timed_out=False, extra=("not json at all",),
+                 graph_tool=True, extra_events=(), stderr=()):
         self.calls = []
         self.dirty, self.exit_code, self.timed_out, self.extra = dirty, exit_code, timed_out, extra
+        self.graph_tool, self.extra_events, self.stderr = graph_tool, extra_events, stderr
 
-    def __call__(self, argv, cwd, on_line):
+    def __call__(self, argv, cwd, on_line, on_err=None):
         self.calls.append((argv, cwd))
         for line in self.extra:
             on_line(line)
-        for line in SPIKE.read_text().splitlines():
+        for line in SPIKE.read_text().replace(SPIKE_WT, str(cwd)).splitlines():
+            ev = json.loads(line)
+            if ev.get("subtype") == "init" and GRAPH_TOOL in argv and self.graph_tool:
+                ev["tools"] = [*ev["tools"], GRAPH_TOOL]
+                ev["mcp_servers"] = [{"name": "precedent", "status": "connected"}]
+                line = json.dumps(ev)
             on_line(line)
+        for line in self.extra_events:
+            on_line(line)
+        for line in self.stderr:
+            on_err(line)
         if self.dirty:
             (Path(cwd) / "a.txt").write_text("changed\n")
         return self.exit_code, self.timed_out
@@ -164,13 +187,18 @@ def test_transcript_format(tmp_path, worktree, runs_root):
     assert events[0]["event"]["subtype"] == "init"
     assert set(row) == {"case", "arm", "repeat", "exit_code", "timed_out", "duration_ms",
                         "num_turns", "total_cost_usd", "model", "claude_version", "argv",
-                        "transcript", "error"}
+                        "transcript", "error", "init_tools", "mcp_servers",
+                        "out_of_worktree", "stderr"}
     assert (row["case"], row["arm"], row["repeat"], row["exit_code"], row["timed_out"]) == (
         "C1", "graph", 1, 0, False)
     assert (row["num_turns"], row["model"], row["claude_version"]) == (
         6, "claude-sonnet-5-5", "2.1.292")
     assert row["total_cost_usd"] == pytest.approx(0.0307462)
     assert row["error"] is None
+    assert row["init_tools"] == ["Glob", "Grep", "Read", GRAPH_TOOL]
+    assert row["mcp_servers"] == [{"name": "precedent", "status": "connected"}]
+    assert row["out_of_worktree"] == [] and row["stderr"] == "transcripts/C1-graph-r1.err"
+    assert (out / row["stderr"]).is_file()
     assert row["argv"][0] == "claude" and "--mcp-config" in row["argv"]
 
 
@@ -208,7 +236,7 @@ def test_failures_recorded_and_eval_continues(tmp_path, worktree, runs_root):
     assert [r["timed_out"] for r in rows] == [True, True]
     assert all(r["error"] for r in rows) and rows[0]["exit_code"] == 1
 
-    def boom(argv, cwd, on_line):
+    def boom(argv, cwd, on_line, on_err=None):
         raise OSError("no claude")
 
     out2 = tmp_path / "out2"
@@ -251,3 +279,89 @@ def test_cases_agree_with_fixture_expectations():
 
 def test_run_eval_exports(tmp_path):
     assert runner.RUN_TIMEOUT_S == 900
+
+
+def test_graph_arm_missing_tool_is_error(tmp_path, worktree, runs_root):
+    _, rows = _run(tmp_path, worktree, runs_root, FakeSpawn(graph_tool=False))
+    by = {r["arm"]: r for r in rows}
+    assert GRAPH_TOOL in by["graph"]["error"] and by["graph"]["init_tools"] == [
+        "Glob", "Grep", "Read"]
+    assert by["baseline"]["error"] is None and by["baseline"]["init_tools"] == [
+        "Glob", "Grep", "Read"]
+
+
+def test_graph_server_not_connected_is_error(tmp_path, worktree, runs_root):
+    class Failed(FakeSpawn):
+        def __call__(self, argv, cwd, on_line, on_err=None):
+            def patched(line):
+                ev = json.loads(line) if line.startswith("{") else {}
+                if ev.get("subtype") == "init" and GRAPH_TOOL in argv:
+                    ev["mcp_servers"] = [{"name": "precedent", "status": "failed"}]
+                    line = json.dumps(ev)
+                on_line(line)
+            return super().__call__(argv, cwd, patched, on_err)
+
+    _, rows = _run(tmp_path, worktree, runs_root, Failed(), arms=("graph",))
+    assert "status failed" in rows[0]["error"]
+    assert rows[0]["mcp_servers"] == [{"name": "precedent", "status": "failed"}]
+
+
+def test_baseline_arm_with_mcp_tool_is_error(tmp_path, worktree, runs_root):
+    class Leaky(FakeSpawn):
+        def __call__(self, argv, cwd, on_line, on_err=None):
+            def patched(line):
+                ev = json.loads(line) if line.startswith("{") else {}
+                if ev.get("subtype") == "init":
+                    ev["tools"] = [*ev["tools"], GRAPH_TOOL]
+                    line = json.dumps(ev)
+                on_line(line)
+            return super().__call__(argv, cwd, patched, on_err)
+
+    _, rows = _run(tmp_path, worktree, runs_root, Leaky(), arms=("baseline",))
+    assert "baseline arm has MCP tools" in rows[0]["error"]
+
+
+def test_out_of_worktree_read_flagged(tmp_path, worktree, runs_root):
+    evil = [_read_event("/etc/hosts"), _read_event("scripts/x.sh"),
+            _read_event(str(worktree / "a.txt")), _read_event("../secret"),
+            json.dumps({"type": "assistant", "message": {"content": [
+                {"type": "tool_use", "name": "Glob", "input": {"pattern": "/etc/*"}},
+                {"type": "tool_use", "name": "Grep", "input": {"pattern": "foo|bar", "path": ""}},
+                {"type": "text", "text": "hi"}]}})]
+    _, rows = _run(tmp_path, worktree, runs_root, FakeSpawn(extra_events=evil),
+                   arms=("baseline",))
+    assert rows[0]["out_of_worktree"] == ["/etc/hosts", "../secret", "/etc/*"]
+    assert "out-of-worktree file access" in rows[0]["error"]
+
+
+def test_inside_reads_not_flagged(tmp_path, worktree, runs_root):
+    ok = [_read_event("scripts/x.sh"), _read_event(str(worktree / "docs" / "a.md"))]
+    _, rows = _run(tmp_path, worktree, runs_root, FakeSpawn(extra_events=ok),
+                   arms=("baseline",))
+    assert rows[0]["out_of_worktree"] == [] and rows[0]["error"] is None
+
+
+def test_stderr_goes_to_err_file(tmp_path, worktree, runs_root):
+    out, rows = _run(tmp_path, worktree, runs_root, FakeSpawn(stderr=("warn 1", "warn 2")),
+                     arms=("baseline",))
+    assert (out / rows[0]["stderr"]).read_text() == "warn 1\nwarn 2\n"
+    assert "warn 1" not in (out / rows[0]["transcript"]).read_text()
+
+
+def test_default_spawn_separates_stderr_and_kills_on_timeout(tmp_path, monkeypatch):
+    import sys
+    script = (
+        "import sys, json\n"
+        "for i in range(300):\n"
+        "    print(json.dumps({'type': 'x', 'i': i, 'pad': 'a' * 3000}), flush=True)\n"
+        "    sys.stderr.write('noise %d ' % i + 'e' * 3000 + '\\n'); sys.stderr.flush()\n")
+    out, err = [], []
+    code, timed_out = runner.default_spawn([sys.executable, "-c", script], tmp_path,
+                                           out.append, err.append)
+    assert (code, timed_out) == (0, False)
+    assert [json.loads(x)["i"] for x in out] == list(range(300))  # every stdout line parses
+    assert len(err) == 300 and err[0].startswith("noise 0")
+    monkeypatch.setattr(runner, "RUN_TIMEOUT_S", 0.5)
+    code, timed_out = runner.default_spawn(
+        [sys.executable, "-c", "import time; time.sleep(60)"], tmp_path, out.append, err.append)
+    assert timed_out is True and code != 0

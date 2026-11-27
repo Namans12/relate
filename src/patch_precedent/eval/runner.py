@@ -30,7 +30,8 @@ BASE_TOOLS = ("Read", "Grep", "Glob")
 RUN_TIMEOUT_S = 900
 MAX_TURNS = "25"
 
-Spawn = Callable[[Sequence[str], Path, Callable[[str], None]], "tuple[int, bool]"]
+# spawn(argv, cwd, on_line, on_err=None) -> (exit_code, timed_out)
+Spawn = Callable[..., "tuple[int, bool]"]
 
 
 class EvalRefused(RuntimeError):
@@ -56,11 +57,16 @@ def build_command(prompt: str, arm: str, mcp_config: Path, claude_bin: str = "cl
             "--output-format", "stream-json", "--verbose", "--no-session-persistence"]
 
 
-def default_spawn(argv: Sequence[str], cwd: Path, on_line: Callable[[str], None]) -> tuple[int, bool]:
-    """Run argv with stdin from /dev/null, stderr merged, in its own process group."""
+def default_spawn(argv: Sequence[str], cwd: Path, on_line: Callable[[str], None],
+                  on_err: Callable[[str], None] | None = None) -> tuple[int, bool]:
+    """Run argv with stdin from /dev/null in its own process group.
+
+    stdout lines go to on_line; stderr is a separate pipe drained in a thread to on_err
+    (discarded when None), so noise can never corrupt the stdout stream.
+    """
     proc = subprocess.Popen(
         list(argv), cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
+        stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
         start_new_session=True)
     timed_out = threading.Event()
 
@@ -69,6 +75,13 @@ def default_spawn(argv: Sequence[str], cwd: Path, on_line: Callable[[str], None]
         with contextlib.suppress(ProcessLookupError, PermissionError):
             os.killpg(proc.pid, signal.SIGKILL)
 
+    def drain_err() -> None:
+        for line in proc.stderr:
+            if on_err is not None:
+                on_err(line.rstrip("\n"))
+
+    reader = threading.Thread(target=drain_err, daemon=True)
+    reader.start()
     timer = threading.Timer(RUN_TIMEOUT_S, expire)
     timer.start()
     try:
@@ -79,7 +92,9 @@ def default_spawn(argv: Sequence[str], cwd: Path, on_line: Callable[[str], None]
         timer.cancel()
         with contextlib.suppress(ProcessLookupError, PermissionError):
             os.killpg(proc.pid, signal.SIGKILL)  # reap stragglers (MCP server children)
+        reader.join(timeout=5)
         proc.stdout.close()
+        proc.stderr.close()
     return proc.returncode, timed_out.is_set()
 
 
@@ -112,20 +127,57 @@ def _claude_version(claude_bin: str) -> str:
     return (r.stdout or r.stderr).strip()
 
 
-def _summarise(event: dict, info: dict) -> None:
+def _outside(wt: Path, value: str) -> bool:
+    """True if a tool path argument resolves outside the worktree (relative/empty: inside)."""
+    if not value:
+        return False
+    p = os.path.expanduser(value)
+    joined = p if os.path.isabs(p) else os.path.join(wt, p)
+    real, root = os.path.realpath(joined), os.path.realpath(wt)
+    return os.path.commonpath([real, root]) != root
+
+
+def _summarise(event: dict, info: dict, wt: Path) -> None:
     if event.get("type") == "system" and event.get("subtype") == "init":
         info["model"] = event.get("model")
+        info["init_tools"] = event.get("tools")
+        info["mcp_servers"] = [{"name": s.get("name"), "status": s.get("status")}
+                               for s in event.get("mcp_servers") or []]
     elif event.get("type") == "result":
         info["num_turns"] = event.get("num_turns")
         info["total_cost_usd"] = event.get("total_cost_usd")
+    elif event.get("type") == "assistant":
+        content = (event.get("message") or {}).get("content")
+        for block in content if isinstance(content, list) else []:
+            if not (isinstance(block, dict) and block.get("type") == "tool_use"):
+                continue
+            args = block.get("input")
+            for key in ("file_path", "path", "pattern"):
+                v = args.get(key) if isinstance(args, dict) else None
+                if isinstance(v, str) and _outside(wt, v) and v not in info["out_of_worktree"]:
+                    info["out_of_worktree"].append(v)
 
 
-def _one_run(argv, wt, tpath: Path, spawn: Spawn) -> dict:
-    info = {"model": None, "num_turns": None, "total_cost_usd": None}
+def _tool_integrity_errors(arm: str, info: dict) -> list[str]:
+    tools, servers = info["init_tools"], info["mcp_servers"]
+    if tools is None:
+        return ["no init event: tool set not verified"]
+    mcp = [x for x in tools if str(x).startswith("mcp__")]
+    if arm == "graph":
+        errs = [] if GRAPH_TOOL in tools else [f"graph arm init lacks {GRAPH_TOOL}"]
+        errs += [f"mcp server {s['name']} status {s['status']}" for s in servers
+                 if s["status"] != "connected"]
+        return errs
+    return [f"baseline arm has MCP tools {mcp}"] if mcp else []
+
+
+def _one_run(argv, wt, tpath: Path, errpath: Path, arm: str, spawn: Spawn) -> dict:
+    info = {"model": None, "num_turns": None, "total_cost_usd": None, "init_tools": None,
+            "mcp_servers": [], "out_of_worktree": []}
     errors: list[str] = []
     start = time.monotonic()
     exit_code, timed_out = None, False
-    with open(tpath, "w", encoding="utf-8") as tf:
+    with open(tpath, "w", encoding="utf-8") as tf, open(errpath, "w", encoding="utf-8") as ef:
         def on_line(line: str) -> None:
             if not line.strip():
                 return
@@ -135,15 +187,19 @@ def _one_run(argv, wt, tpath: Path, spawn: Spawn) -> dict:
             except ValueError:
                 event = None
             if isinstance(event, dict):
-                _summarise(event, info)
+                _summarise(event, info, wt)
                 rec = {"t_ms": t_ms, "event": event}
             else:
                 rec = {"t_ms": t_ms, "raw": line}
             tf.write(json.dumps(rec, ensure_ascii=False) + "\n")
             tf.flush()
 
+        def on_err(line: str) -> None:
+            ef.write(line + "\n")
+            ef.flush()
+
         try:
-            exit_code, timed_out = spawn(argv, wt, on_line)
+            exit_code, timed_out = spawn(argv, wt, on_line, on_err=on_err)
         except Exception as exc:  # a failed run is recorded; the evaluation continues
             errors.append(f"spawn failed: {exc!r}")
     duration_ms = int((time.monotonic() - start) * 1000)
@@ -151,6 +207,10 @@ def _one_run(argv, wt, tpath: Path, spawn: Spawn) -> dict:
         errors.append(f"timed out after {RUN_TIMEOUT_S}s; process group killed")
     elif exit_code not in (0, None):
         errors.append(f"exit code {exit_code}")
+    if not any(e.startswith("spawn failed") for e in errors):
+        errors += _tool_integrity_errors(arm, info)
+    if info["out_of_worktree"]:
+        errors.append("out-of-worktree file access")
     dirty = _git_status(wt)
     if dirty.strip():
         errors.append(f"worktree not clean after run: {dirty.strip()[:200]!r}")
@@ -211,9 +271,11 @@ def run_eval(cases: Sequence[Case], arms: Sequence[str], repeats: int, out_dir: 
         for k, case, arm in run_order(cases, arms, repeats):
             argv = build_command(prompts[case.id], arm, cfgs[arm], claude_bin)
             rel = f"transcripts/{case.id}-{arm}-r{k}.jsonl"
+            rel_err = f"transcripts/{case.id}-{arm}-r{k}.err"
             row = {"case": case.id, "arm": arm, "repeat": k,
-                   **_one_run(argv, wt, out_dir / rel, spawn),
-                   "claude_version": version, "argv": argv, "transcript": rel}
+                   **_one_run(argv, wt, out_dir / rel, out_dir / rel_err, arm, spawn),
+                   "claude_version": version, "argv": argv, "transcript": rel,
+                   "stderr": rel_err}
             with open(runs_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
             print(f"{case.id} {arm} r{k}: exit={row['exit_code']} turns={row['num_turns']} "
