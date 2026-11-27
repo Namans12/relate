@@ -105,6 +105,10 @@ def build_site(root: Path, out: Path, base_url: str | None = None,
     if lockup.is_file():
         shutil.copy2(lockup, out / "lockup.png")
     (out / ".nojekyll").write_text("", encoding="utf-8")
+    # Vercel reads vercel.json from the deployed folder, not the repo root.
+    vercel = root / "vercel.json"
+    if vercel.is_file():
+        shutil.copy2(vercel, out / "vercel.json")
 
     home = data.content["home"]
     written: list[Path] = []

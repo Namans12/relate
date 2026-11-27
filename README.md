@@ -60,6 +60,36 @@ mode     read-only: no upstream fetch, no patch executed
 CONTRIBUTING.md: no linked decision
 ```
 
+## Website
+
+A static site (home, the two scenarios, each patch, the evidence graph and a recorded demo) is generated from the committed evidence and recordings. Once deployed it is also the hackathon demo link: <deployed URL>.
+
+Build it locally and view it:
+
+```bash
+uv run patch-precedent site
+python3 -m http.server -d _site
+```
+
+Refresh the recording the site replays (`recorded/demo-all.json`, committed):
+
+```bash
+uv run patch-precedent site record
+```
+
+Deploy with the Vercel CLI from a local build. This needs your own Vercel login, and Node is needed only for this optional step:
+
+```bash
+uv run patch-precedent site --out _site --base-url https://<project>.vercel.app
+npx vercel deploy _site --prod
+```
+
+`--base-url` is only needed for link previews (the absolute `og:image` URL); without it the site builds and works the same, with relative links throughout. The build copies `vercel.json` into `_site/`, because Vercel reads it from the deployed folder. `_site/` is not committed.
+
+### Terminal output
+
+In a terminal, `demo`, `demo all` and `explain` print styled output. The output is plain text when it is piped, when `NO_COLOR` is set, or when `--plain` is passed; the plain output is what is quoted in this README and is compared against a golden file in the tests. `explain --links` adds GitHub permalinks to the upstream files and commits (styled output only).
+
 ## Scenarios
 
 | Scenario | Decision | Harness | Patches | Observed outcome |
@@ -413,6 +443,7 @@ uv run pytest -m upstream # runs the real upstream harness, about 2-3 minutes
 - Upstream: `https://github.com/relatedb/relate.git` at `5f7a510713c3feac146133e77d8c5bb72bae1b11`
 - Relate CLI (optional, for Relate's own MCP server): v1.3.0, `relate-darwin-arm64`, checksum-verified
 - `mcp==2.3.0` (Python SDK)
+- `jinja2==3.1.6` and `rich==15.0.0` (site templates and styled terminal output)
 - Implementing commits: `5ac38808547d11f55b02333624cc3e88b46566eb` (ADR-0585), `d79d8b150561f56b4940876a067d6b7e4781d2bc` (ADR-0580)
 - `relate-db==1.1.0`, Python 3.12
 
@@ -432,6 +463,7 @@ uv run pytest -m upstream # runs the real upstream harness, about 2-3 minutes
 Patch Precedent was built with significant AI assistance, disclosed here as the hackathon rules require.
 
 - **Claude Code (Anthropic)** turned the project plan into an implementation plan and ran the build. Claude Opus planned each task and reviewed every change and the final branch. Claude Sonnet subagents wrote the code, tests and documentation.
+- **The website, terminal UI and recording** were also built with Claude Code, with Claude Opus orchestrating and reviewing and Claude Sonnet subagents implementing. The title lockup drawing in `src/patch_precedent/site/static/c-art.js` was adapted from a draft generated with Google Gemini.
 - **The project owner** chose the idea, approved the plan, and made the integration, licensing and publication decisions.
 - **Not AI-generated:** Relate, the upstream installer, its test harness and ADR-0585, ADR-0580 and the release script come from relatedb/relate at the pinned commit (see [NOTICE](NOTICE)).
 - **No model at run time:** the demo, `explain` and `mcp` call no AI service and need no API key. The one exception is `eval run`, which runs Claude Sonnet through Claude Code as the agent under test.

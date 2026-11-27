@@ -218,3 +218,9 @@ def test_cli_site_missing_recording_exit_2(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr("patch_precedent.cli.project_root", lambda: tmp_path)
     assert main(["site", "--out", str(tmp_path / "s")]) == 2
     assert "missing input file" in capsys.readouterr().err
+
+
+def test_vercel_json_copied_into_output(tmp_path):
+    root = pins.project_root()
+    build_site(root, tmp_path)
+    assert (tmp_path / "vercel.json").read_text() == (root / "vercel.json").read_text()
