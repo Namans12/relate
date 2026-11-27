@@ -55,6 +55,5 @@ described above, which remains under Apache License 2.0.
 
 Dependencies installed by uv are not redistributed here and keep their own
 licenses. They include the `mcp` Python SDK (version 2.3.0, MIT License), used
-by `patch-precedent mcp`.
-relate-db 1.1.0 (Apache License 2.0) is the Python package used to read and write
-the Relate store.
+by `patch-precedent mcp`, and `relate-db` (version 1.1.0, Apache License 2.0), the
+Python package used to read and write the Relate store.
