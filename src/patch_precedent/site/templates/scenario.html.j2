@@ -1,7 +1,7 @@
 {% extends "base.html.j2" %}
 {% import "macros.html.j2" as m %}
 {% set nav_active = "scenarios" %}
-{% block title %}{{ patch.label }} - Patch Precedent{% endblock %}
+{% block title %}{{ patch.label }} ({{ patch.scenario_title }}) - Patch Precedent{% endblock %}
 {% block body_class %}patch{% endblock %}
 {% block main %}
 {% set pg = c["patch_page"] %}

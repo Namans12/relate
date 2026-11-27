@@ -6,7 +6,7 @@
 {% block main %}
 {% set u = c["use"] %}
 {% set steps = u["steps"] %}
-{% set rdir = "eval/results/20261127T040059Z" %}
+{% set rdir = results_dir %}
 {% set cmdnames = {
   "build-store": "build-store", "demo": "demo all | installer | release", "explain": "explain PATCH_FILE",
   "mcp": "mcp", "verify-store": "verify-store", "scan-citations": "scan-citations",

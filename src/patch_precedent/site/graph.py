@@ -204,8 +204,12 @@ def patch_graph_svg(page: PatchPage) -> str:
             + _text(X_CHECK + 20, cy + 5, f"#{c.number}", 13, INK, "start", mono=True),
             verbatim=True))
 
-    aria = (f"Graph for patch {prose(page.label)}: {len(files)} changed file(s), "
-            f"{len(decisions)} linked decision(s), {len(checks)} check(s), {len(scanned)} scanned decision(s).")
+    def count(n: int, noun: str) -> str:
+        return f"{n} {noun}" if n == 1 else f"{n} {noun}s"
+
+    aria = (f"Graph for patch {prose(page.label)}: {count(len(files), 'changed file')}, "
+            f"{count(len(decisions), 'linked decision')}, {count(len(checks), 'check')}, "
+            f"{count(len(scanned), 'scanned decision')}.")
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {_n(height)}" width="100%" '
             f'role="group" aria-label="{_e(aria)}" class="patch-graph">'
             + "".join(edges) + "".join(nodes) + "</svg>")

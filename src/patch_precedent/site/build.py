@@ -11,7 +11,7 @@ import markupsafe
 
 from .. import evidence as _evidence, replay as _replay, store as _store
 from .graph import patch_graph_svg, schema_svg
-from .data import SiteData, SiteDataError, load_site_data, prose
+from .data import RESULTS_DIR, SiteData, SiteDataError, load_site_data, prose
 
 HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates"
@@ -66,6 +66,7 @@ def _env() -> jinja2.Environment:
     env.filters["text"] = _text
     env.filters["cited_file"] = _cited_file
     env.filters["code"] = _code
+    env.globals["results_dir"] = RESULTS_DIR
     env.globals["graph_svg"] = patch_graph_svg
     env.globals["schema_svg"] = schema_svg
     env.globals["relate_queries"] = _relate_queries()

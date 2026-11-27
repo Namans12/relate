@@ -86,3 +86,27 @@ def test_recording_has_no_orphan_path_lines():
         text = "".join(s[0] for s in ln["spans"])
         if "runs/" in text:
             assert "artifacts" in text or "overall exit" in text, text
+
+
+def test_cli_record_rejects_base_url(capsys):
+    assert main(["site", "record", "--base-url", "https://x.example"]) == 2
+    assert "--base-url" in capsys.readouterr().err
+
+
+def test_cli_record_announces_and_turns_record_error_into_exit_2(tmp_path, monkeypatch, capsys):
+    from patch_precedent.site import record as rec
+
+    out = tmp_path / "r.json"
+    out.write_text(json.dumps({"elapsed_s": 52.4}))
+
+    def boom(*_a, **_k):
+        raise rec.RecordError("expected exactly one new run directory")
+
+    monkeypatch.setattr(rec, "record_demo", boom)
+    assert main(["site", "record", "--out", str(out)]) == 2
+    err = capsys.readouterr().err
+    assert "recording demo all, about 52 s" in err and "expected exactly one" in err
+    assert "Traceback" not in err
+    out.unlink()
+    assert main(["site", "record", "--out", str(out)]) == 2
+    assert "about a minute" in capsys.readouterr().err

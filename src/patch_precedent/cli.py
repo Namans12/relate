@@ -1,5 +1,6 @@
 """Command-line entry point."""
 import argparse
+import json
 import sys
 import tempfile
 from pathlib import Path
@@ -327,10 +328,23 @@ def _cmd_scan(args: argparse.Namespace) -> int:
 
 def _cmd_site(args: argparse.Namespace) -> int:
     if args.action == "record":
-        from .site.record import record_demo
+        from .site.record import RecordError, record_demo
 
+        if args.base_url is not None:
+            print("site record: --base-url applies to the build only", file=sys.stderr)
+            return 2
         out = args.out or project_root() / "recorded" / "demo-all.json"
-        code = record_demo(out, project_root() / "runs")
+        try:
+            prev = json.loads(Path(out).read_text(encoding="utf-8"))["elapsed_s"]
+            estimate = f"about {round(float(prev))} s"
+        except (OSError, ValueError, KeyError, TypeError):
+            estimate = "about a minute"
+        print(f"site record: recording demo all, {estimate}...", file=sys.stderr, flush=True)
+        try:
+            code = record_demo(out, project_root() / "runs")
+        except RecordError as e:
+            print(f"site record: {e}", file=sys.stderr)
+            return 2
         if code == 0:
             try:
                 shown = out.resolve().relative_to(project_root().resolve())

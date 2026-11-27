@@ -306,3 +306,22 @@ def test_inner_pages_have_reveal_fallback(site):
         t = (site / page).read_text()
         assert "siteReady" in t and ".reveal" in t and "2000" in t, page
     assert "siteReady" in (site / "assets/site.js").read_text()
+
+
+def test_scenario_titles_are_unique_per_page(site):
+    titles = [re.search(r"<title>(.*?)</title>", (site / f"scenarios/{s}.html").read_text()).group(1)
+              for s in SLUGS]
+    assert len(set(titles)) == len(SLUGS)
+    assert "wording (Release) - Patch Precedent" in titles
+
+
+def test_graph_aria_label_count_grammar(site):
+    t = (site / "scenarios/release-wording.html").read_text()
+    label = re.search(r'aria-label="(Graph for patch[^"]*)"', t).group(1)
+    assert "(s)" not in label
+    assert re.search(r"\b1 (changed file|linked decision|check)s\b", label) is None
+
+
+def test_results_caveat_names_the_metric(site):
+    t = (site / "results.html").read_text()
+    assert "Catching-checks recall was" in t and "Failing-check recall" not in t

@@ -15,6 +15,10 @@ _RGB_TO_NAME = {
     tuple(int(v[i:i + 2], 16) for i in (1, 3, 5)): k.removeprefix("pp.")
     for k, v in STYLES.items() if v.startswith("#")
 }
+class RecordError(RuntimeError):
+    """The recording could not be made for a reason the user can act on."""
+
+
 _DROP_RUN_KEYS = {"log"}
 _DROP_SCENARIO_KEYS = {"run_dir", "replay_store", "join_rows"}
 
@@ -136,7 +140,8 @@ def record_demo(out: Path, runs_root: Path) -> int:
     new = [p for p in runs_root.iterdir()
            if p.name not in before and (p / "summary.json").is_file()]
     if len(new) != 1:
-        raise RuntimeError(f"expected exactly one new run directory under {runs_root}, got {new}")
+        raise RecordError(f"expected exactly one new run directory under {runs_root}, got {len(new)} "
+                          f"(is another demo running?)")
     run_dir = new[0]
     summary = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
     scenarios = {}

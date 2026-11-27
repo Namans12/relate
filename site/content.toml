@@ -28,7 +28,7 @@ text = "One Relate query joins the patch, its decision and every observed test r
 
 [patch_page]
 graph_caption = "Drawn from the Relate store; observed results from the recorded run."
-query_note = "Runs as-is against data/precedent.rl, with relate or the MCP read_cypher tool."
+query_note = "Runs as-is against a copy of data/precedent.rl, with relate or the MCP read_cypher tool. Opening the store read-write rewrites it, so never point a query at the original."
 
 [patches."installer/release-lookup"]
 summary = "Asks the GitHub API about the release when a download fails."
@@ -81,7 +81,7 @@ eyebrow = "Measured"
 title = "Agents with and without the graph."
 intro = "{model} reviewed each patch {repeats} times per arm. Same prompt, same tools, same budget. The graph arm adds one MCP tool."
 caveats = [
-  "Failing-check recall was {catching_recall_baseline} for the baseline and {catching_recall_graph} for the graph arm. The checks-recall gap comes from passing checks.",
+  "Catching-checks recall was {catching_recall_baseline} for the baseline and {catching_recall_graph} for the graph arm. The checks-recall gap comes from passing checks.",
   "The baseline cannot observe test results, so its test claims are unsupported by construction.",
   "In {replay_missed} of {graph_runs} graph runs the agent altered the patch when passing it to the tool, so no evidence came back.",
   "The prompt does not define \"consistent\" versus \"no decision\"; {baseline_misses_sit} on that line.",
@@ -141,7 +141,7 @@ exits = "0 ok, 2 results directory missing"
 [[use.commands]]
 id = "site"
 does = "Build the static website or record the demo run"
-exits = "0 ok, 2 missing input or bad base URL"
+exits = "build: 0 ok, 2 missing input, bad base URL or refused output path. record: 0 ok, or the demo exit (2, 3, 4); 2 for bad options"
 
 [[use.steps]]
 title = "Clone"

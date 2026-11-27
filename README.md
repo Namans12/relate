@@ -38,7 +38,7 @@ uv run patch-precedent demo installer
 uv run patch-precedent demo release
 ```
 
-`demo all` takes about 46 seconds on the tested Mac once the upstream cache is warm.
+`demo all` takes about 50 seconds on the tested Mac once the upstream cache is warm.
 
 Show the source chain behind a patch without fetching upstream or executing anything:
 
@@ -84,7 +84,7 @@ uv run patch-precedent site --out _site --base-url https://<project>.vercel.app
 npx vercel deploy _site --prod
 ```
 
-`--base-url` is only needed for link previews (the absolute `og:image` URL); without it the site builds and works the same, with relative links throughout. The build copies `vercel.json` into `_site/`, because Vercel reads it from the deployed folder. `_site/` is not committed.
+`--base-url` is only needed for link previews (the absolute `og:image` URL); without it the site builds and works the same, with relative links throughout. The build copies `vercel.json` into `_site/`, because Vercel reads it from the deployed folder. `_site/` is not committed. `--out` replaces only an empty directory or one a previous `site` build made (it carries a `.patch-precedent-site` marker); it refuses the project root, its parents, files and any other non-empty directory.
 
 ### Terminal output
 
@@ -405,6 +405,14 @@ Why the overall exit is 0 when patches fail: the demo's exit says whether the re
 |---:|---|
 | 0 | Chain printed (also when the patch has no changed files or a file has no linked decision). |
 | 2 | Patch file or store not found. |
+
+`site`:
+
+| Code | Meaning |
+|---:|---|
+| 0 | `site` (build): the pages were written. `site record`: the recording was written. |
+| 2 | `site`: missing recording or evidence input, `--base-url` not starting with `https://`, or `--out` refused (it is the project root or one of its parents, a file, or a non-empty directory that a previous build did not create). `site record`: `--base-url` given, or no single new run directory found. |
+| 3, 4 | `site record` only: the demo's own exit (mismatch, no upstream), passed through; nothing is written. |
 
 `build-store` returns 0 on success. `verify-store` returns 0 when the store matches the manifest and 1 when it does not or is missing.
 
