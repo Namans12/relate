@@ -5,7 +5,7 @@ Transcript lines are `{"t_ms", "event"}`, `{"t_ms", "raw"}` or bare stream-json 
 the case ground truth.
 """
 import json
-import re
+import math
 import statistics
 from pathlib import Path
 from typing import Iterable
@@ -14,6 +14,24 @@ from .cases import Case
 
 CLAIMS = ("fails", "passes")
 ARM_ORDER = ("baseline", "graph")
+
+
+INFRA_PREFIXES = ("spawn failed", "no init event", "graph arm init lacks", "mcp server ",
+                  "baseline arm has MCP tools")
+
+
+def error_class(error: str | None) -> str | None:
+    """None for a clean run; "infrastructure" (excluded) or "agent" (scored as failed).
+
+    The runner joins error strings with "; ". Any infrastructure part makes the run
+    infrastructure; every other string, including unknown ones, is an agent failure so
+    failures are never hidden.
+    """
+    if not error:
+        return None
+    if any(part.startswith(INFRA_PREFIXES) for part in error.split("; ")):
+        return "infrastructure"
+    return "agent"
 
 
 def norm(text: str) -> str:
@@ -130,17 +148,14 @@ def supported_checks(events: list[dict]) -> set[str]:
 
 
 def _first_citation_ms(case: Case, events: list[dict]) -> int | None:
+    """t_ms of the first assistant TEXT block naming the expected ADR (tool inputs never count:
+    a patch passed to a tool can itself contain the ADR id)."""
     if not case.decisions:
         return None
     adr = case.decisions[0]
     for e in events:
         ev = e["event"]
-        if ev.get("type") != "assistant":
-            continue
-        hay = _assistant_text(ev) + "\n" + "\n".join(
-            json.dumps(b.get("input"), ensure_ascii=False) for b in _content_blocks(ev)
-            if b.get("type") == "tool_use")
-        if adr in hay:
+        if ev.get("type") == "assistant" and adr in _assistant_text(ev):
             return e["t_ms"]
     return None
 
@@ -197,16 +212,24 @@ def score_run(case: Case, events: list[dict], final: dict | None, row: dict | No
 
 
 def score_row(case: Case, row: dict, results_dir: Path) -> dict:
-    """Score one runs.jsonl row; carries the identity fields the report needs."""
+    """Score one runs.jsonl row; carries the identity fields the report needs.
+
+    An agent-class failure is scored as a failed run: verdict incorrect, other metrics null,
+    turns and cost kept.
+    """
     events = load_events(Path(results_dir) / row["transcript"]) if row.get("transcript") else []
     scored = score_run(case, events, final_from_events(events), row)
+    cls = error_class(row.get("error"))
+    if cls == "agent":
+        scored = {k: (None if k not in ("turns", "cost_usd") else v) for k, v in scored.items()}
+        scored.update(parse_error=False, verdict_correct=False)
     return {"case": row["case"], "arm": row["arm"], "repeat": row["repeat"],
-            "error": row.get("error"), "model": row.get("model"), "argv": row.get("argv"),
-            **scored}
+            "error": row.get("error"), "error_class": cls, "model": row.get("model"),
+            "argv": row.get("argv"), "outcome_linked": len(case.check_outcomes), **scored}
 
 
 def _mean(xs: list[float]) -> float | None:
-    return sum(xs) / len(xs) if xs else None
+    return math.fsum(sorted(xs)) / len(xs) if xs else None
 
 
 def _metrics(runs: list[dict]) -> dict:
@@ -224,11 +247,12 @@ def _metrics(runs: list[dict]) -> dict:
         "unsupported_total": sum(unsup), "unsupported_n": len(unsup),
         "unsupported_mean": _mean(unsup),
         "outcome_marked": marked, "outcome_correct": correct,
+        "outcome_linked": sum(vals("outcome_linked")),
         "outcome_accuracy": correct / marked if marked else None,
         "citation_median_s": statistics.median(cites) / 1000 if cites else None,
         "citation_n": len(cites),
         "turns_mean": _mean(turns), "turns_n": len(turns),
-        "cost_total": sum(costs), "cost_n": len(costs),
+        "cost_total": math.fsum(sorted(costs)), "cost_n": len(costs),
     }
 
 
@@ -237,12 +261,13 @@ def _arm_key(arm: str) -> tuple:
 
 
 def summarise(scored: list[dict]) -> dict:
-    """Aggregate per arm and per case x arm. Errored runs are excluded and listed."""
-    kept = [r for r in scored if r.get("error") is None]
+    """Aggregate per arm and per case x arm. Infrastructure failures are excluded and listed;
+    agent failures stay in every denominator."""
+    kept = [r for r in scored if error_class(r.get("error")) != "infrastructure"]
     excluded = [{"case": r["case"], "arm": r["arm"], "repeat": r["repeat"], "error": r["error"],
-                 "cost_usd": r.get("cost_usd")}
+                 "class": "infrastructure", "cost_usd": r.get("cost_usd")}
                 for r in sorted(scored, key=lambda r: (r["case"], _arm_key(r["arm"]), r["repeat"]))
-                if r.get("error") is not None]
+                if error_class(r.get("error")) == "infrastructure"]
     arms = sorted({r["arm"] for r in kept}, key=_arm_key)
     cases = sorted({r["case"] for r in kept})
     return {

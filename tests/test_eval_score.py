@@ -5,8 +5,8 @@ from pathlib import Path
 from patch_precedent import pins
 from patch_precedent.diffparse import read_patch
 from patch_precedent.eval.cases import load_cases
-from patch_precedent.eval.score import (load_events, norm, parse_final, score_row, score_run,
-                                        summarise)
+from patch_precedent.eval.score import (error_class, load_events, norm, parse_final, score_row,
+                                        score_run, summarise)
 from patch_precedent.evidence import precedent_for_patch
 from patch_precedent.harness import RunResult
 from patch_precedent.replay import record_runs
@@ -109,10 +109,51 @@ def test_wrapped_citation_time():
     ev = _wrap([_asst(text="looking around"), _asst(tool_input={"pattern": "ADR-0585"}),
                 _asst(text="ADR-0585 applies"), _result(_final_line())])
     s = score_run(CASES["C1"], ev, parse_final(_final_line()))
-    assert s["time_to_first_correct_citation_ms"] == 2000
+    assert s["time_to_first_correct_citation_ms"] == 3000  # tool_use input (2000) never counts
     ev = _wrap([_tool_result("ADR-0585 in a tool result"), _asst(text="no cite")])
     assert score_run(CASES["C1"], ev, parse_final(_final_line()))[
         "time_to_first_correct_citation_ms"] is None
+
+
+def test_c4_graph_tool_input_with_patch_does_not_count():
+    patch = CASES["C4"].diff_text()
+    assert "ADR-0580" in patch
+    ev = [{"t_ms": 900, "event": _asst(tool_input={"diff": patch})},
+          {"t_ms": 20000, "event": _asst(text="This violates ADR-0580.")}]
+    final = {"verdict": "violates", "decisions": ["ADR-0580"], "checks": [], "check_outcomes": {}}
+    assert score_run(CASES["C4"], ev, final)["time_to_first_correct_citation_ms"] == 20000
+    ev = [{"t_ms": 900, "event": _asst(tool_input={"diff": patch})}]
+    assert score_run(CASES["C4"], ev, final)["time_to_first_correct_citation_ms"] is None
+
+
+def test_error_class_mapping():
+    assert error_class(None) is None and error_class("") is None
+    for e in ("spawn failed: OSError()", "no init event: tool set not verified",
+              "graph arm init lacks mcp__precedent__precedent_for_patch",
+              "mcp server precedent status failed", "baseline arm has MCP tools ['mcp__x']",
+              "exit code 1; no init event: tool set not verified"):
+        assert error_class(e) == "infrastructure", e
+    for e in ("exit code 1", "timed out after 900s; process group killed",
+              "out-of-worktree file access", "worktree not clean after run: 'M x'",
+              "something new and unknown"):
+        assert error_class(e) == "agent", e
+
+
+def test_agent_failure_scored_as_failed_but_infra_excluded(tmp_path):
+    (tmp_path / "t").mkdir()
+    ev = _wrap([_result(_final_line(), turns=9, cost=1.25)])
+    (tmp_path / "t" / "a.jsonl").write_text("\n".join(json.dumps(e) for e in ev))
+    base = {"case": "C1", "arm": "graph", "repeat": 1, "transcript": "t/a.jsonl",
+            "num_turns": 9, "total_cost_usd": 1.25}
+    agent = score_row(CASES["C1"], dict(base, error="exit code 1"), tmp_path)
+    assert agent["error_class"] == "agent" and agent["verdict_correct"] is False
+    assert agent["decisions_exact"] is None and agent["unsupported_claims"] is None
+    assert agent["turns"] == 9 and agent["cost_usd"] == 1.25 and agent["outcome_linked"] == 3
+    infra = score_row(CASES["C1"], dict(base, error="no init event: tool set not verified"), tmp_path)
+    sm = summarise([agent, infra])
+    assert sm["arms"]["graph"]["n"] == 1 and sm["arms"]["graph"]["verdict_k"] == 0
+    assert sm["arms"]["graph"]["cost_total"] == 1.25
+    assert [x["class"] for x in sm["excluded"]] == ["infrastructure"]
 
 
 def test_c6_citation_null():
@@ -240,7 +281,7 @@ def _scored(case, arm, repeat, **kw):
 def test_errored_run_excluded_and_parse_error_counted():
     runs = [_scored("C1", "baseline", 1),
             _scored("C1", "baseline", 2, time_to_first_correct_citation_ms=8000, turns=8),
-            _scored("C1", "baseline", 3, error="exit code 1", cost_usd=9.0),
+            _scored("C1", "baseline", 3, error="spawn failed: boom", cost_usd=9.0),
             _scored("C2", "baseline", 1, parse_error=True, verdict=None, verdict_correct=False,
                     decisions_exact=None, checks_recall=None, outcome_marked=None,
                     outcome_correct=None, unsupported_claims=None,
@@ -256,5 +297,6 @@ def test_errored_run_excluded_and_parse_error_counted():
     assert abs(b["turns_mean"] - 20 / 3) < 1e-9 and b["turns_n"] == 3 and b["cost_total"] == 1.5
     assert sm["arms"]["graph"]["n"] == 1
     assert sm["excluded"] == [{"case": "C1", "arm": "baseline", "repeat": 3,
-                               "error": "exit code 1", "cost_usd": 9.0}]
+                               "error": "spawn failed: boom", "class": "infrastructure",
+                               "cost_usd": 9.0}]
     assert sm["cases"]["C1"]["baseline"]["n"] == 2 and sm["cases"]["C2"]["baseline"]["n"] == 1

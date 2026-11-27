@@ -276,7 +276,7 @@ def _cmd_eval_report(args: argparse.Namespace) -> int:
     scored = [json.loads(x) for x in (d / "scored.jsonl").read_text(encoding="utf-8").splitlines()
               if x.strip()]
     meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
-    (d / "RESULTS.md").write_text(render_results_md(summarise(scored), scored, meta),
+    (d / "RESULTS.md").write_text(render_results_md(summarise(scored), scored, meta, str(d.resolve())),
                                   encoding="utf-8")
     print(f"wrote {d / 'RESULTS.md'}")
     return 0

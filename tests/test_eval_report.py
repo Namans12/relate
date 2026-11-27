@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -69,6 +70,11 @@ def make_results(root: Path) -> Path:
     rows.append({"case": "C4", "arm": "graph", "repeat": 1, "error": "exit code 1",
                  "model": "claude-sonnet-5-5", "num_turns": 3, "total_cost_usd": 0.1,
                  "argv": _argv("graph"), "transcript": "transcripts/C4-graph-r1.jsonl"})
+    (root / "transcripts" / "C4-graph-r2.jsonl").write_text("")
+    rows.append({"case": "C4", "arm": "graph", "repeat": 2,
+                 "error": "no init event: tool set not verified", "model": None,
+                 "num_turns": None, "total_cost_usd": None, "argv": _argv("graph"),
+                 "transcript": "transcripts/C4-graph-r2.jsonl"})
     (root / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
     return root
 
@@ -83,9 +89,10 @@ def _render(tmp_path):
 def test_cli_score_and_report(tmp_path):
     root, md = _render(tmp_path)
     scored = [json.loads(x) for x in (root / "scored.jsonl").read_text().splitlines()]
-    assert len(scored) == 4
+    assert len(scored) == 5
     results = json.loads((root / "results.json").read_text())
-    assert results["arms"]["graph"]["n"] == 1 and len(results["excluded"]) == 1
+    assert results["arms"]["graph"]["n"] == 2 and len(results["excluded"]) == 1
+    assert results["arms"]["graph"]["verdict_k"] == 1  # the agent failure counts as failed
     text = md.decode()
     # graph arm's claims are all supported; baseline's are not
     assert results["arms"]["graph"]["unsupported_total"] == 0
@@ -103,8 +110,9 @@ def test_report_is_deterministic_and_matches_golden(tmp_path):
     a = render_results_md(summarise(scored), scored, meta)
     b = render_results_md(summarise(list(reversed(scored))), list(reversed(scored)), meta)
     assert a == b == md.decode()
-    if not GOLDEN.exists():  # first run only: review the file before committing it
+    if os.environ.get("PP_REGEN_GOLDEN") == "1":
         GOLDEN.write_bytes(md)
+    assert GOLDEN.exists(), "golden missing: regenerate deliberately with PP_REGEN_GOLDEN=1"
     assert md == GOLDEN.read_bytes()
 
 
@@ -146,3 +154,53 @@ def test_missing_results_dir_is_a_clean_error(tmp_path, capsys):
     assert cli.main(["eval", "score", "--results", str(tmp_path / "nope")]) == 2
     assert "runs.jsonl" in capsys.readouterr().err
     assert cli.main(["eval", "report", "--results", str(tmp_path)]) == 2
+
+
+def test_report_has_no_absolute_local_paths(tmp_path):
+    root = make_results(tmp_path / "res")
+    rows = [json.loads(x) for x in (root / "runs.jsonl").read_text().splitlines()]
+    home = os.path.expanduser("~")
+    for r in rows:
+        r["argv"] = [a.replace("/x/", f"{root}/") for a in r["argv"]] + [
+            f"{pins.project_root()}/eval/prompt.md", f"{home}/foo",
+            "/tmp/patch-precedent-agent-abc123/relate/docs"]
+        if r["error"] == "exit code 1":
+            r["error"] = f"worktree not clean after run: {home}/secret"
+    (root / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    cli.main(["eval", "score", "--results", str(root)])
+    cli.main(["eval", "report", "--results", str(root)])
+    text = (root / "RESULTS.md").read_text()
+    for bad in (str(root), str(pins.project_root()), home, "patch-precedent-agent-abc123"):
+        assert bad not in text, bad
+    assert "<results>/mcp-baseline.json" in text and "<project>/eval/prompt.md" in text
+    assert "~/foo" in text and "<worktree>/docs" in text
+    assert "WARNING" not in text  # same extra tokens in both arms: still only the allowed diff
+
+
+def test_fairness_warning_on_unexpected_difference(tmp_path):
+    root = make_results(tmp_path / "res")
+    rows = [json.loads(x) for x in (root / "runs.jsonl").read_text().splitlines()]
+    for r in rows:
+        if r["arm"] == "graph":
+            r["argv"] += ["--extra"]
+    (root / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    cli.main(["eval", "score", "--results", str(root)])
+    cli.main(["eval", "report", "--results", str(root)])
+    assert "WARNING" in (root / "RESULTS.md").read_text()
+
+
+def test_fairness_sentence_clean_and_warning(tmp_path):
+    _, md = _render(tmp_path)
+    text = md.decode()
+    assert "WARNING" not in text
+    assert "differ only in: the value of `--mcp-config`" in text
+    assert "mcp__precedent__precedent_for_patch` in `--allowedTools` (graph only)" in text
+
+
+def test_all_meta_arms_rendered_even_with_zero_runs(tmp_path):
+    root = make_results(tmp_path / "res")
+    rows = [json.loads(x) for x in (root / "runs.jsonl").read_text().splitlines()]
+    (root / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows if r["arm"] == "baseline"))
+    cli.main(["eval", "score", "--results", str(root)])
+    cli.main(["eval", "report", "--results", str(root)])
+    assert "graph (n=0)" in (root / "RESULTS.md").read_text()
