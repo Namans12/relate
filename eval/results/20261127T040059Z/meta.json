@@ -1,0 +1,24 @@
+{
+  "date": "2026-11-27T04:00:59+00:00",
+  "claude_version": "2.1.292 (Claude Code)",
+  "upstream_sha": "5f7a510713c3feac146133e77d8c5bb72bae1b11",
+  "store_sha256": "27f279affd8ce3ff8d458b6edebc170cdd2b56eea40f7d811348ba07d1857138",
+  "replay_runs": {
+    "installer": "20261127T035748Z",
+    "release": "20261127T035748Z"
+  },
+  "repeats": 3,
+  "arms": [
+    "baseline",
+    "graph"
+  ],
+  "cases": [
+    "C1",
+    "C2",
+    "C3",
+    "C4",
+    "C5",
+    "C6"
+  ],
+  "claude_bin": "claude"
+}

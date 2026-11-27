@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "precedent": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "/Users/naman/Documents/ChatGPT/Buildathon/patch-precedent",
+        "--quiet",
+        "patch-precedent",
+        "mcp",
+        "--store",
+        "/Users/naman/Documents/ChatGPT/Buildathon/patch-precedent/data/precedent.rl",
+        "--runs-dir",
+        "/Users/naman/Documents/ChatGPT/Buildathon/patch-precedent/runs"
+      ]
+    }
+  }
+}
