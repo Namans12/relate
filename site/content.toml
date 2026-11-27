@@ -1,0 +1,131 @@
+# Copy for the Patch Precedent website. Numbers are never typed here: use {placeholders},
+# which load_site_data fills from the recording and the evaluation results.
+# No en or em dashes in any copy (a test checks this file as a whole).
+
+[home]
+eyebrow = "Built with Relate"
+title = "Every patch has a precedent."
+lede = "Check every patch against the architecture decisions behind the code, and the tests that prove it."
+scenarios_title = "Six patches, two decisions."
+results_title = "Agents with and without the graph."
+use_title = "Run it in a minute."
+chain_caption = "A patch, the file it changes, the decision that file cites, and the checks that guard it."
+
+[[home.steps]]
+name = "Cite"
+text = "Every ADR mention in Relate's repo, plus hand-reviewed rules and the tests that enforce them."
+
+[[home.steps]]
+name = "Replay"
+text = "Each patch runs against the unmodified upstream test harness in its own clean checkout."
+
+[[home.steps]]
+name = "Explain"
+text = "One Relate query joins the patch, its decision and every observed test result."
+
+[patches."installer/release-lookup"]
+summary = "Asks the GitHub API about the release when a download fails."
+heading = "Breaks the installer's no-API rule"
+body = "{decision}: {rule}. Checks {failing} caught it: the script spells a GitHub API endpoint and an install made a request to it."
+
+[patches."installer/token-header"]
+summary = "Sends GITHUB_TOKEN as an Authorization header, for the authenticated rate limit."
+heading = "Breaks the installer's no-token rule"
+body = "{decision}: {rule}. Check {failing} caught it: an install with GITHUB_TOKEN set sent an Authorization header."
+
+[patches."installer/wording"]
+summary = "Rewords the install progress message."
+heading = "Keeps the installer's direct-route rule"
+body = "{decision}: {rule}. All {checks} linked checks passed in the replay."
+
+[patches."release/always-rotate"]
+summary = "Drops the skip guard so every version bump rotates CHANGELOG.md."
+heading = "Breaks the no-rotation rule for version advances"
+body = "{decision}: {rule}. Check {failing} caught it: an advance rewrote CHANGELOG.md."
+
+[patches."release/wording"]
+summary = "Rewords the skipped-rotation message."
+heading = "Keeps the no-rotation rule"
+body = "{decision}: {rule}. All {checks} linked checks passed in the replay."
+
+[patches."release/docs-only"]
+summary = "Edits CONTRIBUTING.md, which cites no ADR."
+heading = "Touches no recorded decision"
+body = "No decision cites {file}. The release harness still ran: {passed} of {total} checks passed."
+
+[checks."drift guard: install.sh consults no GitHub API endpoint (ADR-0585)"]
+short = "No GitHub API endpoint in install.sh"
+
+[checks."token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)"]
+short = "No Authorization header when GITHUB_TOKEN is set"
+
+[checks."no case made a GitHub API request (ADR-0585)"]
+short = "No case made a GitHub API request"
+
+[checks."advance: empty-[Unreleased] CHANGELOG.md byte-identical \u2014 no heading inserted, [Unreleased] ref unchanged"]
+short = "Advance leaves CHANGELOG.md untouched"
+
+[checks."advance: the version surfaces still advanced"]
+short = "Advance still sweeps the version surfaces"
+
+[results]
+intro = "{model} reviewed each patch {repeats} times per arm. Same prompt, same tools, same budget. The graph arm adds one MCP tool."
+caveats = [
+  "Failing-check recall was {catching_recall_baseline} for the baseline and {catching_recall_graph} for the graph arm. The checks-recall gap comes from passing checks.",
+  "The baseline cannot observe test results, so its test claims are unsupported by construction.",
+  "In {replay_missed} of {graph_runs} graph runs the agent altered the patch when passing it to the tool, so no evidence came back.",
+  "The prompt does not define \"consistent\" versus \"no decision\"; all {baseline_verdict_misses} baseline verdict misses sit on that line.",
+]
+
+[[use.steps]]
+title = "Clone"
+text = "macOS with git and uv. The first run also downloads Relate's source once."
+tag = ""
+
+[[use.steps]]
+title = "Run the demo"
+text = "Replays every patch against the real upstream tests and explains the result."
+tag = ""
+
+[[use.steps]]
+title = "Explain any patch"
+text = "Read-only and offline. Works on any diff against Relate."
+tag = ""
+
+[[use.steps]]
+title = "Give your agent the graph"
+text = "One read-only tool, precedent_for_patch. Run the demo first so it can return observed results."
+tag = ""
+
+[[use.steps]]
+title = "Relate's own MCP server"
+text = "Raw Cypher over the same graph. Point it at a copy of the store."
+tag = "optional, macOS arm64"
+
+[[use.steps]]
+title = "Re-score the published evaluation"
+text = "Rebuilds RESULTS.md byte for byte from the committed transcripts."
+tag = "offline, no usage"
+
+[relate]
+intro = "Patch Precedent keeps its evidence in one embedded Relate store, `data/precedent.rl`, and asks every question of it in Cypher."
+
+[[relate.capabilities]]
+name = "Embedded store"
+text = "Single file, no server."
+
+[[relate.capabilities]]
+name = "Cypher reads and writes"
+text = "The store is built and queried with Cypher."
+
+[[relate.capabilities]]
+name = "Parameter binding"
+text = "Queries bind values such as $path and $key instead of splicing strings."
+
+[[relate.capabilities]]
+name = "Read-only opens"
+text = "Every query path opens the store read-only."
+
+[[relate.capabilities]]
+name = "MCP server"
+text = "The relate CLI's `serve --mcp stdio --read-only` exposes raw Cypher over MCP."
