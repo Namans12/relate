@@ -64,11 +64,6 @@ def test_styled_output_lines_clean():
         assert "\x1b" not in stripped
 
 
-def test_site_build_not_implemented(capsys):
-    assert main(["site", "build"]) == 2
-    assert "not yet implemented" in capsys.readouterr().err
-
-
 def test_committed_recording_shape():
     rec = json.loads((pins.project_root() / "recorded/demo-all.json").read_text(encoding="utf-8"))
     assert rec["format"] == 1 and rec["overall_exit"] == 0

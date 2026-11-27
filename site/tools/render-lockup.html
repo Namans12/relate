@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Render lockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;800&display=swap" rel="stylesheet">
+<style>html,body{margin:0;background:#FAF7F2}canvas{display:block;width:2160px;height:760px}</style>
+</head>
+<body>
+<script type="module">
+  // Renders the intro lockup at 2160x760 for headless Chrome:
+  // chrome --headless=new --hide-scrollbars --window-size=2160,760 --virtual-time-budget=5000 --screenshot=lockup.png URL
+  import { drawC, FONTS } from '../../src/patch_precedent/site/static/c-art.js';
+  await document.fonts.ready;
+  document.body.append(await drawC(FONTS.playfair));
+</script>
+</body>
+</html>

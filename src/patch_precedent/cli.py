@@ -82,7 +82,7 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
     site = subparsers.add_parser("site", help="build the static website or record the demo run")
     site.add_argument("action", nargs="?", choices=["build", "record"], default="build")
     site.add_argument("--out", type=Path, default=None,
-                      help="output (build: directory, default site/dist; record: JSON file, "
+                      help="output (build: directory, default _site; record: JSON file, "
                       "default recorded/demo-all.json)")
     site.add_argument("--base-url", default=None, help="absolute base URL for the built site")
 
@@ -338,8 +338,23 @@ def _cmd_site(args: argparse.Namespace) -> int:
                 shown = out
             print(f"wrote {shown}")
         return code
-    print("site build: not yet implemented", file=sys.stderr)
-    return 2
+    from .site.build import build_site
+    from .site.data import SiteDataError
+
+    base_url = args.base_url
+    if base_url is not None:
+        if not base_url.startswith("https://"):
+            print("site build: --base-url must start with https://", file=sys.stderr)
+            return 2
+        base_url = base_url.rstrip("/")
+    out = args.out or project_root() / "_site"
+    try:
+        pages = build_site(project_root(), out, base_url)
+    except SiteDataError as e:
+        print(f"site build: {e}", file=sys.stderr)
+        return 2
+    print(f"wrote {len(pages)} pages to {out}")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
