@@ -44,6 +44,7 @@ _EXIT_W = 14
 class _Console(Console):
     """Console that never emits trailing spaces (Rich pads table cells to column width)."""
 
+    # `_render_buffer` is private Rich API; this override is valid for rich==15.0.0 (pinned).
     def _render_buffer(self, buffer):  # type: ignore[override]
         segs = list(buffer)
         ends_nl = bool(segs) and not segs[-1].control and segs[-1].text.endswith("\n")
@@ -128,9 +129,8 @@ def _diff_text(raw: str) -> Text:
 class StyledReporter:
     """Rich implementation of `DemoReporter`; details are buffered until a scenario ends."""
 
-    def __init__(self, console: Console, links: bool = False) -> None:
+    def __init__(self, console: Console) -> None:
         self.console = console
-        self.links = links
         self._diffs: list[tuple[str, Any]] = []
         self._details: tuple | None = None
         self._scenario_open = False
@@ -177,8 +177,9 @@ class StyledReporter:
         self.console.print(_indent(row))
 
     # -- details (buffered) --------------------------------------------
-    def details(self, runs, evidence_by_patch, file_blocks, join_query, joined):
-        self._details = (runs, evidence_by_patch, file_blocks, join_query, joined)
+    def details(self, runs, evidence_by_patch, file_blocks, join_query, joined,
+                file_evidence=()):
+        self._details = (runs, evidence_by_patch, file_blocks, join_query, joined, file_evidence)
 
     def _flush_details(self) -> None:
         details, diffs = self._details, self._diffs
@@ -196,26 +197,34 @@ class StyledReporter:
             c.print(_diff_text(Path(patch.path).read_text(errors="replace")))
         if details is None:
             return
-        runs, evidence_by_patch, file_blocks, join_query, joined = details
+        runs, evidence_by_patch, file_blocks, join_query, joined, file_evidence = details
         c.print()
         c.print(_t("Comparison", "pp.strong"))
         c.print(self._comparison(runs, evidence_by_patch))
         c.print()
         c.print(_t("Graph evidence", "pp.strong"))
-        for block in file_blocks:
-            c.print(Text(block))
-            c.print()
+        if file_evidence:
+            # styled chains: prose() on upstream titles, grid indentation, unwrapped permalinks
+            for path, chain_rows, cited_rows, patch_observed in file_evidence:
+                _chain(c, path, chain_rows, cited_rows, True, True, patch_observed)
+        else:
+            for block in file_blocks:
+                c.print(Text(block))
+                c.print()
         c.print(_t("Graph join (replay.rl)", "pp.strong"))
         c.print(Text(join_query.rstrip()))
         c.print()
         c.print(self._join_table(joined))
 
     @staticmethod
-    def _table(headers: list[str], rows: list[list[str]]) -> Table:
+    def _table(headers: list[str], rows: list[list[str]], ellipsis_cols=()) -> Table:
         table = Table(box=box.SIMPLE_HEAD, header_style="pp.dim", pad_edge=False,
                       show_edge=False, collapse_padding=False)
-        for h in headers:
-            table.add_column(Text(h), overflow="fold")
+        for i, h in enumerate(headers):
+            if i in ellipsis_cols:
+                table.add_column(Text(h), no_wrap=True, overflow="ellipsis")
+            else:
+                table.add_column(Text(h), overflow="fold")
         for r in rows:
             table.add_row(*[Text(str(x)) for x in r])
         return table
@@ -234,7 +243,7 @@ class StyledReporter:
             pf = f"{run.tap.passed} / {run.tap.failed}" if run.tap else "-"
             body.append([run.label, changed, exit_cell, pf]
                         + [cell_for(run, c).replace("—", "-") for _, _, c in checks])
-        return self._table(headers, body)
+        return self._table(headers, body, ellipsis_cols=(1,))
 
     def _join_table(self, joined) -> Table:
         # Every field of the plain join table is kept; related short fields share a cell
@@ -264,6 +273,9 @@ class StyledReporter:
                 wording = Text("violates ").append_text(_adr_text(rec.decisions))
             elif rec.kind == "consistent":
                 wording = Text("consistent with ").append_text(_adr_text(rec.decisions))
+                if rec.covered:
+                    wording.append(" (checks " + ", ".join(f"#{n}" for n in rec.covered) + ")",
+                                   style="pp.dim")
             elif rec.kind == "scanned_only":
                 wording = Text("cites ").append_text(_adr_text(rec.decisions, "")).append(
                     " (scanned, not reviewed)")
@@ -275,6 +287,12 @@ class StyledReporter:
                 refs = ", ".join(f"#{n} {kind}" for n, kind, _name in rec.failing)
                 wording.append("  ").append(refs, style="pp.dim")
             grid.add_row(_t("●", dot), _t(rec.label), wording)
+            if rec.reason:
+                grid.add_row(Text(""), Text(""), _t(f"({prose(rec.reason)})", "pp.dim"))
+            for n, name in rec.unlinked:
+                grid.add_row(Text(""), Text(""),
+                             Text.assemble((f"also failed (no linked decision): #{n} ", "pp.dim"),
+                                           (name, "pp.dim")))
         c.print(_indent(grid))
         c.print()
         c.print(_t(prose(rcheck["line"]), "pp.dim"))
@@ -318,8 +336,14 @@ class StyledReporter:
 
 # -- explain -------------------------------------------------------------
 
+def _url_line(console: Console, indent: int, label: str, url: str, gutter: int = 9) -> None:
+    """A permalink on its own line, never wrapped (so it stays copyable), after `label`."""
+    console.print(Text.assemble((" " * indent + label.ljust(gutter), "pp.dim"), (url, "pp.dim")),
+                  soft_wrap=True)
+
+
 def _chain(console: Console, path: str, rows: list[dict], cited: list[dict], links: bool,
-           show_path: bool) -> None:
+           show_path: bool, patch_observed=None) -> None:
     groups: dict[str, list[dict]] = {}
     for row in rows:
         groups.setdefault(row["decision"], []).append(row)
@@ -340,22 +364,33 @@ def _chain(console: Console, path: str, rows: list[dict], cited: list[dict], lin
         fields.add_row(_t("rule", "pp.dim"), _t(prose(first["rule"])))
         fields.add_row(_t("why", "pp.dim"), _t(prose(" ".join(first["reason"].split()))))
         sha = first["implementation"][:8]
+        subject = first.get("commit_subject")
         fields.add_row(_t("commit", "pp.dim"),
-                       _t(f"{sha} {first['commit_url']}" if links else sha))
-        if links:
-            fields.add_row(_t("cite", "pp.dim"), _t(first["citation_url"]))
-            fields.add_row(_t("decision", "pp.dim"), _t(first["decision_url"]))
-            fields.add_row(_t("scope", "pp.dim"), _t(first["consequences_url"]))
+                       _t(f"{sha} {prose(subject)}" if subject and patch_observed is not None
+                          else sha))
         console.print(_indent(fields))
+        if links:
+            _url_line(console, 2, "", first["commit_url"])
+            _url_line(console, 2, "cite", first["citation_url"])
+            _url_line(console, 2, "decision", first["decision_url"])
+            _url_line(console, 2, "scope", first["consequences_url"])
         console.print()
         console.print(_indent(_t("checks", "pp.dim")))
-        checks = _grid(5, 8, None)
         for row in group:
-            checks.add_row(_t(f"#{row['check_number_at_pin']}"), _t(row["check_kind"], "pp.dim"),
-                           _t(row["check"]))
+            line = _grid(5, 8, None)
+            line.add_row(_t(f"#{row['check_number_at_pin']}"), _t(row["check_kind"], "pp.dim"),
+                         _t(row["check"]))
+            console.print(_indent(line, 4))
+            for label, observed in patch_observed or ():
+                res = observed.get(row["check"])
+                if res is None:
+                    verdict, style = "not observed", "pp.dim"
+                else:
+                    verdict = f"{'ok' if res.ok else 'not ok'} {res.number}"
+                    style = "pp.pass" if res.ok else "pp.fail"
+                console.print(_indent(Text.assemble((f"{label} → ", "pp.dim"), (verdict, style)), 19))
             if links:
-                checks.add_row(Text(""), Text(""), _t(row["check_url"], "pp.dim"))
-        console.print(_indent(checks, 4))
+                _url_line(console, 19, "", row["check_url"], gutter=0)
         console.print()
     if extra:
         ids = " ".join(c["decision"].removeprefix("ADR-") for c in extra)
@@ -363,7 +398,8 @@ def _chain(console: Console, path: str, rows: list[dict], cited: list[dict], lin
                          f"(scanned, not reviewed): {ids}", "pp.dim"))
         if links:
             for c in extra:
-                console.print(_indent(_t(f"{c['decision']}  {c['citation_url']}", "pp.dim")))
+                console.print(_t(f"  {c['decision']}  {c['citation_url']}", "pp.dim"),
+                              soft_wrap=True)
         console.print()
 
 

@@ -43,7 +43,9 @@ class DemoReporter(Protocol):
     def run_end(self, run: "RunResult", duration_s: float) -> None: ...
 
     def details(self, runs, evidence_by_patch, file_blocks: list[str], join_query: str,
-                joined: list[dict]) -> None: ...
+                joined: list[dict], file_evidence: "list[tuple] | tuple" = ()) -> None:
+        """`file_evidence` holds (path, chain rows, cited rows, [(run label, observed)]) per
+        file, for reporters that render the chains themselves instead of `file_blocks`."""
 
     def verdicts(self, lines: list[str], records: "list[VerdictRecord]", rcheck: dict,
                  warnings: list[str], mismatches: list[str]) -> None: ...
@@ -95,7 +97,7 @@ class PlainReporter:
         print(f"exit {code}  {counts}  → {run.status}{tail}")
         print()
 
-    def details(self, runs, evidence_by_patch, file_blocks, join_query, joined):
+    def details(self, runs, evidence_by_patch, file_blocks, join_query, joined, file_evidence=()):
         print("== comparison ==")
         print(comparison_table(runs, evidence_by_patch))
         print()
@@ -279,7 +281,12 @@ def _run_scenario(
             patch_observed=[(r.label, observed_map(r)) for r in file_runs])
         for f, file_runs in by_file.items()
     ]
-    reporter.details(runs, evidence_by_patch, file_blocks, JOIN_QUERY, joined)
+    file_evidence = [
+        (f, per_file[file_runs[0].patch.id][f], cited_per_file[file_runs[0].patch.id][f],
+         [(r.label, observed_map(r)) for r in file_runs])
+        for f, file_runs in by_file.items()
+    ]
+    reporter.details(runs, evidence_by_patch, file_blocks, JOIN_QUERY, joined, file_evidence)
 
     verdicts, exit_code = compute_verdicts(runs, evidence_by_patch, mismatches, cited_by_patch)
     records = verdict_records(runs, evidence_by_patch, cited_by_patch)

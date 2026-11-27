@@ -141,3 +141,109 @@ def test_run_row_gap_before_failing_numbers():
     rep = StyledReporter(make_console(file=buf, width=80, force_terminal=False))
     rep.run_end(_run("release-lookup", 192, 2, 1, (7, 193)), 7.1)
     assert "7.1s   #7 #193" in buf.getvalue()
+
+
+# -- demo details and verdicts with fake runs -------------------------------
+
+_URL = "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/"
+
+
+def _row(check, number, decision="ADR-0431"):
+    return {
+        "decision": decision, "title": "Extension distribution — the first-party channel",
+        "status": "Accepted", "rule": "install.sh — never calls the API",
+        "reason": "Because – of limits " * 8, "implementation": "0123456789abcdef",
+        "commit_subject": "fix: scripts — install", "commit_url": _URL.replace("blob", "commit") + "x" * 20,
+        "citation_url": _URL + "distribution/install.sh#L10-L12",
+        "decision_url": _URL + "docs/adr/0431-extension-distribution-the-first-party-channel.md",
+        "consequences_url": _URL + "docs/adr/0431-extension-distribution-the-first-party-channel.md#consequences",
+        "check": check, "check_number_at_pin": number, "check_kind": "runtime",
+        "check_url": _URL + "scripts/tests/test_distribution_installer_release_lookup_failures.sh#L100-L140",
+        "check_evidence": "e",
+    }
+
+
+def _patch(label="release-lookup"):
+    from patch_precedent.diffparse import PatchInfo
+    return PatchInfo(Path("/nonexistent.patch"), label, "a" * 64, "patch:" + "a" * 12,
+                     ("distribution/install.sh",), "k")
+
+
+def _patched_run(label, nums=(), unlinked=()):
+    r = _run(label, 3, len(nums) + len(unlinked), 1, tuple(nums) + tuple(n for n, _ in unlinked))
+    results = tuple(TapResult(x.number, x.ok, "extension channel check" if x.number in nums
+                              else dict(unlinked).get(x.number, x.description)) for x in r.tap.results)
+    tap = TapReport(results, len(results), r.tap.passed, r.tap.failed, 0, True)
+    return RunResult(label, _patch(label), "sha", "cmd", 1, tap, Path("log"), "fail", None)
+
+
+def test_styled_details_transcript_is_clean():
+    buf = io.StringIO()
+    rep = StyledReporter(make_console(file=buf, width=100, force_terminal=False))
+    run = _patched_run("release-lookup", nums=(7,))
+    rows = [_row("extension channel check", 7)]
+    rep.details([_run("baseline", 6, 0, 0), run], {run.patch.id: rows}, ["RAW BLOCK"], "Q", [],
+                [("distribution/install.sh", rows, [], [("release-lookup", {"extension channel check":
+                  run.tap.results[-1]})])])
+    rep.finish()
+    out = buf.getvalue()
+    assert "RAW BLOCK" not in out
+    assert "–" not in out and "—" not in out
+    assert "ADR-0431" in out and "Extension distribution - the first-party channel" in out
+    assert "release-lookup → not ok 7" in out
+    for ln in out.splitlines():
+        tok = ln.strip()
+        if " " not in tok and ("/blob/" in tok or "/commit/" in tok or "relatedb" in tok):
+            assert tok.startswith("https://"), ln  # a URL is never a wrapped fragment
+        if ln and not ln[0].isspace():  # nothing wrapped back to column 0
+            assert ln.startswith(("\u2500", "-", "Input", "Comparison", "Graph", "Q",
+                                  "distribution/install.sh", "ADR-0431", "baseline",
+                                  "release-lookup", "label")), ln
+    # every permalink survives intact on one line
+    for url in (rows[0]["citation_url"], rows[0]["check_url"], rows[0]["commit_url"]):
+        assert any(ln.strip() == url or ln.strip().endswith(url) for ln in out.splitlines())
+
+
+def test_comparison_changed_column_does_not_fold():
+    buf = io.StringIO()
+    rep = StyledReporter(make_console(file=buf, width=100, force_terminal=False))
+    run = _patched_run("release-lookup", nums=(7,))
+    rows = [_row("extension channel check", 7)]
+    rep.details([run], {run.patch.id: rows}, [], "Q", [])
+    rep.finish()
+    assert "install.sh" in buf.getvalue()
+    assert not any(ln.strip() in ("l.sh", "sh") for ln in buf.getvalue().splitlines())
+
+
+def test_verdicts_show_unlinked_failures_reasons_and_covered_checks():
+    buf = io.StringIO()
+    rep = StyledReporter(make_console(file=buf, width=100, force_terminal=False))
+    recs = [
+        VerdictRecord("p1", "consistent", ("ADR-0585",), covered=(7, 64),
+                      unlinked=((12, "other [Unreleased] check"),)),
+        VerdictRecord("p2", "inconclusive", reason="linked checks not found in TAP output"),
+        VerdictRecord("p3", "no_decision", unlinked=((3, "stray"),)),
+    ]
+    rep.verdicts([], recs, {"line": "l", "reproduced": [], "inconclusive": []}, [], [])
+    out = buf.getvalue()
+    assert "consistent with ADR-0585 (checks #7, #64)" in out
+    assert "also failed (no linked decision): #12 other [Unreleased] check" in out
+    assert "also failed (no linked decision): #3 stray" in out
+    assert "linked checks not found in TAP output" in out
+
+
+def test_verdict_records_carry_unlinked_and_reason():
+    from patch_precedent.report import verdict_records
+    base = _run("baseline", 6, 0, 0)
+    run = _patched_run("p", nums=(7,), unlinked=((9, "stray"),))
+    rows = [_row("extension channel check", 7)]
+    (rec,) = verdict_records([base, run], {run.patch.id: rows})
+    assert rec.kind == "violates" and rec.unlinked == ((9, "stray"),)
+    assert rec.as_dict()["unlinked"] == [[9, "stray"]]
+    bad = RunResult("p", _patch(), "sha", "cmd", None, None, Path("log"), "inconclusive", "timed out")
+    (rec,) = verdict_records([base, bad], {})
+    assert rec.kind == "inconclusive" and rec.reason == "timed out"
+    (rec,) = verdict_records([_run("baseline", 1, 1, 1, (1,)), run], {})
+    assert rec.reason.startswith("baseline not green")
+    import json
+    json.dumps(rec.as_dict())

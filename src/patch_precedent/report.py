@@ -251,6 +251,8 @@ class VerdictRecord:
     rule: str | None = None
     failing: tuple[tuple[int, str, str], ...] = ()  # (tap number, check kind, check name)
     covered: tuple[int, ...] = ()  # tap numbers of the linked checks seen
+    unlinked: tuple[tuple[int, str], ...] = ()  # (tap number, check name) failing with no decision
+    reason: str | None = None  # why the verdict is inconclusive
 
     def as_dict(self) -> dict:
         return {
@@ -260,6 +262,8 @@ class VerdictRecord:
             "rule": self.rule,
             "failing": [list(f) for f in self.failing],
             "covered": list(self.covered),
+            "unlinked": [list(u) for u in self.unlinked],
+            "reason": self.reason,
         }
 
 
@@ -272,23 +276,29 @@ def verdict_records(
     baseline = next((r for r in runs if r.patch is None), None)
     patches = [r for r in runs if r.patch is not None]
     if baseline is None or baseline.status != "pass":
-        return [VerdictRecord(r.label, "inconclusive") for r in patches]
+        why = "no baseline run" if baseline is None else (baseline.reason or baseline.status)
+        return [VerdictRecord(r.label, "inconclusive", reason=f"baseline not green: {why}")
+                for r in patches]
     records: list[VerdictRecord] = []
     for run in patches:
         if run.status == "inconclusive" or run.tap is None:
-            records.append(VerdictRecord(run.label, "inconclusive"))
+            records.append(VerdictRecord(
+                run.label, "inconclusive", reason=run.reason or "no TAP observed"))
             continue
         rows = evidence_by_patch.get(run.patch.id, [])
         if not rows:
             ids = tuple(sorted({c["decision"] for c in (cited_by_patch or {}).get(run.patch.id, [])}))
-            records.append(VerdictRecord(run.label, "scanned_only" if ids else "no_decision", ids))
+            records.append(VerdictRecord(run.label, "scanned_only" if ids else "no_decision", ids,
+                                         unlinked=_unlinked(run, set())))
             continue
         obs = observed_map(run)
         seen = [r for r in rows if r["check"] in obs]
         if not seen:
-            records.append(VerdictRecord(run.label, "inconclusive"))
+            records.append(VerdictRecord(
+                run.label, "inconclusive", reason="linked checks not found in TAP output"))
             continue
         covered = tuple(sorted({obs[r["check"]].number for r in seen}))
+        unlinked = _unlinked(run, {r["check"] for r in rows})
         failing = [r for r in seen if not obs[r["check"]].ok]
         if failing:
             records.append(VerdictRecord(
@@ -296,12 +306,17 @@ def verdict_records(
                 tuple(dict.fromkeys(r["decision"] for r in failing)),
                 failing[0]["rule"],
                 tuple((obs[r["check"]].number, r["check_kind"], r["check"]) for r in failing),
-                covered))
+                covered, unlinked))
         else:
             records.append(VerdictRecord(
                 run.label, "consistent",
-                tuple(dict.fromkeys(r["decision"] for r in seen)), None, (), covered))
+                tuple(dict.fromkeys(r["decision"] for r in seen)), None, (), covered, unlinked))
     return records
+
+
+def _unlinked(run: RunResult, linked: set[str]) -> tuple[tuple[int, str], ...]:
+    return tuple((r.number, r.description) for r in run.tap.results
+                 if not r.ok and r.description not in linked)
 
 
 def _unlinked_failures(run: RunResult, linked: set[str]) -> list[str]:
