@@ -53,7 +53,7 @@
     Adapted: class names scoped to pp-enter, colours mapped to the Paper & Ink palette,
     keyboard Enter mirrors the hover and active states.
   */
-  .pp-enter{background:#1B1F2A;color:#FAF7F2;font-family:inherit;padding:.35em;padding-left:1.2em;font-size:17px;font-weight:500;border-radius:.9em;border:none;letter-spacing:.05em;display:flex;align-items:center;box-shadow:inset 0 0 1.6em -.6em #000;overflow:hidden;position:relative;height:2.8em;padding-right:3.3em;cursor:pointer}
+  .pp-enter{text-decoration:none;background:#1B1F2A;color:#FAF7F2;font-family:inherit;padding:.35em;padding-left:1.2em;font-size:17px;font-weight:500;border-radius:.9em;border:none;letter-spacing:.05em;display:flex;align-items:center;box-shadow:inset 0 0 1.6em -.6em #000;overflow:hidden;position:relative;height:2.8em;padding-right:3.3em;cursor:pointer}
   .pp-enter .icon{background:#FAF7F2;margin-left:1em;position:absolute;display:flex;align-items:center;justify-content:center;height:2.2em;width:2.2em;border-radius:.7em;box-shadow:.1em .1em .6em .2em rgba(0,0,0,.35);right:.3em;transition:all .3s}
   .pp-enter:hover .icon,.pp-enter.kbd .icon{width:calc(100% - .6em)}
   .pp-enter .icon svg{width:1.1em;transition:transform .3s;color:#B4472A}
@@ -80,15 +80,28 @@
   </noscript>
   <div id="artslot" style="aspect-ratio:2160/760"></div>
   <div class="enter-wrap">
-    <button class="pp-enter" id="enter" type="button" aria-label="Enter Patch Precedent">
+    <a class="pp-enter" id="enter" href="home.html" aria-label="Enter Patch Precedent">
       Enter
       <div class="icon">
         <svg height="24" width="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"></path><path d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z" fill="currentColor"></path></svg>
       </div>
-    </button>
+    </a>
   </div>
 </main>
 
 <script type="module" src="assets/intro.js"></script>
+<script>
+// Fallback when the module script cannot run (file:// in Chromium, offline, any load failure).
+setTimeout(function () {
+  if (document.body.classList.contains('ready')) return;
+  var slot = document.getElementById('artslot');
+  if (slot) {
+    var img = new Image();
+    img.src = 'lockup.png'; img.alt = 'Patch Precedent'; img.id = 'artslot'; img.className = 'still';
+    slot.replaceWith(img);
+  }
+  document.body.classList.add('ready');
+}, 1500);
+</script>
 </body>
 </html>

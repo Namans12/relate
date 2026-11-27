@@ -90,7 +90,7 @@ def test_page_exists(site, page):
 
 
 def test_intro_assets_written(site):
-    for f in ("lockup.png", ".nojekyll", "assets/site.css", "assets/site.js", "assets/intro.js",
+    for f in ("lockup.png", ".patch-precedent-site", "assets/site.css", "assets/site.js", "assets/intro.js",
               "assets/c-art.js", "assets/pixelcraft/pixelcraft-banner.js"):
         assert (site / f).is_file(), f
 
@@ -117,6 +117,10 @@ def test_external_links_allowlisted(site):
         for url in _scan(page).urls:
             if re.match(r"^https?://", url):
                 assert url.startswith(ALLOWED), (page.name, url)
+                if url.startswith("https://github.com/relatedb/relate/"):
+                    assert re.match(
+                        rf"https://github\.com/relatedb/relate/(blob/{pins.UPSTREAM_SHA}/|commit/[0-9a-f]{{7,40}}\b)",
+                        url), (page.name, url)
 
 
 def test_no_forbidden_dashes_outside_verbatim(site):
@@ -147,11 +151,8 @@ def test_uiverse_credit_kept(site):
             in (site / "index.html").read_text())
 
 
-def test_built_with_relate_once(site):
-    assert sum(p.read_text().count("Built with Relate") for p in site.rglob("*.html")) <= 1
-
-
 def test_built_with_relate_exactly_once(site):
+    assert sum(p.read_text().count("Built with Relate") for p in site.rglob("*.html")) == 1
     assert (site / "home.html").read_text().count("Built with Relate") == 1
 
 
@@ -232,3 +233,76 @@ def test_menu_panel_and_anchor_offset_css(site):
     assert "position:absolute" in m and "top:100%" in m and "overflow-y:auto" in m
     assert ".nav .menu-panel .wrap{" in css and "height:auto" in css
     assert re.search(r"main \[id\]\{scroll-margin-top:(7\d|[89]\d)px\}", css)
+
+
+def test_out_rebuild_replaces_previous_build(tmp_path):
+    root = pins.project_root()
+    out = tmp_path / "s"
+    build_site(root, out)
+    (out / "stale.txt").write_text("x")
+    build_site(root, out)
+    assert not (out / "stale.txt").exists() and (out / ".patch-precedent-site").is_file()
+
+
+def test_out_empty_existing_dir_ok(tmp_path):
+    (tmp_path / "e").mkdir()
+    build_site(pins.project_root(), tmp_path / "e")
+    assert (tmp_path / "e" / "home.html").is_file()
+
+
+def test_out_refuses_project_root(tmp_path):
+    (tmp_path / "keep.txt").write_text("x")
+    with pytest.raises(SiteDataError, match="project root"):
+        build_site(pins.project_root(), pins.project_root())
+    assert (pins.project_root() / ".git").exists()
+
+
+def test_out_refuses_ancestor_of_project_root():
+    root = pins.project_root()
+    with pytest.raises(SiteDataError, match="project root or one of its parents"):
+        build_site(root, root.parent)
+    assert root.is_dir()
+
+
+def test_out_refuses_non_empty_dir_without_marker(tmp_path):
+    out = tmp_path / "mine"
+    out.mkdir()
+    (out / "precious.txt").write_text("x")
+    with pytest.raises(SiteDataError, match="not empty"):
+        build_site(pins.project_root(), out)
+    assert (out / "precious.txt").read_text() == "x"
+
+
+def test_out_refuses_a_file(tmp_path):
+    f = tmp_path / "f"
+    f.write_text("x")
+    with pytest.raises(SiteDataError, match="not a directory"):
+        build_site(pins.project_root(), f)
+    assert f.read_text() == "x"
+
+
+def test_cli_site_out_project_root_exit_2(capsys):
+    assert main(["site", "--out", str(pins.project_root())]) == 2
+    assert "refusing" in capsys.readouterr().err
+    assert (pins.project_root() / ".git").exists()
+
+
+def test_intro_enter_is_a_link_with_classic_fallback(site):
+    t = (site / "index.html").read_text()
+    assert re.search(r'<a class="pp-enter" id="enter" href="home\.html"', t)
+    assert "<button" not in t
+    # classic (non-module) fallback script that shows the lockup and marks the page ready
+    classic = [m for m in re.findall(r"<script>(.*?)</script>", t, re.S) if "lockup.png" in m]
+    assert classic and "1500" in classic[0] and "'ready'" in classic[0]
+
+
+def test_intro_js_armed_flag_and_font_check(site):
+    js = (site / "assets/intro.js").read_text()
+    assert "armed" in js and "document.fonts" in js and "Playfair Display" in js
+
+
+def test_inner_pages_have_reveal_fallback(site):
+    for page in ("home.html", "results.html", "scenarios/release-wording.html"):
+        t = (site / page).read_text()
+        assert "siteReady" in t and ".reveal" in t and "2000" in t, page
+    assert "siteReady" in (site / "assets/site.js").read_text()

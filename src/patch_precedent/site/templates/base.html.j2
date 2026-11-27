@@ -73,5 +73,12 @@
 </footer>
 <div class="sr-only" aria-live="polite" id="sr-status"></div>
 <script src="{{ 'assets/site.js' | rel }}" defer></script>
+<script>
+// If site.js did not run (blocked or failed to load), reveal everything rather than leave it hidden.
+setTimeout(function () {
+  if ('siteReady' in document.documentElement.dataset) return;
+  document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('in'); });
+}, 2000);
+</script>
 </body>
 </html>

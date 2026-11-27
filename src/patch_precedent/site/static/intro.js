@@ -13,7 +13,10 @@ function showStill() {
 }
 
 try {
-  if (reduce) {
+  // Offline, the web font never arrives; drawing with a fallback face would misrender the title.
+  const fontOk = !reduce && (await document.fonts.load('800 100px "Playfair Display"')).length > 0
+    && document.fonts.check('800 100px "Playfair Display"');
+  if (reduce || !fontOk) {
     showStill();
   } else {
     await import('./pixelcraft/pixelcraft-banner.js');
@@ -41,12 +44,18 @@ const go = () => {
   document.body.classList.add('leaving');
   setTimeout(() => { location.href = 'home.html'; }, reduce ? 0 : 450);
 };
-btn.addEventListener('click', go);
+btn.addEventListener('click', e => { e.preventDefault(); go(); });
 // keyboard Enter shows the same slide and press as the mouse, then enters
+// (a keyup without a keydown on this page, such as one that began elsewhere, does nothing)
+let armed = false;
 addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.repeat && !e.target.closest('a')) { e.preventDefault(); btn.classList.add('kbd', 'kbd-down'); }
+  if (e.key === 'Enter' && !e.repeat && !e.target.closest('a')) {
+    e.preventDefault(); armed = true; btn.classList.add('kbd', 'kbd-down');
+  }
   if (e.key === 'Escape') go();
 });
 addEventListener('keyup', e => {
-  if (e.key === 'Enter' && !e.target.closest('a')) { btn.classList.remove('kbd-down'); setTimeout(go, reduce ? 0 : 220); }
+  if (e.key === 'Enter' && armed && !e.target.closest('a')) {
+    armed = false; btn.classList.remove('kbd-down'); setTimeout(go, reduce ? 0 : 220);
+  }
 });

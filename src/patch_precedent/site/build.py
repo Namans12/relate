@@ -73,20 +73,38 @@ def _env() -> jinja2.Environment:
     return env
 
 
-def _pages(data: SiteData, available: set[str]) -> list[tuple[str, str, dict]]:
-    """(output path, template, extra context) for every page whose template exists."""
-    # a missing required template is an error unless allow_missing (see build_site)
+MARKER = ".patch-precedent-site"
+
+
+def _pages(data: SiteData) -> list[tuple[str, str, dict]]:
+    """(output path, template, extra context) for every page."""
     pages: list[tuple[str, str, dict]] = [("index.html", "intro.html.j2", {})]
     for out, tpl in (("home.html", "home.html.j2"), ("results.html", "results.html.j2"),
                      ("use.html", "use.html.j2"), ("relate.html", "relate.html.j2")):
         pages.append((out, tpl, {}))
     for p in data.patches:
         pages.append((f"scenarios/{p.slug}.html", "scenario.html.j2", {"patch": p}))
-    return [pg for pg in pages if pg[1] in available]
+    return pages
 
 
-def build_site(root: Path, out: Path, base_url: str | None = None,
-               allow_missing: bool = False) -> list[Path]:
+def _prepare_out(root: Path, out: Path) -> None:
+    """Create a clean output directory, replacing only an empty dir or a previous build."""
+    resolved, project = out.resolve(), root.resolve()
+    if resolved == project or resolved in project.parents:
+        raise SiteDataError(f"refusing to build into {out}: it is the project root or one of its parents")
+    if out.exists() or out.is_symlink():
+        if not out.is_dir() or out.is_symlink():
+            raise SiteDataError(f"refusing to replace {out}: it is not a directory")
+        if any(out.iterdir()):
+            if not (out / MARKER).is_file():
+                raise SiteDataError(
+                    f"refusing to replace {out}: it is not empty and was not made by `site build` "
+                    f"(no {MARKER} file); choose an empty or new directory")
+            shutil.rmtree(out)
+    out.mkdir(parents=True, exist_ok=True)
+
+
+def build_site(root: Path, out: Path, base_url: str | None = None) -> list[Path]:
     root, out = Path(root), Path(out)
     if base_url is not None:
         base_url = base_url.rstrip("/")
@@ -94,17 +112,15 @@ def build_site(root: Path, out: Path, base_url: str | None = None,
     env = _env()
     available = {p.name for p in TEMPLATES.glob("*.j2")}
     missing = [t for t in REQUIRED if t not in available]
-    if missing and not allow_missing:
+    if missing:
         raise SiteDataError(f"missing template: {missing[0]}")
 
-    if out.exists():
-        shutil.rmtree(out)
-    out.mkdir(parents=True)
+    _prepare_out(root, out)
+    (out / MARKER).write_text("Built by `patch-precedent site`; safe to replace.\n", encoding="utf-8")
     shutil.copytree(STATIC, out / "assets")
     lockup = STATIC / "lockup.png"
     if lockup.is_file():
         shutil.copy2(lockup, out / "lockup.png")
-    (out / ".nojekyll").write_text("", encoding="utf-8")
     # Vercel reads vercel.json from the deployed folder, not the repo root.
     vercel = root / "vercel.json"
     if vercel.is_file():
@@ -112,7 +128,7 @@ def build_site(root: Path, out: Path, base_url: str | None = None,
 
     home = data.content["home"]
     written: list[Path] = []
-    for page, tpl, extra in _pages(data, available):
+    for page, tpl, extra in _pages(data):
         html = env.get_template(tpl).render(
             page=page, data=data, c=data.content, base_url=base_url,
             og_description=home["lede"], **extra)

@@ -1,5 +1,6 @@
 // Reveal on scroll, copy buttons and the mobile menu. Everything works without it.
 (() => {
+  document.documentElement.dataset.siteReady = '';
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const items = document.querySelectorAll('.reveal');
