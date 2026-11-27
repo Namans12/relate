@@ -12,6 +12,7 @@ from patch_precedent.report import (
     render_cited_block,
     render_evidence_chain,
     shorten_status,
+    verdict_records,
 )
 from patch_precedent.tap import parse_tap
 
@@ -184,3 +185,63 @@ def test_shorten_status():
     long = "x" * 50
     assert shorten_status(long) == "x" * 40 + "…"
     assert shorten_status("y" * 40) == "y" * 40
+
+
+# --- verdict records -------------------------------------------------------
+
+def _fakes():
+    return _runs(), _evidence(), {WORDING.id: [], RELEASE.id: []}
+
+
+def test_verdict_records_match_compute_verdicts_kinds():
+    prefixes = {"violates": "violates", "consistent": "consistent with",
+                "no_decision": "no linked decision", "scanned_only": "cites",
+                "inconclusive": "inconclusive"}
+    cases = [
+        (_runs(), _evidence(), {}),
+        (_runs(), {WORDING.id: [], RELEASE.id: ROWS}, {}),
+        (_runs(), {WORDING.id: [], RELEASE.id: ROWS},
+         {WORDING.id: [_cited("ADR-0300"), _cited("ADR-0115")], RELEASE.id: []}),
+    ]
+    inc = _runs()
+    inc[2] = replace(inc[2], status="inconclusive", reason="timeout", tap=None)
+    cases.append((inc, _evidence(), {}))
+    for runs, ev, cited in cases:
+        lines, _ = compute_verdicts(runs, ev, [], cited)
+        recs = verdict_records(runs, ev, cited)
+        heads = [ln for ln in lines if not ln.startswith("    ")]
+        for rec in recs:
+            head = next(h for h in heads if h.startswith(f"{rec.label}: "))
+            assert head[len(rec.label) + 2:].startswith(prefixes[rec.kind]), (rec, head)
+    recs = {r.label: r for r in verdict_records(_runs(), _evidence(), {})}
+    assert recs["release-lookup"].kind == "violates"
+    assert recs["release-lookup"].decisions == ("ADR-0585",)
+    assert recs["release-lookup"].rule == "no GitHub API"
+    assert [f[0] for f in recs["release-lookup"].failing] == [7, 193]
+    assert recs["wording"].kind == "consistent"
+    assert recs["wording"].covered == (7, 193)
+
+
+def test_verdict_records_scanned_only_lists_decisions():
+    cited = {WORDING.id: [_cited("ADR-0300"), _cited("ADR-0115"), _cited("ADR-0300")],
+             RELEASE.id: []}
+    recs = {r.label: r for r in
+            verdict_records(_runs(), {WORDING.id: [], RELEASE.id: ROWS}, cited)}
+    assert recs["wording"].kind == "scanned_only"
+    assert recs["wording"].decisions == ("ADR-0115", "ADR-0300")
+
+
+def test_verdict_records_baseline_red_all_inconclusive():
+    runs = _runs()
+    runs[0] = _run("baseline", None, "release-lookup", 1, "fail")
+    recs = verdict_records(runs, _evidence(), {})
+    assert [r.label for r in recs] == ["wording", "release-lookup"]
+    assert all(r.kind == "inconclusive" for r in recs)
+
+
+def test_verdict_record_as_dict_is_json_safe():
+    import json
+    out = json.loads(json.dumps([r.as_dict() for r in verdict_records(*_fakes())]))
+    viol = next(r for r in out if r["kind"] == "violates")
+    assert viol["failing"] == [[7, "static", D7], [193, "runtime", D193]]
+    assert viol["decisions"] == ["ADR-0585"]

@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import textwrap
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Literal
 
 from .tap import TapResult
 
@@ -238,6 +239,69 @@ def compute_verdicts(
         lines += _unlinked_failures(run, {r["check"] for r in rows})
     code = 2 if inconclusive else 3 if mismatches else 0
     return lines, code
+
+
+@dataclass(frozen=True)
+class VerdictRecord:
+    """Structured twin of one patch's verdict line(s) from `compute_verdicts`."""
+
+    label: str
+    kind: Literal["violates", "consistent", "no_decision", "scanned_only", "inconclusive"]
+    decisions: tuple[str, ...] = ()
+    rule: str | None = None
+    failing: tuple[tuple[int, str, str], ...] = ()  # (tap number, check kind, check name)
+    covered: tuple[int, ...] = ()  # tap numbers of the linked checks seen
+
+    def as_dict(self) -> dict:
+        return {
+            "label": self.label,
+            "kind": self.kind,
+            "decisions": list(self.decisions),
+            "rule": self.rule,
+            "failing": [list(f) for f in self.failing],
+            "covered": list(self.covered),
+        }
+
+
+def verdict_records(
+    runs: Sequence[RunResult],
+    evidence_by_patch: Mapping[str, list[dict]],
+    cited_by_patch: Mapping[str, list[dict]] | None = None,
+) -> list[VerdictRecord]:
+    """One record per patch, mirroring the branch logic of `compute_verdicts`."""
+    baseline = next((r for r in runs if r.patch is None), None)
+    patches = [r for r in runs if r.patch is not None]
+    if baseline is None or baseline.status != "pass":
+        return [VerdictRecord(r.label, "inconclusive") for r in patches]
+    records: list[VerdictRecord] = []
+    for run in patches:
+        if run.status == "inconclusive" or run.tap is None:
+            records.append(VerdictRecord(run.label, "inconclusive"))
+            continue
+        rows = evidence_by_patch.get(run.patch.id, [])
+        if not rows:
+            ids = tuple(sorted({c["decision"] for c in (cited_by_patch or {}).get(run.patch.id, [])}))
+            records.append(VerdictRecord(run.label, "scanned_only" if ids else "no_decision", ids))
+            continue
+        obs = observed_map(run)
+        seen = [r for r in rows if r["check"] in obs]
+        if not seen:
+            records.append(VerdictRecord(run.label, "inconclusive"))
+            continue
+        covered = tuple(sorted({obs[r["check"]].number for r in seen}))
+        failing = [r for r in seen if not obs[r["check"]].ok]
+        if failing:
+            records.append(VerdictRecord(
+                run.label, "violates",
+                tuple(dict.fromkeys(r["decision"] for r in failing)),
+                failing[0]["rule"],
+                tuple((obs[r["check"]].number, r["check_kind"], r["check"]) for r in failing),
+                covered))
+        else:
+            records.append(VerdictRecord(
+                run.label, "consistent",
+                tuple(dict.fromkeys(r["decision"] for r in seen)), None, (), covered))
+    return records
 
 
 def _unlinked_failures(run: RunResult, linked: set[str]) -> list[str]:
