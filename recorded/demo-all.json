@@ -1,0 +1,3810 @@
+{
+  "format": 1,
+  "run_id": "20261127T101818Z",
+  "recorded_at": "2026-11-27T10:18:58Z",
+  "upstream": {
+    "url": "https://github.com/relatedb/relate.git",
+    "sha": "5f7a510713c3feac146133e77d8c5bb72bae1b11"
+  },
+  "relate_version": "1.1.0",
+  "overall_exit": 0,
+  "elapsed_s": 39.7,
+  "scenarios": {
+    "installer": {
+      "upstream": {
+        "url": "https://github.com/relatedb/relate.git",
+        "sha": "5f7a510713c3feac146133e77d8c5bb72bae1b11"
+      },
+      "runs": [
+        {
+          "label": "baseline",
+          "patch_id": null,
+          "sha256": null,
+          "changed_files": [],
+          "status": "pass",
+          "reason": null,
+          "exit_code": 0,
+          "passed": 194,
+          "failed": 0,
+          "skipped": 0,
+          "total": 194,
+          "failing": [],
+          "failing_numbers": [],
+          "duration_s": 7.5,
+          "observed": {}
+        },
+        {
+          "label": "release-lookup",
+          "patch_id": "patch:635b00b21f4b",
+          "sha256": "635b00b21f4b918ab73a400abdda636e8923d76b2ada61ccc2bc5d17dc0217e5",
+          "changed_files": [
+            "distribution/install.sh"
+          ],
+          "status": "fail",
+          "reason": null,
+          "exit_code": 1,
+          "passed": 192,
+          "failed": 2,
+          "skipped": 0,
+          "total": 194,
+          "failing": [
+            "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)",
+            "no case made a GitHub API request (ADR-0585)"
+          ],
+          "failing_numbers": [
+            7,
+            193
+          ],
+          "duration_s": 6.9,
+          "observed": {
+            "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)": {
+              "ok": false,
+              "number": 7
+            },
+            "token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)": {
+              "ok": true,
+              "number": 64
+            },
+            "no case made a GitHub API request (ADR-0585)": {
+              "ok": false,
+              "number": 193
+            }
+          }
+        },
+        {
+          "label": "token-header",
+          "patch_id": "patch:5146b525a26d",
+          "sha256": "5146b525a26dbcaf1cba5c3fa781d77a5ffd5085b1295a3c68faec6f565906ba",
+          "changed_files": [
+            "distribution/install.sh"
+          ],
+          "status": "fail",
+          "reason": null,
+          "exit_code": 1,
+          "passed": 193,
+          "failed": 1,
+          "skipped": 0,
+          "total": 194,
+          "failing": [
+            "token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)"
+          ],
+          "failing_numbers": [
+            64
+          ],
+          "duration_s": 7.6,
+          "observed": {
+            "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)": {
+              "ok": true,
+              "number": 7
+            },
+            "token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)": {
+              "ok": false,
+              "number": 64
+            },
+            "no case made a GitHub API request (ADR-0585)": {
+              "ok": true,
+              "number": 193
+            }
+          }
+        },
+        {
+          "label": "wording",
+          "patch_id": "patch:96278d65b413",
+          "sha256": "96278d65b413302fa666500df1941180248cf2e0eab8b3d5e67ace9bcc8cff29",
+          "changed_files": [
+            "distribution/install.sh"
+          ],
+          "status": "pass",
+          "reason": null,
+          "exit_code": 0,
+          "passed": 194,
+          "failed": 0,
+          "skipped": 0,
+          "total": 194,
+          "failing": [],
+          "failing_numbers": [],
+          "duration_s": 7.0,
+          "observed": {
+            "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)": {
+              "ok": true,
+              "number": 7
+            },
+            "token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)": {
+              "ok": true,
+              "number": 64
+            },
+            "no case made a GitHub API request (ADR-0585)": {
+              "ok": true,
+              "number": 193
+            }
+          }
+        }
+      ],
+      "warnings": [],
+      "mismatches": [],
+      "verdicts": [
+        "release-lookup: violates ADR-0585 — install.sh consults no GitHub API endpoint and does not read GITHUB_TOKEN",
+        "    #7 static: the script spells a GitHub API endpoint",
+        "    #193 runtime: a GitHub API request was attempted and recorded in the harness's stubbed curl log",
+        "    harness exit 1, 192 passed / 2 failed",
+        "token-header: violates ADR-0585 — install.sh consults no GitHub API endpoint and does not read GITHUB_TOKEN",
+        "    #64 runtime: an install with GITHUB_TOKEN set sent an Authorization header",
+        "    harness exit 1, 193 passed / 1 failed",
+        "wording: consistent with ADR-0585 as far as checks #7, #64, #193 cover"
+      ],
+      "replay_check": {
+        "matched": 4,
+        "total": 4,
+        "mismatches": [],
+        "reproduced": [
+          "release-lookup",
+          "token-header"
+        ]
+      },
+      "exit_code": 0,
+      "verdict_records": [
+        {
+          "label": "release-lookup",
+          "kind": "violates",
+          "decisions": [
+            "ADR-0585"
+          ],
+          "rule": "install.sh consults no GitHub API endpoint and does not read GITHUB_TOKEN",
+          "failing": [
+            [
+              7,
+              "static",
+              "drift guard: install.sh consults no GitHub API endpoint (ADR-0585)"
+            ],
+            [
+              193,
+              "runtime",
+              "no case made a GitHub API request (ADR-0585)"
+            ]
+          ],
+          "covered": [
+            7,
+            64,
+            193
+          ]
+        },
+        {
+          "label": "token-header",
+          "kind": "violates",
+          "decisions": [
+            "ADR-0585"
+          ],
+          "rule": "install.sh consults no GitHub API endpoint and does not read GITHUB_TOKEN",
+          "failing": [
+            [
+              64,
+              "runtime",
+              "token set: no Authorization header anywhere (GITHUB_TOKEN never rides a request)"
+            ]
+          ],
+          "covered": [
+            7,
+            64,
+            193
+          ]
+        },
+        {
+          "label": "wording",
+          "kind": "consistent",
+          "decisions": [
+            "ADR-0585"
+          ],
+          "rule": null,
+          "failing": [],
+          "covered": [
+            7,
+            64,
+            193
+          ]
+        }
+      ]
+    },
+    "release": {
+      "upstream": {
+        "url": "https://github.com/relatedb/relate.git",
+        "sha": "5f7a510713c3feac146133e77d8c5bb72bae1b11"
+      },
+      "runs": [
+        {
+          "label": "baseline",
+          "patch_id": null,
+          "sha256": null,
+          "changed_files": [],
+          "status": "pass",
+          "reason": null,
+          "exit_code": 0,
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "total": 6,
+          "failing": [],
+          "failing_numbers": [],
+          "duration_s": 2.9,
+          "observed": {}
+        },
+        {
+          "label": "always-rotate",
+          "patch_id": "patch:5b21144e810e",
+          "sha256": "5b21144e810e0ac0b41f213f1f42c2846e7b79410b1dcec5509ff1b11fd5f1c5",
+          "changed_files": [
+            "scripts/release-bump.sh"
+          ],
+          "status": "fail",
+          "reason": null,
+          "exit_code": 1,
+          "passed": 5,
+          "failed": 1,
+          "skipped": 0,
+          "total": 6,
+          "failing": [
+            "advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged"
+          ],
+          "failing_numbers": [
+            2
+          ],
+          "duration_s": 2.6,
+          "observed": {
+            "advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged": {
+              "ok": false,
+              "number": 2
+            },
+            "advance: the version surfaces still advanced": {
+              "ok": true,
+              "number": 3
+            }
+          }
+        },
+        {
+          "label": "docs-only",
+          "patch_id": "patch:8ea2fb7d08c0",
+          "sha256": "8ea2fb7d08c0eb7a34a9304f351477678848ee4f1cdbff9334c177b62ebfc27a",
+          "changed_files": [
+            "CONTRIBUTING.md"
+          ],
+          "status": "pass",
+          "reason": null,
+          "exit_code": 0,
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "total": 6,
+          "failing": [],
+          "failing_numbers": [],
+          "duration_s": 2.2,
+          "observed": {
+            "advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged": {
+              "ok": true,
+              "number": 2
+            },
+            "advance: the version surfaces still advanced": {
+              "ok": true,
+              "number": 3
+            }
+          }
+        },
+        {
+          "label": "wording",
+          "patch_id": "patch:25a59c759f3f",
+          "sha256": "25a59c759f3f8876f6fe6495e01d016dbfc1ef83ce717a5b9293936edc291269",
+          "changed_files": [
+            "scripts/release-bump.sh"
+          ],
+          "status": "pass",
+          "reason": null,
+          "exit_code": 0,
+          "passed": 6,
+          "failed": 0,
+          "skipped": 0,
+          "total": 6,
+          "failing": [],
+          "failing_numbers": [],
+          "duration_s": 2.4,
+          "observed": {
+            "advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged": {
+              "ok": true,
+              "number": 2
+            },
+            "advance: the version surfaces still advanced": {
+              "ok": true,
+              "number": 3
+            }
+          }
+        }
+      ],
+      "warnings": [],
+      "mismatches": [],
+      "verdicts": [
+        "always-rotate: violates ADR-0580 — An advance never rotates CHANGELOG.md; the changelog rotates only at a release cut",
+        "    #2 runtime: an advance rewrote CHANGELOG.md, minting a release section for a version that never shipped",
+        "    harness exit 1, 5 passed / 1 failed",
+        "docs-only: no linked decision",
+        "wording: consistent with ADR-0580 as far as checks #2, #3 cover"
+      ],
+      "replay_check": {
+        "matched": 4,
+        "total": 4,
+        "mismatches": [],
+        "reproduced": [
+          "always-rotate"
+        ]
+      },
+      "exit_code": 0,
+      "verdict_records": [
+        {
+          "label": "always-rotate",
+          "kind": "violates",
+          "decisions": [
+            "ADR-0580"
+          ],
+          "rule": "An advance never rotates CHANGELOG.md; the changelog rotates only at a release cut",
+          "failing": [
+            [
+              2,
+              "runtime",
+              "advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted, [Unreleased] ref unchanged"
+            ]
+          ],
+          "covered": [
+            2,
+            3
+          ]
+        },
+        {
+          "label": "docs-only",
+          "kind": "no_decision",
+          "decisions": [],
+          "rule": null,
+          "failing": [],
+          "covered": []
+        },
+        {
+          "label": "wording",
+          "kind": "consistent",
+          "decisions": [
+            "ADR-0580"
+          ],
+          "rule": null,
+          "failing": [],
+          "covered": [
+            2,
+            3
+          ]
+        }
+      ]
+    }
+  },
+  "transcript": [
+    {
+      "t": 0.07,
+      "spans": [
+        [
+          "╭────────────────────────────────────────────────────────────────────╮",
+          "accent"
+        ]
+      ]
+    },
+    {
+      "t": 0.07,
+      "spans": [
+        [
+          "│",
+          "accent"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "Patch Precedent",
+          "strong"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "demo all",
+          "dim"
+        ],
+        [
+          "                                         ",
+          "plain"
+        ],
+        [
+          "│",
+          "accent"
+        ]
+      ]
+    },
+    {
+      "t": 0.07,
+      "spans": [
+        [
+          "│",
+          "accent"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "relatedb/relate @ 5f7a5107 · Relate 1.1.0 · read-only store",
+          "dim"
+        ],
+        [
+          "       ",
+          "plain"
+        ],
+        [
+          "│",
+          "accent"
+        ]
+      ]
+    },
+    {
+      "t": 0.07,
+      "spans": [
+        [
+          "╰────────────────────────────────────────────────────────────────────╯",
+          "accent"
+        ]
+      ]
+    },
+    {
+      "t": 0.07,
+      "spans": []
+    },
+    {
+      "t": 0.07,
+      "spans": [
+        [
+          "installer",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "t": 7.59,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "✓",
+          "pass"
+        ],
+        [
+          " baseline         194 passed  ",
+          "plain"
+        ],
+        [
+          "         ",
+          "fail"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          "exit 0  7.5s",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 14.52,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "✗",
+          "fail"
+        ],
+        [
+          " release-lookup   192 passed  ",
+          "plain"
+        ],
+        [
+          "2 failed ",
+          "fail"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          "exit 1  6.9s",
+          "dim"
+        ],
+        [
+          "   ",
+          "plain"
+        ],
+        [
+          "#7 #193",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 22.15,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "✗",
+          "fail"
+        ],
+        [
+          " token-header     193 passed  ",
+          "plain"
+        ],
+        [
+          "1 failed ",
+          "fail"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          "exit 1  7.6s",
+          "dim"
+        ],
+        [
+          "   ",
+          "plain"
+        ],
+        [
+          "#64",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 29.14,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "✓",
+          "pass"
+        ],
+        [
+          " wording          194 passed  ",
+          "plain"
+        ],
+        [
+          "         ",
+          "fail"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          "exit 0  7.0s",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.31,
+      "spans": []
+    },
+    {
+      "t": 29.31,
+      "spans": [
+        [
+          "Verdicts",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "t": 29.31,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "●",
+          "fail"
+        ],
+        [
+          " release-lookup   violates ",
+          "plain"
+        ],
+        [
+          "ADR-0585",
+          "accent"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "#7 static, #193 runtime",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.31,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "●",
+          "fail"
+        ],
+        [
+          " token-header     violates ",
+          "plain"
+        ],
+        [
+          "ADR-0585",
+          "accent"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "#64 runtime",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.31,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "●",
+          "pass"
+        ],
+        [
+          " wording          consistent with ",
+          "plain"
+        ],
+        [
+          "ADR-0585",
+          "accent"
+        ]
+      ]
+    },
+    {
+      "t": 29.31,
+      "spans": []
+    },
+    {
+      "t": 29.31,
+      "spans": [
+        [
+          "replay check: 4/4 runs match fixtures/installer/expectations.toml (by content sha256)",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.31,
+      "spans": [
+        [
+          "  release-lookup",
+          "plain"
+        ],
+        [
+          " - expected regression reproduced; demo replay succeeded",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.31,
+      "spans": [
+        [
+          "  token-header",
+          "plain"
+        ],
+        [
+          " - expected regression reproduced; demo replay succeeded",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.31,
+      "spans": []
+    },
+    {
+      "t": 29.31,
+      "spans": [
+        [
+          "───────────────────────────────────────────── ",
+          "dim"
+        ],
+        [
+          "Details",
+          "plain"
+        ],
+        [
+          " ──────────────────────────────────────────────",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.31,
+      "spans": []
+    },
+    {
+      "t": 29.31,
+      "spans": [
+        [
+          "release-lookup",
+          "strong"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "patch 635b00b21f4b changes distribution/install.sh",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "diff --git a/distribution/install.sh b/distribution/install.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "index 331db681..a33deda1 100755",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "--- a/distribution/install.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+++ b/distribution/install.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "@@ -151,7 +151,12 @@ fetch_url() { # $1 = URL, $2 = destination",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          " # One release asset over the direct route.",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          " direct_get() { # $1 = asset name, $2 = destination",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "-       fetch_url \"$download_base/$tag/$1\" \"$2\" || die \"$fetch_error\"",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+       fetch_url \"$download_base/$tag/$1\" \"$2\" && return 0",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+       asset_error=$fetch_error",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+       if fetch_url \"https://api.github.com/repos/relatedb/relate/releases/tags/$tag\"",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "\"$tmp/release-info.json\"; then",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+               echo \"Release $tag exists. Check the asset name: $1\" >&2",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+       fi",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+       die \"$asset_error\"",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          " }",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          " # The one https:// gate both override seams take, before any request.",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "token-header",
+          "strong"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "patch 5146b525a26d changes distribution/install.sh",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "diff --git a/distribution/install.sh b/distribution/install.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "index 331db68..752a1f3 100755",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "--- a/distribution/install.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+++ b/distribution/install.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "@@ -135,7 +135,12 @@ trap 'rm -rf \"$tmp\"; [ -z \"$tmp_out\" ] || rm -f \"$tmp_out\"' EXIT",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          " # dies with its own sentence around that cause.",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          " fetch_url() { # $1 = URL, $2 = destination",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "        fetch_error=\"\"",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+       # Send GITHUB_TOKEN when set, so users behind shared IPs get the",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+       # authenticated rate limit instead of the anonymous one.",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+       auth=\"\"",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+       [ -n \"${GITHUB_TOKEN:-}\" ] && auth=\"Authorization: Bearer $GITHUB_TOKEN\"",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "        status=$(curl --proto '=https' --proto-redir '=https' -sSL \\",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+               ${auth:+-H \"$auth\"} \\",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "                -o \"$2\" -w '%{http_code}' \"$1\") || {",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "                fetch_error=\"failed to fetch $1; check the connection and retry\"",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "                return 1",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "wording",
+          "strong"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "patch 96278d65b413 changes distribution/install.sh",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "diff --git a/distribution/install.sh b/distribution/install.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "index 331db681..b095337a 100755",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "--- a/distribution/install.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+++ b/distribution/install.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "@@ -255,7 +255,7 @@ case \"$latest_status\" in",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          " *) die \"$metadata_fail: the document is malformed: no latest.tag\" ;;",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          " esac",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "-echo \"Installing relate $tag ($os/$arch) to $INSTALL_DIR\"",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "+echo \"Installing relate $tag for $os/$arch in $INSTALL_DIR\"",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          " # Cheap first: the manifest and its signature are small; the binary is",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          " # the large download and must not start until the manifest is",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "Comparison",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "Input          ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " Changed             ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " Exit ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " Passed/failed ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " #7 static ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " #64 runtime ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " #193 runtime",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "────────────────────────────────────────────────────────────────────────────────────────────────────",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "baseline         - (unpatched)         0      194 / 0         ok 7        ok 64         ok 193",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "release-lookup   distribution/instal   1      192 / 2         not ok 7    ok 64         not ok 193",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "                 l.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "token-header     distribution/instal   1      193 / 1         ok 7        not ok 64     ok 193",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "                 l.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "wording          distribution/instal   0      194 / 0         ok 7        ok 64         ok 193",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "                 l.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "Graph evidence",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "distribution/install.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "  cites ADR-0585 · The installer downloads release assets over the direct route [Proposed]",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    rule      install.sh consults no GitHub API endpoint and does not read GITHUB_TOKEN",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    why       Anonymous GitHub API requests are limited to 60 per hour per IP address,",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "              and users behind shared egress (VPNs, corporate NAT, Cloudflare WARP)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "              exhausted that quota, so the one-line installer broke. Release assets are",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "              now fetched over the direct download route instead. Only ADR-0068's",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "              installer authentication clause is superseded; version selection still",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "              uses releases.json.",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    citation",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/distribution/instal",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "l.sh#L120-L128",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    decision",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/docs/adr/0585-insta",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "ller-downloads-via-direct-route.md#L8-L38",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    scope",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/docs/adr/0585-insta",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "ller-downloads-via-direct-route.md#L89-L97",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    commit    5ac38808 fix(installer): download release assets over the direct route, no GitHub API",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "(LABS-1482, ADR-0585)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "(https://github.com/relatedb/relate/commit/5ac38808547d11f55b02333624cc3e88b46566eb)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    checks",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "      #7    static   drift guard: install.sh consults no GitHub API endpoint (ADR-0585)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            release-lookup → not ok 7",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            token-header → ok 7",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            wording → ok 7",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "/tests/test_install_sh.sh#L129-L135",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "      #64   runtime  token set: no Authorization header anywhere (GITHUB_TOKEN never rides a",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "request)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            release-lookup → ok 64",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            token-header → not ok 64",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            wording → ok 64",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "/tests/test_install_sh.sh#L314-L315",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "      #193  runtime  no case made a GitHub API request (ADR-0585)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            release-lookup → not ok 193",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            token-header → ok 193",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            wording → ok 193",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "/tests/test_install_sh.sh#L610-L615",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "  also cites (scanned from source, not reviewed)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    ADR-0115 · Sign release checksums with SSHSIG for offline install and upgrade verification",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "[Accepted]",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/distribution/instal",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "l.sh#L9",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    ADR-0250 · Release discovery from a static releases.json on the website [Accepted]",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/distribution/instal",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "l.sh#L43",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    ADR-0431 · Extension distribution — the first-party channel, the install verbs, and trust tiers",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "(LABS-469) [Proposed]",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/distribution/instal",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "l.sh#L217",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    ADR-0457 · The signed release manifest carries the release version [Proposed]",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/distribution/instal",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "l.sh#L33",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "    ADR-0586 · Windows installs through a PowerShell installer [Proposed]",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/distribution/instal",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "l.sh#L83",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "Graph join (replay.rl)",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "MATCH (p:Patch)-[:CHANGES]->(f:File)-[:CITES]->(d:Decision)-[:CHECKED_BY]->(t:Check),",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "      (p)-[:PRODUCED]->(o:Observation)-[:FOR_CHECK]->(t),",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "      (c:Commit)-[:IMPLEMENTS]->(d)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "RETURN p.id AS patch, f.path AS file, d.id AS decision, d.reason AS reason,",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "       c.sha AS implementation, t.name AS assertion, o.tap AS observed,",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "       p.label AS label, o.number AS tap_number",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "ORDER BY patch, assertion",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "label / patch      ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " file / decision / impl  ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " observed   ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " assertion",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "────────────────────────────────────────────────────────────────────────────────────────────────────",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "token-header         distribution/install.sh   ok 7         drift guard: install.sh consults no",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "patch:5146b525a26d   ADR-0585 5ac38808                      GitHub API endpoint (ADR-0585)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "token-header         distribution/install.sh   ok 193       no case made a GitHub API request",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "patch:5146b525a26d   ADR-0585 5ac38808                      (ADR-0585)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "token-header         distribution/install.sh   not ok 64    token set: no Authorization header",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "patch:5146b525a26d   ADR-0585 5ac38808                      anywhere (GITHUB_TOKEN never rides a",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "                                                            request)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "release-lookup       distribution/install.sh   not ok 7     drift guard: install.sh consults no",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "patch:635b00b21f4b   ADR-0585 5ac38808                      GitHub API endpoint (ADR-0585)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "release-lookup       distribution/install.sh   not ok 193   no case made a GitHub API request",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "patch:635b00b21f4b   ADR-0585 5ac38808                      (ADR-0585)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "release-lookup       distribution/install.sh   ok 64        token set: no Authorization header",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "patch:635b00b21f4b   ADR-0585 5ac38808                      anywhere (GITHUB_TOKEN never rides a",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "                                                            request)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "wording              distribution/install.sh   ok 7         drift guard: install.sh consults no",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "patch:96278d65b413   ADR-0585 5ac38808                      GitHub API endpoint (ADR-0585)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "wording              distribution/install.sh   ok 193       no case made a GitHub API request",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "patch:96278d65b413   ADR-0585 5ac38808                      (ADR-0585)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "wording              distribution/install.sh   ok 64        token set: no Authorization header",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "patch:96278d65b413   ADR-0585 5ac38808                      anywhere (GITHUB_TOKEN never rides a",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "                                                            request)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "artifacts  ",
+          "dim"
+        ],
+        [
+          "runs/20261127T101818Z/installer",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 29.32,
+      "spans": []
+    },
+    {
+      "t": 29.32,
+      "spans": [
+        [
+          "release",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "t": 32.27,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "✓",
+          "pass"
+        ],
+        [
+          " baseline         6 passed    ",
+          "plain"
+        ],
+        [
+          "         ",
+          "fail"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          "exit 0  2.9s",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 34.92,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "✗",
+          "fail"
+        ],
+        [
+          " always-rotate    5 passed    ",
+          "plain"
+        ],
+        [
+          "1 failed ",
+          "fail"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          "exit 1  2.6s",
+          "dim"
+        ],
+        [
+          "   ",
+          "plain"
+        ],
+        [
+          "#2",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 37.16,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "✓",
+          "pass"
+        ],
+        [
+          " docs-only        6 passed    ",
+          "plain"
+        ],
+        [
+          "         ",
+          "fail"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          "exit 0  2.2s",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.58,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "✓",
+          "pass"
+        ],
+        [
+          " wording          6 passed    ",
+          "plain"
+        ],
+        [
+          "         ",
+          "fail"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          "exit 0  2.4s",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.68,
+      "spans": []
+    },
+    {
+      "t": 39.68,
+      "spans": [
+        [
+          "Verdicts",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "●",
+          "fail"
+        ],
+        [
+          " always-rotate    violates ",
+          "plain"
+        ],
+        [
+          "ADR-0580",
+          "accent"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "#2 runtime",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "●",
+          "dim"
+        ],
+        [
+          " docs-only        no linked decision",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "●",
+          "pass"
+        ],
+        [
+          " wording          consistent with ",
+          "plain"
+        ],
+        [
+          "ADR-0580",
+          "accent"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "replay check: 4/4 runs match fixtures/release/expectations.toml (by content sha256)",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "  always-rotate",
+          "plain"
+        ],
+        [
+          " - expected regression reproduced; demo replay succeeded",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "───────────────────────────────────────────── ",
+          "dim"
+        ],
+        [
+          "Details",
+          "plain"
+        ],
+        [
+          " ──────────────────────────────────────────────",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "always-rotate",
+          "strong"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "patch 5b21144e810e changes scripts/release-bump.sh",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "diff --git a/scripts/release-bump.sh b/scripts/release-bump.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "index 6048649..b9e9e46 100755",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "--- a/scripts/release-bump.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "+++ b/scripts/release-bump.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "@@ -228,14 +228,10 @@ cargo metadata --format-version 1 > /dev/null",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          " # the idempotence decision, the link-ref rewrites — lives in",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          " # scripts/changelog_rotate.py, the one implementation, unit-tested directly.",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          " # Already-rotated is the module's own skip notice on stdout, exit 0. The",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "-# advance's scoped mode skips the step: the changelog rotates only at a",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "-# release cut (ADR-0580).",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "-if (( ! skip_changelog )); then",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "-  python3 scripts/changelog_rotate.py \"$changelog\" \\",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "-    --version \"$next\" --date \"$(date +%F)\"",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "-else",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "-  echo \"release-bump: CHANGELOG rotation skipped (the advance's scoped mode); the changelog rotates",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "only at a release cut\"",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "-fi",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "+# advance's scoped mode used to skip the step, but rotation is idempotent, so",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "+# every sweep now runs it and the changelog can never fall behind (ADR-0580).",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "+python3 scripts/changelog_rotate.py \"$changelog\" \\",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "+  --version \"$next\" --date \"$(date +%F)\"",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          " # --- 4. Consistency self-check (after editing) --------------------------------",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "docs-only",
+          "strong"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "patch 8ea2fb7d08c0 changes CONTRIBUTING.md",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "index e904916..5038b68 100644",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "--- a/CONTRIBUTING.md",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "+++ b/CONTRIBUTING.md",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "@@ -1,6 +1,6 @@",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          " # Contributing to Relate",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "-Thanks for using Relate — and for wanting to make it better.",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "+Thank you for using Relate, and for wanting to make it better.",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          " ## How to contribute: open an issue",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "wording",
+          "strong"
+        ],
+        [
+          "  ",
+          "plain"
+        ],
+        [
+          "patch 25a59c759f3f changes scripts/release-bump.sh",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "diff --git a/scripts/release-bump.sh b/scripts/release-bump.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "index 6048649..534c546 100755",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "--- a/scripts/release-bump.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "+++ b/scripts/release-bump.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "@@ -234,7 +234,7 @@ if (( ! skip_changelog )); then",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "   python3 scripts/changelog_rotate.py \"$changelog\" \\",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "     --version \"$next\" --date \"$(date +%F)\"",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          " else",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "-  echo \"release-bump: CHANGELOG rotation skipped (the advance's scoped mode); the changelog rotates",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "only at a release cut\"",
+          "fail"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "+  echo \"release-bump: --skip-changelog: CHANGELOG.md left unchanged (an advance is not a release",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "cut)\"",
+          "pass"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          " fi",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          " # --- 4. Consistency self-check (after editing) --------------------------------",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "Comparison",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "Input         ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " Changed                 ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " Exit ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " Passed/failed ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " #2 runtime ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " #3 runtime",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "────────────────────────────────────────────────────────────────────────────────────────",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "baseline        - (unpatched)             0      6 / 0           ok 2         ok 3",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "always-rotate   scripts/release-bump.sh   1      5 / 1           not ok 2     ok 3",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "docs-only       CONTRIBUTING.md           0      6 / 0           ok 2         ok 3",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "wording         scripts/release-bump.sh   0      6 / 0           ok 2         ok 3",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "Graph evidence",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "scripts/release-bump.sh",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "  cites ADR-0580 · Post-release workspace versioning [Proposed]",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "    rule      An advance never rotates CHANGELOG.md; the changelog rotates only at a release cut",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "    why       After each release the workspace advances to the next unreleased version,",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "              so main never carries a released version. The advance performs the",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "              version-surface sweep without the changelog rotation, because an advance",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "              is not a release cut and rotating then would mint a release section for a",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "              version that never shipped. The released version therefore exists only on",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "              the tagged commit and on the registries.",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "    citation",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/release-bum",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "p.sh#L224-L238",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "    decision",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/docs/adr/0580-post-",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "release-workspace-versioning.md#L26-L45",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "    scope",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/docs/adr/0580-post-",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "release-workspace-versioning.md#L66-L78",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "    commit    d79d8b15 fix(release): close the cargo package drift window with a post-release",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "version advance (LABS-1443, ADR-0580) (#233)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "(https://github.com/relatedb/relate/commit/d79d8b150561f56b4940876a067d6b7e4781d2bc)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "    checks",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "      #2    runtime  advance: empty-[Unreleased] CHANGELOG.md byte-identical — no heading inserted,",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "[Unreleased] ref unchanged",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "            always-rotate → not ok 2",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "            wording → ok 2",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "/tests/test_release_advance.sh#L45-L46",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "      #3    runtime  advance: the version surfaces still advanced",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "            always-rotate → ok 3",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "            wording → ok 3",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "            https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "/tests/test_release_advance.sh#L48-L49",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "  also cites (scanned from source, not reviewed)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "    ADR-0278 · npm distribution [Accepted]",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/release-bum",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "p.sh#L18",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "    ADR-0560 · crates.io and PyPI distribution [Proposed]",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/release-bum",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "p.sh#L184",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "    ADR-0616 · npm platform packages resolve as file: links in the repository, registry pins",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "injected at pack time [Proposed]",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "https://github.com/relatedb/relate/blob/5f7a510713c3feac146133e77d8c5bb72bae1b11/scripts/release-bum",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "p.sh#L193",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "CONTRIBUTING.md: no linked decision",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "Graph join (replay.rl)",
+          "strong"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "MATCH (p:Patch)-[:CHANGES]->(f:File)-[:CITES]->(d:Decision)-[:CHECKED_BY]->(t:Check),",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "      (p)-[:PRODUCED]->(o:Observation)-[:FOR_CHECK]->(t),",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "      (c:Commit)-[:IMPLEMENTS]->(d)",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "RETURN p.id AS patch, f.path AS file, d.id AS decision, d.reason AS reason,",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "       c.sha AS implementation, t.name AS assertion, o.tap AS observed,",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "       p.label AS label, o.number AS tap_number",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "ORDER BY patch, assertion",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "label / patch      ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " file / decision / impl  ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " observed ",
+          "dim"
+        ],
+        [
+          " ",
+          "plain"
+        ],
+        [
+          " assertion",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "────────────────────────────────────────────────────────────────────────────────────────────────────",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "wording              scripts/release-bump.sh   ok 2       advance: empty-[Unreleased] CHANGELOG.md",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "patch:25a59c759f3f   ADR-0580 d79d8b15                    byte-identical — no heading inserted,",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "                                                          [Unreleased] ref unchanged",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "wording              scripts/release-bump.sh   ok 3       advance: the version surfaces still",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "patch:25a59c759f3f   ADR-0580 d79d8b15                    advanced",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "always-rotate        scripts/release-bump.sh   not ok 2   advance: empty-[Unreleased] CHANGELOG.md",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "patch:5b21144e810e   ADR-0580 d79d8b15                    byte-identical — no heading inserted,",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "                                                          [Unreleased] ref unchanged",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "always-rotate        scripts/release-bump.sh   ok 3       advance: the version surfaces still",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "patch:5b21144e810e   ADR-0580 d79d8b15                    advanced",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "artifacts  ",
+          "dim"
+        ],
+        [
+          "runs/20261127T101818Z/release",
+          "plain"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": []
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "✓ 8/8 runs match expectations",
+          "pass"
+        ],
+        [
+          "   ",
+          "plain"
+        ],
+        [
+          "overall exit 0 · 40s ·",
+          "dim"
+        ]
+      ]
+    },
+    {
+      "t": 39.69,
+      "spans": [
+        [
+          "runs/20261127T101818Z",
+          "dim"
+        ]
+      ]
+    }
+  ]
+}

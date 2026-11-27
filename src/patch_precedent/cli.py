@@ -79,6 +79,13 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
         sub.add_argument("--results", type=Path, default=None,
                          help="results directory (default: newest eval/results/*)")
 
+    site = subparsers.add_parser("site", help="build the static website or record the demo run")
+    site.add_argument("action", nargs="?", choices=["build", "record"], default="build")
+    site.add_argument("--out", type=Path, default=None,
+                      help="output (build: directory, default site/dist; record: JSON file, "
+                      "default recorded/demo-all.json)")
+    site.add_argument("--base-url", default=None, help="absolute base URL for the built site")
+
     scan = subparsers.add_parser(
         "scan-citations", help="scan upstream for ADR-NNNN mentions into evidence/scanned/"
     )
@@ -318,6 +325,26 @@ def _cmd_scan(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_site(args: argparse.Namespace) -> int:
+    if args.action == "record":
+        import tempfile as _tf
+
+        from .site.record import record_demo
+
+        out = args.out or project_root() / "recorded" / "demo-all.json"
+        with _tf.TemporaryDirectory() as tmp:
+            code = record_demo(out, Path(tmp))
+        if code == 0:
+            try:
+                shown = out.resolve().relative_to(project_root().resolve())
+            except ValueError:
+                shown = out
+            print(f"wrote {shown}")
+        return code
+    print("site build: not yet implemented", file=sys.stderr)
+    return 2
+
+
 def main(argv: list[str] | None = None) -> int:
     parser, _subparsers = build_parser()
     args = parser.parse_args(argv)
@@ -331,6 +358,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_scan(args)
     if args.command == "demo":
         return _cmd_demo(args)
+    if args.command == "site":
+        return _cmd_site(args)
     if args.command == "mcp":
         return _cmd_mcp(args)
     if args.command == "fetch-relate-cli":
