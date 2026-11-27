@@ -1,4 +1,5 @@
 import json
+import re
 import shutil
 from pathlib import Path
 
@@ -6,7 +7,7 @@ import pytest
 
 from patch_precedent import pins
 from patch_precedent.pins import STORE_PATH
-from patch_precedent.site.data import (SiteDataError, fill, literal_query, load_site_data,
+from patch_precedent.site.data import (SiteDataError, checks_phrase, failing_label, misses_sit, fill, literal_query, load_site_data,
                                        prose)
 from patch_precedent.store import open_readonly
 
@@ -57,7 +58,7 @@ def test_six_patch_pages_match_recording(data):
 def test_consistent_body_has_rule(data):
     w = next(p for p in data.patches if p.slug == "release-wording")
     assert "ADR-0580: An advance never rotates CHANGELOG.md" in w.body
-    assert "All 2 linked checks passed" in w.body
+    assert "Both linked checks passed" in w.body
 
 
 def test_diff_line_numbers(data):
@@ -103,7 +104,7 @@ def test_caveats_filled(data):
     assert any("3 of 18" in c for c in data.eval.caveats)
     assert len(data.eval.caveats) == 4
     assert all("{" not in c and "}" not in c for c in data.eval.caveats)
-    assert "all 2 baseline verdict misses" in data.eval.caveats[3]
+    assert "both baseline verdict misses sit on that line" in data.eval.caveats[3]
     assert "{" not in data.eval.intro and "Claude Sonnet" in data.eval.intro
 
 
@@ -172,3 +173,35 @@ def test_store_stats(data):
     s = data.store
     assert (s.nodes, s.rels) == (2557, 6844)
     assert s.by_label["Decision"] == 567 and s.by_type["CITES"] == 6837
+
+
+def test_count_helpers():
+    assert checks_phrase(1) == "The linked check"
+    assert checks_phrase(2) == "Both linked checks"
+    assert checks_phrase(3) == "All 3 linked checks"
+    assert failing_label([64]) == "Check #64"
+    assert failing_label([193, 7]) == "Checks #7 and #193"
+    assert failing_label([1, 2, 3]) == "Checks #1, #2 and #3"
+    assert misses_sit(1) == "the one baseline verdict miss sits"
+    assert misses_sit(2) == "both baseline verdict misses sit"
+    assert misses_sit(5) == "all 5 baseline verdict misses sit"
+
+
+def test_bodies_and_demo_strings(data):
+    by = {p.slug: p.body for p in data.patches}
+    assert "Checks #7 and #193 caught it: install.sh contains a GitHub API URL" in by["installer-release-lookup"]
+    assert by["installer-token-header"].count("Check #64 caught it") == 1
+    assert "All 3 linked checks passed" in by["installer-wording"]
+    n = round(data.recording["elapsed_s"])
+    assert data.content["home"]["demo_note"] == f"Runs locally in about {n} seconds."
+    assert f"About {n} seconds." in data.content["use"]["steps"][1]["text"]
+    for sec in ("home", "use", "relate"):
+        assert "{" not in "".join(re.findall(r'"((?:[^"\\\\]|\\\\.)*)"', json.dumps(data.content[sec])))
+
+
+def test_stray_placeholder_in_home_raises(tmp_path):
+    _copy_inputs(tmp_path)
+    p = tmp_path / "site" / "content.toml"
+    p.write_text(p.read_text(encoding="utf-8").replace("{demo_seconds}", "{nope}", 1), encoding="utf-8")
+    with pytest.raises(SiteDataError, match=r"\{nope\}"):
+        load_site_data(tmp_path)

@@ -228,6 +228,33 @@ def _failing_text(nums: list[int]) -> str:
     return tags[0] if len(tags) == 1 else ", ".join(tags[:-1]) + " and " + tags[-1] if tags else ""
 
 
+def failing_label(nums: list[int]) -> str:
+    """"Check #64" or "Checks #7 and #193"."""
+    return ("Check " if len(nums) == 1 else "Checks ") + _failing_text(nums)
+
+
+def checks_phrase(n: int) -> str:
+    """Subject phrase for "passed": "The linked check", "Both linked checks", "All 3 linked checks"."""
+    if n == 0:
+        return "No linked checks"
+    if n == 1:
+        return "The linked check"
+    if n == 2:
+        return "Both linked checks"
+    return f"All {n} linked checks"
+
+
+def misses_sit(n: int) -> str:
+    """Clause subject and verb for baseline verdict misses."""
+    if n == 0:
+        return "no baseline verdict misses sit"
+    if n == 1:
+        return "the one baseline verdict miss sits"
+    if n == 2:
+        return "both baseline verdict misses sit"
+    return f"all {n} baseline verdict misses sit"
+
+
 def _checks(rows: list[dict], observed: dict, content: dict) -> tuple[CheckRow, ...]:
     out: dict[str, CheckRow] = {}
     for r in rows:
@@ -253,15 +280,15 @@ def _cards(rows: list[dict], observed: dict, content: dict) -> tuple[DecisionCar
     for did, rs in sorted(by_decision.items()):
         r = rs[0]
         cards.append(DecisionCard(
-            did, prose(r["title"]), prose(r["status"]), r["rule"], r["reason"],
+            did, prose(r["title"]), prose(r["status"]), prose(r["rule"]), prose(r["reason"]),
             r["decision_url"], r["consequences_url"], r["citation_url"],
-            r["implementation"], r["commit_subject"], r["commit_url"],
+            r["implementation"], prose(r["commit_subject"]), r["commit_url"],
             _checks(rs, observed, content)))
     return tuple(cards)
 
 
 def _build_patch(run: dict, rec: dict, scenario: str, fixture: str, root: Path, conn,
-                 content: dict, pc: dict) -> PatchPage:
+                 content: dict, pc: dict, shared: Mapping[str, object]) -> PatchPage:
     label = run["label"]
     files = tuple(run["changed_files"])
     ev = _store.evidence_for_paths(conn, files)
@@ -280,15 +307,18 @@ def _build_patch(run: dict, rec: dict, scenario: str, fixture: str, root: Path, 
                               r["decision_url"]))
     verdict = next(v for v in rec["verdict_records"] if v["label"] == label)
     nums = sorted(run["failing_numbers"])
+    n_checks = sum(len(d.checks) for d in decisions)
     values = {
+        **shared,
         "decision": ", ".join(verdict["decisions"]),
-        "rule": verdict.get("rule") or (decisions[0].rule if decisions else ""),
+        "rule": prose(verdict.get("rule") or "") or (decisions[0].rule if decisions else ""),
         "failing": _failing_text(nums),
+        "failing_label": failing_label(nums),
         "passed": run["passed"], "total": run["total"],
-        "checks": sum(len(d.checks) for d in decisions),
+        "checks": n_checks, "checks_phrase": checks_phrase(n_checks),
         "file": files[0] if files else "",
     }
-    body = fill(pc["body"], values)
+    body = prose(fill(pc["body"], values))
     diff = parse_diff(_need(root / fixture).read_text(encoding="utf-8"))
     queries = (
         ("Decision chain", "\n\n".join(
@@ -346,7 +376,7 @@ def _metrics(arms: dict) -> tuple[dict, ...]:
     )
 
 
-def _eval_view(root: Path, content: dict) -> EvalView:
+def _eval_inputs(root: Path):
     rdir = root / RESULTS_DIR
     results = _json(rdir / "results.json")
     scored = _jsonl(rdir / "scored.jsonl")
@@ -354,6 +384,31 @@ def _eval_view(root: Path, content: dict) -> EvalView:
     expected = {c["id"]: c["verdict"] for c in cases_toml}
     arms = results["arms"]
     b, g = arms["baseline"], arms["graph"]
+    return results, scored, cases_toml, expected, arms, b, g
+
+
+def _shared_values(root: Path, rec: dict) -> dict:
+    results, scored, cases_toml, expected, arms, b, g = _eval_inputs(root)
+    return {
+        "model": MODEL_NAME,
+        "repeats": max(r["repeat"] for r in scored),
+        "cases": len(cases_toml),
+        "n": b["n"],
+        "graph_runs": g["replay_found_n"],
+        "replay_found": g["replay_found_k"],
+        "replay_missed": g["replay_found_n"] - g["replay_found_k"],
+        "baseline_verdict_k": b["verdict_k"],
+        "graph_verdict_k": g["verdict_k"],
+        "baseline_verdict_misses": b["n"] - b["verdict_k"],
+        "baseline_misses_sit": misses_sit(b["n"] - b["verdict_k"]),
+        "catching_recall_baseline": _pct(b["catching_recall_mean"]),
+        "catching_recall_graph": _pct(g["catching_recall_mean"]),
+        "demo_seconds": round(rec["elapsed_s"]),
+    }
+
+
+def _eval_view(root: Path, content: dict, values: Mapping[str, object]) -> EvalView:
+    results, scored, cases_toml, expected, arms, b, g = _eval_inputs(root)
 
     for r in scored:
         if r["arm"] == "baseline" and r["verdict_correct"] is False:
@@ -369,26 +424,12 @@ def _eval_view(root: Path, content: dict) -> EvalView:
         {k: r.get(k) for k in ("case", "arm", "repeat", "verdict", "verdict_correct", "turns",
                                "cost_usd", "tool_replay_found")}
         for r in scored)
-    values = {
-        "model": MODEL_NAME,
-        "repeats": max(r["repeat"] for r in scored),
-        "cases": len(cases_toml),
-        "n": b["n"],
-        "graph_runs": g["replay_found_n"],
-        "replay_found": g["replay_found_k"],
-        "replay_missed": g["replay_found_n"] - g["replay_found_k"],
-        "baseline_verdict_k": b["verdict_k"],
-        "graph_verdict_k": g["verdict_k"],
-        "baseline_verdict_misses": b["n"] - b["verdict_k"],
-        "catching_recall_baseline": _pct(b["catching_recall_mean"]),
-        "catching_recall_graph": _pct(g["catching_recall_mean"]),
-    }
     res = content.get("results")
     if not res:
         raise SiteDataError("content.toml has no [results] table")
     return EvalView(
-        arms=arms, cases=cases, per_run=per_run, intro=fill(res["intro"], values),
-        caveats=tuple(fill(c, values) for c in res["caveats"]), metrics=_metrics(arms))
+        arms=arms, cases=cases, per_run=per_run, intro=prose(fill(res["intro"], values)),
+        caveats=tuple(prose(fill(c, values)) for c in res["caveats"]), metrics=_metrics(arms))
 
 
 # ---- store --------------------------------------------------------------------------
@@ -410,12 +451,27 @@ def _store_stats(path: Path) -> StoreStats:
         conn.close()
 
 
+def _fill_all(value, values: Mapping[str, object]):
+    if isinstance(value, str):
+        return prose(fill(value, values))
+    if isinstance(value, list):
+        return [_fill_all(v, values) for v in value]
+    if isinstance(value, dict):
+        return {k: _fill_all(v, values) for k, v in value.items()}
+    return value
+
+
 # ---- entry point --------------------------------------------------------------------
 
 def load_site_data(root: Path) -> SiteData:
     root = Path(root)
     rec = _json(root / "recorded" / "demo-all.json")
     content = _toml(root / "site" / "content.toml")
+    shared = _shared_values(root, rec)
+    for section in ("home", "use", "relate"):
+        if section not in content:
+            raise SiteDataError(f"content.toml has no [{section}] table")
+        content[section] = _fill_all(content[section], shared)
     store_path = root / "data" / "precedent.rl"
     _need(store_path)
 
@@ -435,7 +491,8 @@ def load_site_data(root: Path) -> SiteData:
             if pc is None:
                 raise SiteDataError(f"no content entry for [patches.\"{key}\"]")
             fixture = f"fixtures/{scenario}/{run['label']}.patch"
-            pages_by_key[key] = _build_patch(run, sc, scenario, fixture, root, conn, content, pc)
+            pages_by_key[key] = _build_patch(run, sc, scenario, fixture, root, conn, content, pc,
+                                             shared)
     finally:
         conn.close()
     missing = [k for k in order if k not in pages_by_key]
@@ -453,7 +510,7 @@ def load_site_data(root: Path) -> SiteData:
     home = next((p for p in patches if p.slug == "installer-token-header"), None)
     if home is None:
         raise SiteDataError("recording has no installer/token-header patch")
-    return SiteData(tuple(patches), _eval_view(root, content), _store_stats(store_path),
+    return SiteData(tuple(patches), _eval_view(root, content, shared), _store_stats(store_path),
                     rec, content, home)
 
 
