@@ -6,7 +6,9 @@ import shutil
 from pathlib import Path
 
 import jinja2
+import markupsafe
 
+from .graph import patch_graph_svg
 from .data import SiteData, SiteDataError, load_site_data, prose
 
 HERE = Path(__file__).resolve().parent
@@ -30,12 +32,19 @@ def _rel(ctx: jinja2.runtime.Context, target: str) -> str:
     return url + sep + frag if (url or frag) else "./"
 
 
+def _text(value: str) -> markupsafe.Markup:
+    """Escape for element content only (& < >), so quotes in verbatim code stay literal."""
+    return markupsafe.Markup(str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+
 def _env() -> jinja2.Environment:
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(str(TEMPLATES)), autoescape=True,
         undefined=jinja2.StrictUndefined, trim_blocks=True, lstrip_blocks=True,
         keep_trailing_newline=True)
     env.filters["prose"] = prose
+    env.filters["text"] = _text
+    env.globals["graph_svg"] = patch_graph_svg
     env.filters["rel"] = jinja2.pass_context(_rel)
     return env
 

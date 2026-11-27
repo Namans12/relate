@@ -168,4 +168,46 @@
     addEventListener('hashchange', () => { if (location.hash === '#demo') request(); });
     document.addEventListener('click', e => { if (e.target.closest('a[href$="#demo"]')) request(); });
   });
+  // patch graph: highlight a node's edges and show its title as a tooltip
+  document.querySelectorAll('svg.patch-graph').forEach(svg => {
+    const tip = document.createElement('div');
+    tip.className = 'gtip'; tip.hidden = true; tip.setAttribute('aria-hidden', 'true');
+    document.body.append(tip);
+    const edges = [...svg.querySelectorAll('path[data-from]')];
+    const clear = () => {
+      svg.classList.remove('hovering');
+      svg.querySelectorAll('.hl').forEach(el => el.classList.remove('hl'));
+      tip.hidden = true;
+    };
+    const show = (node, x, y) => {
+      clear();
+      const id = node.dataset.id;
+      svg.classList.add('hovering');
+      node.classList.add('hl');
+      const linked = new Set([id]);
+      edges.forEach(e => {
+        if (e.dataset.from === id || e.dataset.to === id) {
+          e.classList.add('hl'); linked.add(e.dataset.from); linked.add(e.dataset.to);
+        }
+      });
+      svg.querySelectorAll('.node').forEach(n => { if (linked.has(n.dataset.id)) n.classList.add('hl'); });
+      const title = node.querySelector('title');
+      tip.textContent = title ? title.textContent : '';
+      tip.hidden = !tip.textContent;
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      tip.style.left = Math.max(8, Math.min(x + 12, innerWidth - w - 8)) + 'px';
+      tip.style.top = Math.max(8, y - h - 12 < 8 ? y + 18 : y - h - 12) + 'px';
+    };
+    svg.querySelectorAll('.node').forEach(node => {
+      node.addEventListener('mouseenter', e => show(node, e.clientX, e.clientY));
+      node.addEventListener('mousemove', e => { if (!tip.hidden) show(node, e.clientX, e.clientY); });
+      node.addEventListener('mouseleave', clear);
+      node.addEventListener('focus', () => {
+        const r = node.getBoundingClientRect();
+        show(node, r.left + r.width / 2, r.top);
+      });
+      node.addEventListener('blur', clear);
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') clear(); });
+  });
 })();

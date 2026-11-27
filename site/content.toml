@@ -26,6 +26,10 @@ text = "Each patch runs against the unmodified upstream test harness in its own 
 name = "Explain"
 text = "One Relate query joins the patch, its decision and every observed test result."
 
+[patch_page]
+graph_caption = "Drawn from the Relate store; observed results from the recorded run."
+query_note = "Runs as-is against data/precedent.rl, with relate or the MCP read_cypher tool."
+
 [patches."installer/release-lookup"]
 summary = "Asks the GitHub API about the release when a download fails."
 heading = "Breaks the installer's no-API rule"

@@ -283,3 +283,77 @@ pre,.code{max-width:100%}
   .bar{grid-template-columns:56px minmax(0,1fr) auto}
 }
 @media (prefers-reduced-motion:reduce){.js .fill,.pcard{transition:none}.pcard:hover{transform:none}}
+
+/* ===== patch pages ===== */
+.stack>*{min-width:0}
+.phead .ptitle{display:flex;flex-wrap:wrap;align-items:center;gap:var(--s3);margin:var(--s3) 0 var(--s2)}
+.phead h1{overflow-wrap:anywhere}
+.lede-sm{max-width:62ch}
+.stat b.n-fail{color:var(--fail)}
+.stat b.n-none{color:var(--ink-3)}
+.stat b{display:block;overflow-wrap:anywhere}
+.verdict.callout-pass{background:var(--pass-soft);border-color:#C5E0D1}
+.verdict.callout-pass .ico{background:var(--pass)}
+.verdict.callout-none{background:var(--sunk);border-color:var(--line)}
+.verdict.callout-none .ico{background:var(--ink-3)}
+.verdict>div:last-child{min-width:0}
+.code-bar .path{overflow-wrap:anywhere;min-width:0}
+.code-bar .delta{flex:0 0 auto;margin-left:var(--s3)}
+.code-bar .delta .pl{color:#8FD0A8;font-weight:500}.code-bar .delta .mi{color:#F29A86;font-weight:500}
+.code pre{display:block}
+.code .ln{width:max-content;min-width:100%}
+.code .ln .s{text-align:center}
+.card h3{overflow-wrap:anywhere}
+.card h3 code{font-size:.85em}
+.card .rule{margin:var(--s3) 0 var(--s2)}
+.card .note,.note{font-size:13px}
+.twrap{overflow-x:auto}
+.t td.what{min-width:200px}
+.t code.full{display:block;margin-top:4px;font:400 11.5px/1.5 "JetBrains Mono";color:var(--ink-3);overflow-wrap:anywhere}
+.t td.k a{font-family:"JetBrains Mono"}
+.caption{margin-top:var(--s4);font-size:13.5px;color:var(--ink-3)}
+.card-head .legend{justify-content:flex-end}
+.graph-scroll{border:1px solid var(--line);border-radius:var(--r-sm);background:#fff;padding:var(--s3)}
+.graph-scroll svg{display:block;width:100%;height:auto}
+.patch-graph .node{cursor:pointer;transition:opacity .15s}
+.patch-graph .node:focus{outline:none}
+.patch-graph .node:focus-visible rect,.patch-graph .node:focus-visible circle{stroke:#B4472A;stroke-width:3}
+.patch-graph path{transition:opacity .15s,stroke-width .15s}
+.patch-graph.hovering .node:not(.hl),.patch-graph.hovering path:not(.hl){opacity:.28}
+.patch-graph path.hl{stroke:#1B1F2A;stroke-width:2.5}
+.gtip{position:fixed;z-index:50;max-width:min(320px,calc(100vw - 24px));padding:8px 12px;border-radius:8px;background:#1B1F2A;color:#FAF7F2;font:500 12.5px/1.45 Inter,sans-serif;box-shadow:var(--shadow);pointer-events:none;overflow-wrap:anywhere}
+.gtip[hidden]{display:none}
+details.more summary{gap:var(--s4)}
+details.more summary>span:first-child{font-family:"Playfair Display",Georgia,serif;font-size:18px;font-weight:700}
+details.more summary .note{margin-left:auto;font-weight:500}
+details.more summary:focus-visible{outline-offset:6px}
+details.more[open] summary{margin-bottom:var(--s4)}
+.cited{list-style:none;font-size:14px}
+.cited li{display:flex;gap:var(--s3);align-items:baseline;padding:var(--s2) 0;border-top:1px solid var(--line)}
+.cited li a{flex:0 0 78px;font-size:13px;color:var(--accent);font-weight:600}
+.cited li>span:nth-child(2){flex:1;min-width:0}
+.cited .pill{flex:0 0 auto}
+.queries{display:grid;gap:var(--s4)}
+.queries .code pre{white-space:pre;font-size:12.5px}
+.h-sm{font-size:18px;margin-bottom:var(--s3)}
+.pager>*{flex:1 1 0;min-width:0}
+.pager .next{text-align:right}
+.pager b{font:700 16px "Playfair Display";overflow-wrap:anywhere}
+@media (max-width:720px){
+  .card{padding:var(--s4)}
+  .verdict{padding:var(--s4)}
+  details.more summary{flex-wrap:wrap}
+  details.more summary .note{margin-left:0;flex-basis:100%;order:3}
+  .cited li{flex-wrap:wrap}
+  .cited li>span:nth-child(2){flex-basis:100%;order:3}
+  .card-head{flex-wrap:wrap}
+  .card-head .legend{justify-content:flex-start;gap:var(--s2) var(--s3)}
+  .layout{padding-bottom:var(--s7)}
+}
+@media (prefers-reduced-motion:reduce){.patch-graph .node,.patch-graph path{transition:none}}
+.stat b,.pager b,h1,h2,h3{font-variant-numeric:lining-nums}
+@media (max-width:720px){
+  .t td.what{min-width:0}
+  .t td,.t th{padding-left:var(--s2);padding-right:var(--s2)}
+  .t .badge{padding:0 8px}
+}

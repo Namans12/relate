@@ -468,7 +468,7 @@ def load_site_data(root: Path) -> SiteData:
     rec = _json(root / "recorded" / "demo-all.json")
     content = _toml(root / "site" / "content.toml")
     shared = _shared_values(root, rec)
-    for section in ("home", "use", "relate"):
+    for section in ("home", "use", "relate", "patch_page"):
         if section not in content:
             raise SiteDataError(f"content.toml has no [{section}] table")
         content[section] = _fill_all(content[section], shared)

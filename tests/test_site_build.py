@@ -15,7 +15,7 @@ SLUGS = ["installer-release-lookup", "installer-token-header", "installer-wordin
          "release-always-rotate", "release-wording", "release-docs-only"]
 PAGES = ["index.html", "home.html", "results.html", "use.html", "relate.html"] + [
     f"scenarios/{s}.html" for s in SLUGS]
-LATER = [p for p in PAGES if p not in ("index.html", "home.html")]
+LATER = [p for p in PAGES if p in ("results.html", "use.html", "relate.html")]
 ALLOWED = ("https://github.com/Namans12/relate", "https://github.com/relatedb/relate/",
            "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://relate.devpost.com")
 pending = pytest.mark.xfail(strict=False, reason="page built in a later task")
