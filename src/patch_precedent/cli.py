@@ -35,6 +35,9 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
     )
     explain.add_argument("patch_file", type=Path, metavar="PATCH_FILE")
     explain.add_argument("--store", type=Path, default=STORE_PATH)
+    explain.add_argument("--plain", action="store_true", help="force plain text (no styling)")
+    explain.add_argument("--links", action="store_true",
+                         help="print the GitHub permalinks (styled output only)")
 
     demo = subparsers.add_parser(
         "demo", help="replay baseline and patches against the upstream harness and explain"
@@ -43,6 +46,7 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
                       help=f"scenario to run ({', '.join(SCENARIOS)}, or all)")
     demo.add_argument("--fixtures", type=Path, default=None, help="directory of *.patch files")
     demo.add_argument("--runs-dir", type=Path, default=None, help="where run directories go")
+    demo.add_argument("--plain", action="store_true", help="force plain text (no styling)")
 
     mcp = subparsers.add_parser(
         "mcp", help="serve the read-only precedent_for_patch tool over stdio (MCP)"
@@ -129,6 +133,7 @@ def _cmd_explain(args: argparse.Namespace) -> int:
     from .diffparse import read_patch
     from .report import render_file_evidence
     from .store import cited_decisions, evidence_for_paths, open_readonly
+    from .tui import make_console, render_explain, should_style
 
     if not args.patch_file.is_file():
         print(f"patch file not found: {args.patch_file}", file=sys.stderr)
@@ -137,32 +142,46 @@ def _cmd_explain(args: argparse.Namespace) -> int:
         print(f"store not found: {args.store}", file=sys.stderr)
         return 2
     patch = read_patch(args.patch_file)
-    print(f"patch    {patch.label} (sha256 {patch.sha256[:12]})")
-    print(f"changes  {', '.join(patch.changed_files)}")
-    print("mode     read-only: no upstream fetch, no patch executed")
-    print()
-    if not patch.changed_files:
-        print("no changed files found in patch")
+    styled = should_style(sys.stdout, args.plain)
+    if not styled:
+        print(f"patch    {patch.label} (sha256 {patch.sha256[:12]})")
+        print(f"changes  {', '.join(patch.changed_files)}")
+        print("mode     read-only: no upstream fetch, no patch executed")
+        print()
+        if not patch.changed_files:
+            print("no changed files found in patch")
+            return 0
+    evidence: dict = {}
+    cited: dict = {}
+    if patch.changed_files:
+        conn = open_readonly(args.store)
+        try:
+            evidence = evidence_for_paths(conn, patch.changed_files)
+            cited = cited_decisions(conn, patch.changed_files)
+        finally:
+            conn.close()
+    if styled:
+        render_explain(make_console(), patch, evidence, cited, args.links)
         return 0
-    conn = open_readonly(args.store)
-    try:
-        evidence = evidence_for_paths(conn, patch.changed_files)
-        cited = cited_decisions(conn, patch.changed_files)
-    finally:
-        conn.close()
     print("\n\n".join(render_file_evidence(f, evidence[f], cited[f]) for f in patch.changed_files))
     return 0
 
 
 def _cmd_demo(args: argparse.Namespace) -> int:
     from .demo import run_all, run_demo
+    from .tui import StyledReporter, make_console, should_style
 
-    if args.scenario == "all":
-        if args.fixtures is not None:
-            print("--fixtures cannot be used with 'demo all'", file=sys.stderr)
-            return 2
-        return run_all(args.runs_dir)
-    return run_demo(args.scenario, args.fixtures, args.runs_dir)
+    reporter = StyledReporter(make_console()) if should_style(sys.stdout, args.plain) else None
+    try:
+        if args.scenario == "all":
+            if args.fixtures is not None:
+                print("--fixtures cannot be used with 'demo all'", file=sys.stderr)
+                return 2
+            return run_all(args.runs_dir, reporter=reporter)
+        return run_demo(args.scenario, args.fixtures, args.runs_dir, reporter=reporter)
+    finally:
+        if reporter is not None:
+            reporter.finish()  # idempotent; run_all returns early when upstream is lost
 
 
 def _cmd_mcp(args: argparse.Namespace) -> int:
