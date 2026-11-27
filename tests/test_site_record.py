@@ -83,3 +83,11 @@ def test_committed_recording_shape():
     assert th["observed"]
     assert rec["transcript"] and all(
         set(s[1] for s in ln["spans"]) <= STYLE_NAMES for ln in rec["transcript"])
+
+
+def test_recording_has_no_orphan_path_lines():
+    rec = json.loads((pins.project_root() / "recorded/demo-all.json").read_text(encoding="utf-8"))
+    for ln in rec["transcript"]:
+        text = "".join(s[0] for s in ln["spans"])
+        if "runs/" in text:
+            assert "artifacts" in text or "overall exit" in text, text

@@ -327,13 +327,10 @@ def _cmd_scan(args: argparse.Namespace) -> int:
 
 def _cmd_site(args: argparse.Namespace) -> int:
     if args.action == "record":
-        import tempfile as _tf
-
         from .site.record import record_demo
 
         out = args.out or project_root() / "recorded" / "demo-all.json"
-        with _tf.TemporaryDirectory() as tmp:
-            code = record_demo(out, Path(tmp))
+        code = record_demo(out, project_root() / "runs")
         if code == 0:
             try:
                 shown = out.resolve().relative_to(project_root().resolve())

@@ -123,6 +123,7 @@ def record_demo(out: Path, runs_root: Path) -> int:
     from ..demo import run_all
 
     runs_root = Path(runs_root)
+    before = {p.name for p in runs_root.iterdir()} if runs_root.is_dir() else set()
     sink = TimingSink()
     console = make_console(file=sink, width=100, force_terminal=True, color_system="truecolor")
     reporter = StyledReporter(console)
@@ -132,8 +133,11 @@ def record_demo(out: Path, runs_root: Path) -> int:
         reporter.finish()
     if code != 0:
         return code
-    run_dir = max((p for p in runs_root.iterdir() if (p / "summary.json").is_file()),
-                  key=lambda p: p.name)
+    new = [p for p in runs_root.iterdir()
+           if p.name not in before and (p / "summary.json").is_file()]
+    if len(new) != 1:
+        raise RuntimeError(f"expected exactly one new run directory under {runs_root}, got {new}")
+    run_dir = new[0]
     summary = json.loads((run_dir / "summary.json").read_text(encoding="utf-8"))
     scenarios = {}
     for name, sc in summary["scenarios"].items():
@@ -145,11 +149,8 @@ def record_demo(out: Path, runs_root: Path) -> int:
             runs.append(r)
         scenarios[name] = {**{k: v for k, v in sc.items() if k not in _DROP_SCENARIO_KEYS},
                            "runs": runs}
-    prefixes = {str(runs_root), str(runs_root.resolve())}
     transcript = []
     for t, line in sink.lines:
-        for p in prefixes:
-            line = line.replace(p, "runs")
         transcript.append({"t": round(t, 2),
                            "spans": [[scrub(x), s] for x, s in ansi_to_spans(line)]})
     rec = {
