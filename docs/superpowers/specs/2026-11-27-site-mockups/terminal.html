@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Terminal look - Patch Precedent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Inter:wght@500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:#FAF7F2;color:#1B1F2A;font:500 15px Inter,system-ui,sans-serif}
+  main{max-width:980px;margin:0 auto;padding:44px 24px 64px;display:grid;gap:28px}
+  h1{font:800 34px "Playfair Display";margin:0}
+  p{margin:6px 0 0;color:#4A4F5C}
+  .term{background:#16191F;border-radius:14px;overflow:hidden;box-shadow:0 18px 40px -18px rgba(27,31,42,.5)}
+  .bar{display:flex;align-items:center;gap:8px;padding:11px 14px;background:#1F232C;color:#8C8577;font:500 12.5px "JetBrains Mono"}
+  .bar i{width:11px;height:11px;border-radius:50%;background:#3A3F4D}
+  pre{margin:0;padding:18px 20px;font:400 13.5px/1.7 "JetBrains Mono";color:#E8E2D6;overflow-x:auto}
+  .a{color:#F2A07B}.d{color:#8C8577}.g{color:#8FD0A8}.r{color:#F29A86}.b{font-weight:600;color:#FAF7F2}.ink{color:#C9C2B4}
+  .note{font-size:14px;color:#4A4F5C}
+</style></head>
+<body><main>
+<div><h1>Terminal look</h1><p>Same data as today, styled with Rich in the site's palette. Plain text whenever output is piped or NO_COLOR is set, so scripts, tests and the README excerpt stay stable.</p></div>
+
+<div class="term"><div class="bar"><i></i><i></i><i></i><span style="margin-left:8px">uv run patch-precedent demo all</span></div><pre>
+<span class="a">╭────────────────────────────────────────────────────────────────╮</span>
+<span class="a">│</span>  <span class="b">Patch Precedent</span>  <span class="d">demo all</span>                                     <span class="a">│</span>
+<span class="a">│</span>  <span class="d">relatedb/relate @ 5f7a5107 · Relate 1.1.0 · read-only store</span>   <span class="a">│</span>
+<span class="a">╰────────────────────────────────────────────────────────────────╯</span>
+
+<span class="b">installer</span>  <span class="d">ADR-0585 · 194 checks per run</span>
+  <span class="g">✓</span> baseline         <span class="ink">194 passed</span>              <span class="d">exit 0   6.8s</span>
+  <span class="r">✗</span> release-lookup   <span class="ink">192 passed</span>  <span class="r">2 failed</span>    <span class="d">exit 1   7.1s</span>   <span class="r">#7 #193</span>
+  <span class="r">✗</span> token-header     <span class="ink">193 passed</span>  <span class="r">1 failed</span>    <span class="d">exit 1   7.0s</span>   <span class="r">#64</span>
+  <span class="g">✓</span> wording          <span class="ink">194 passed</span>              <span class="d">exit 0   6.9s</span>
+
+<span class="b">release</span>  <span class="d">ADR-0580 · 6 checks per run</span>
+  <span class="g">✓</span> baseline         <span class="ink">6 passed</span>                <span class="d">exit 0   2.6s</span>
+  <span class="r">✗</span> always-rotate    <span class="ink">5 passed</span>    <span class="r">1 failed</span>    <span class="d">exit 1   2.7s</span>   <span class="r">#2</span>
+  <span class="g">✓</span> docs-only        <span class="ink">6 passed</span>                <span class="d">exit 0   2.6s</span>
+  <span class="g">✓</span> wording          <span class="ink">6 passed</span>                <span class="d">exit 0   2.6s</span>
+
+<span class="b">Verdicts</span>
+  <span class="r">●</span> release-lookup  violates <span class="a">ADR-0585</span>  <span class="d">#7 static, #193 runtime</span>
+  <span class="r">●</span> token-header    violates <span class="a">ADR-0585</span>  <span class="d">#64 runtime</span>
+  <span class="g">●</span> wording         consistent with <span class="a">ADR-0585</span>
+  <span class="r">●</span> always-rotate   violates <span class="a">ADR-0580</span>  <span class="d">#2 runtime</span>
+  <span class="g">●</span> wording         consistent with <span class="a">ADR-0580</span>
+  <span class="d">●</span> docs-only       no linked decision
+
+<span class="g">✓ 8/8 runs match expectations</span>   <span class="d">overall exit 0 · 44s · runs/20261127T041406Z</span>
+</pre></div>
+
+<div class="term"><div class="bar"><i></i><i></i><i></i><span style="margin-left:8px">uv run patch-precedent explain fixtures/installer/token-header.patch</span></div><pre>
+<span class="b">token-header</span>  <span class="d">changes distribution/install.sh · read-only, offline</span>
+
+<span class="a">ADR-0585</span>  <span class="b">The installer downloads release assets over the direct route</span>  <span class="d">[Proposed]</span>
+  <span class="d">rule</span>   install.sh consults no GitHub API endpoint and does not read GITHUB_TOKEN
+  <span class="d">why</span>    Anonymous GitHub API requests are limited to 60 per hour per IP address,
+         and users behind shared egress exhausted that quota.
+  <span class="d">commit</span> 5ac38808
+
+  <span class="d">checks</span>
+    #7    <span class="d">static </span>  no GitHub API endpoint in install.sh
+    #64   <span class="d">runtime</span>  no Authorization header when GITHUB_TOKEN is set
+    #193  <span class="d">runtime</span>  no case made a GitHub API request
+
+<span class="d">also cites 5 ADRs (scanned, not reviewed): 0115 0250 0431 0457 0586</span>
+<span class="d">links: run with --links to print the GitHub permalinks</span>
+</pre></div>
+<p class="note">Long permalinks move behind a --links flag, so the default output fits a normal terminal width.</p>
+</main></body></html>

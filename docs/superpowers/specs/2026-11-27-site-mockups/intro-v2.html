@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Patch Precedent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;800&family=Inter:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#FAF7F2;--ink:#1B1F2A;--deep:#B4472A;--bright:#E36B47}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--ink);font:500 16px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;overflow:hidden}
+
+  /* polka dots: densest at the bottom, fading upward, and cleared around the logo */
+  .dots{position:fixed;inset:0;z-index:0;pointer-events:none;
+    background-image:radial-gradient(circle,rgba(27,31,42,.22) 1.3px,transparent 1.8px);
+    background-size:22px 22px;background-position:11px 11px;
+    -webkit-mask-image:radial-gradient(ellipse 62% 40% at 50% 46%,transparent 55%,#000 100%),linear-gradient(to top,#000 0%,rgba(0,0,0,.55) 45%,transparent 92%);
+    -webkit-mask-composite:source-in;
+    mask-image:radial-gradient(ellipse 62% 40% at 50% 46%,transparent 55%,#000 100%),linear-gradient(to top,#000 0%,rgba(0,0,0,.55) 45%,transparent 92%);
+    mask-composite:intersect;
+    opacity:0;transition:opacity 1.2s ease .2s}
+  .ready .dots{opacity:1}
+
+  .corner{position:fixed;top:clamp(16px,3vw,28px);right:clamp(16px,3vw,28px);z-index:3}
+  .gh{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:#FFFFFF;color:var(--ink);border:1px solid #E7E0D3;box-shadow:0 1px 2px rgba(27,31,42,.06);transition:background .2s,color .2s,border-color .2s}
+  .gh:hover{background:var(--ink);color:#FAF7F2;border-color:var(--ink)}
+  .gh:focus-visible{outline:3px solid #F2C9B9;outline-offset:3px}
+
+  .stage{position:relative;z-index:1;min-height:100dvh;display:grid;place-items:center;align-content:center;gap:clamp(30px,5.5vh,52px);padding:clamp(20px,4vw,48px);transition:opacity .45s ease,transform .45s ease}
+  pixelcraft-banner,#artslot{width:min(1000px,92vw);display:block}
+  pixelcraft-banner{--pixelcraft-bg:#FAF7F2;opacity:0;transform:translateY(10px) scale(.985);transition:opacity .9s ease,transform .9s ease}
+  .ready pixelcraft-banner{opacity:1;transform:none}
+  .enter-wrap{opacity:0;transform:translateY(8px);transition:opacity .7s ease .55s,transform .7s ease .55s}
+  .ready .enter-wrap{opacity:1;transform:none}
+  .leaving .stage{opacity:0;transform:scale(.99)}
+
+  /*
+    From Uiverse.io by adamgiebl - https://uiverse.io/adamgiebl/new-bird-34
+    MIT License, Copyright (c) adamgiebl (Adam Giebl)
+    Adapted: class names scoped to pp-enter, colours mapped to the Paper & Ink palette,
+    keyboard Enter mirrors the hover and active states.
+  */
+  .pp-enter{background:#1B1F2A;color:#FAF7F2;font-family:inherit;padding:.35em;padding-left:1.2em;font-size:17px;font-weight:500;border-radius:.9em;border:none;letter-spacing:.05em;display:flex;align-items:center;box-shadow:inset 0 0 1.6em -.6em #000;overflow:hidden;position:relative;height:2.8em;padding-right:3.3em;cursor:pointer}
+  .pp-enter .icon{background:#FAF7F2;margin-left:1em;position:absolute;display:flex;align-items:center;justify-content:center;height:2.2em;width:2.2em;border-radius:.7em;box-shadow:.1em .1em .6em .2em rgba(0,0,0,.35);right:.3em;transition:all .3s}
+  .pp-enter:hover .icon,.pp-enter.kbd .icon{width:calc(100% - .6em)}
+  .pp-enter .icon svg{width:1.1em;transition:transform .3s;color:#B4472A}
+  .pp-enter:hover .icon svg,.pp-enter.kbd .icon svg{transform:translateX(.1em)}
+  .pp-enter:active .icon,.pp-enter.kbd-down .icon{transform:scale(.95)}
+  .pp-enter:focus-visible{outline:3px solid #F2C9B9;outline-offset:4px}
+
+  @media (prefers-reduced-motion:reduce){pixelcraft-banner,.enter-wrap,.stage,.dots,.pp-enter .icon,.pp-enter .icon svg{transition:none}}
+</style>
+</head>
+<body>
+<div class="dots" aria-hidden="true"></div>
+<div class="corner">
+  <a class="gh" href="https://github.com/Namans12/relate" target="_blank" rel="noopener" aria-label="Patch Precedent on GitHub">
+    <svg width="20" height="20" viewBox="0 0 16 16" aria-hidden="true" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+  </a>
+</div>
+<main class="stage" id="stage">
+  <div id="artslot" style="aspect-ratio:2160/760"></div>
+  <div class="enter-wrap">
+    <button class="pp-enter" id="enter" type="button" aria-label="Enter Patch Precedent">
+      Enter
+      <div class="icon">
+        <svg height="24" width="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 0h24v24H0z" fill="none"></path><path d="M16.172 11l-5.364-5.364 1.414-1.414L20 12l-7.778 7.778-1.414-1.414L16.172 13H4v-2z" fill="currentColor"></path></svg>
+      </div>
+    </button>
+  </div>
+</main>
+
+<script type="module">
+  import './pixelcraft/pixelcraft-banner.js';
+  import { drawC, FONTS } from './c-art.js';
+
+  const canvas = await drawC(FONTS.playfair);
+  const art = document.createElement('pixelcraft-banner');
+  art.setAttribute('variant', 'hover-drift');
+  art.setAttribute('block-size', '8');
+  art.setAttribute('alt', 'Patch Precedent');
+  art.setAttribute('src', canvas.toDataURL('image/png'));
+  document.getElementById('artslot').replaceWith(art);
+  requestAnimationFrame(() => document.body.classList.add('ready'));
+
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const btn = document.getElementById('enter');
+  let leaving = false;
+  const go = () => {
+    if (leaving) return; leaving = true;
+    document.body.classList.add('leaving');
+    setTimeout(() => { location.href = 'welcome.html'; }, reduce ? 0 : 450);
+  };
+  btn.addEventListener('click', go);
+  // keyboard Enter shows the same slide and press as the mouse, then enters
+  addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.repeat) { e.preventDefault(); btn.classList.add('kbd', 'kbd-down'); }
+    if (e.key === 'Escape') go();
+  });
+  addEventListener('keyup', e => {
+    if (e.key === 'Enter') { btn.classList.remove('kbd-down'); setTimeout(go, reduce ? 0 : 220); }
+  });
+</script>
+</body>
+</html>
