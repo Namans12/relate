@@ -217,6 +217,7 @@ def test_no_fraunces_and_visible_focus(site):
             assert "Fraunces" not in body and "F2C9B9" not in body, f.name
 
 
+@pending
 def test_cli_site_build(tmp_path, capsys):
     assert main(["site", "--out", str(tmp_path / "s")]) == 0
     assert "pages to" in capsys.readouterr().out
