@@ -17,7 +17,7 @@ FIX = ROOT / "fixtures"
 REL_CMD = "sh scripts/tests/test_release_advance.sh"
 INS_CMD = "sh scripts/tests/test_install_sh.sh"
 NOTE = ('"observed" is the check\'s result in Patch Precedent\'s replay of this exact patch '
-        '(matched by a whitespace-insensitive key) against the unmodified upstream harness; '
+        '(matched by its changed lines, ignoring whitespace and context) against the unmodified upstream harness; '
         '"not observed" means no replay of this patch was found, or that replay produced no result '
         'for this check.')
 
@@ -106,6 +106,15 @@ def test_precedent_with_replay(tmp_path):
     # an unrelated patch finds no replay
     other = _text("installer", "release-lookup").replace("api.github.com", "api.example.com")
     assert precedent_for_patch(other, pins.STORE_PATH, tmp_path)["replay"] is None
+
+
+def test_context_trimmed_diff_still_finds_replay(tmp_path):
+    _make_replays(tmp_path)
+    lines = _text("installer", "release-lookup").splitlines()
+    trimmed = "\n".join(lines[:-2]) + "\n"
+    res = precedent_for_patch(trimmed, pins.STORE_PATH, tmp_path)
+    assert res["replay"]["label"] == "release-lookup"
+    assert _checks(res) == {7: "not ok", 193: "not ok", 64: "ok"}
 
 
 def test_older_replay_without_patch_key_does_not_match(tmp_path):

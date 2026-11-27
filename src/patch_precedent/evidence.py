@@ -9,7 +9,7 @@ from .scenarios import SCENARIOS
 from .store import cited_decisions, evidence_for_paths, open_readonly
 
 NOTE = ('"observed" is the check\'s result in Patch Precedent\'s replay of this exact patch '
-        '(matched by a whitespace-insensitive key) against the unmodified upstream harness; '
+        '(matched by its changed lines, ignoring whitespace and context) against the unmodified upstream harness; '
         '"not observed" means no replay of this patch was found, or that replay produced no result '
         'for this check.')
 
