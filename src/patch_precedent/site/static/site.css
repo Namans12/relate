@@ -388,7 +388,6 @@ code{font:500 .88em "JetBrains Mono",ui-monospace,monospace;background:var(--sun
 .t td.strong{color:var(--ink);font-weight:600}
 .headline td:first-child{font-size:14px}
 .headline td.k{white-space:nowrap}
-.headline th:nth-child(n+2),.headline td:nth-child(n+2){text-align:right}
 .cases{min-width:880px}
 .cases th{text-align:center}
 .cases thead tr.grp th{padding-bottom:var(--s2)}
@@ -441,15 +440,11 @@ code{font:500 .88em "JetBrains Mono",ui-monospace,monospace;background:var(--sun
 @media (max-width:560px){
   .mgrid{grid-template-columns:minmax(0,1fr)}
 }
-.headline{table-layout:fixed}
-.headline th:nth-child(1){width:auto}
-.headline th:nth-child(n+2){width:clamp(120px,22%,200px)}
-.headline td small{display:inline-block;min-width:3.4em;text-align:left;margin-left:var(--s2)}
-.headline td.k:not(:has(small)){padding-right:calc(var(--s3) + 3.4em + var(--s2))}
-@media (max-width:720px){
-  .headline{table-layout:auto}
-  .headline td small{display:block;margin:0}
-  .headline th:nth-child(n+2){width:auto}
-  .headline td.k:not(:has(small)){padding-right:var(--s2)}
-  .headline td small{min-width:0}
-}
+
+.t .num{text-align:right}
+.headline th.n,.headline td.n{width:3.2em;padding-left:var(--s1);padding-right:var(--s3);color:var(--ink-3);font-size:12px}
+.headline th.n{font-size:11px;letter-spacing:0}
+.headline td.k{white-space:nowrap}
+.lower{font:500 11px Inter;letter-spacing:0;text-transform:none;color:var(--ink-3);white-space:nowrap}
+.cases .lower{display:block}
+code,.code pre,.term-body,.schema-graph text,.patch-graph text{font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0}

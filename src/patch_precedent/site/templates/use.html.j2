@@ -7,6 +7,11 @@
 {% set u = c["use"] %}
 {% set steps = u["steps"] %}
 {% set rdir = "eval/results/20261127T040059Z" %}
+{% set cmdnames = {
+  "build-store": "build-store", "demo": "demo all | installer | release", "explain": "explain PATCH_FILE",
+  "mcp": "mcp", "verify-store": "verify-store", "scan-citations": "scan-citations",
+  "fetch-relate-cli": "fetch-relate-cli", "eval-run": "eval run", "eval-score": "eval score | report",
+  "site": "site [build | record]"} %}
 {% set proj = "<path-to-relate-clone>" %}
 <div class="wrap page-narrow">
   <header class="reveal page-head">
@@ -61,7 +66,7 @@
         <thead><tr><th>Command</th><th>Does</th><th>Exit codes</th></tr></thead>
         <tbody>
           {% for cm in u["commands"] %}
-          <tr><td class="k">{{ cm["name"] }}</td><td>{{ cm["does"] }}</td><td class="muted exits">{{ cm["exits"] }}</td></tr>
+          <tr><td class="k"><code data-verbatim>{{ cmdnames[cm["id"]] | text }}</code></td><td>{{ cm["does"] }}</td><td class="muted exits">{{ cm["exits"] }}</td></tr>
           {% endfor %}
         </tbody>
       </table>

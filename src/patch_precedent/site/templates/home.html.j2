@@ -9,7 +9,6 @@
 {% set rec = data.recording %}
 {% set kind_class = {"violates": "fail", "consistent": "pass", "no_decision": "none"} %}
 {% set shown = ["verdict", "catching_recall", "turns", "unsupported"] %}
-{% set lower = ["turns", "unsupported"] %}
 
 <section class="hero" id="top">
   <div class="wrap hero-grid">
@@ -114,7 +113,7 @@
       <div class="metrics">
         {% for mt in data.eval.metrics if mt["key"] in shown %}
         <div class="metric">
-          <small>{{ mt["label"] }}{% if mt["key"] in lower %} (lower is better){% endif %}</small>
+          <small>{{ mt["label"] }}{% if mt["lower"] %} (lower is better){% endif %}</small>
           <div class="bar"><span>baseline</span><div class="track2"><div class="fill" style="--w:{{ (mt['baseline_frac'] * 100) | round(1) }}%"></div></div><b>{{ mt["baseline"] }}</b></div>
           <div class="bar gr"><span>graph</span><div class="track2"><div class="fill" style="--w:{{ (mt['graph_frac'] * 100) | round(1) }}%"></div></div><b>{{ mt["graph"] }}</b></div>
         </div>

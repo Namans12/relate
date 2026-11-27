@@ -73,3 +73,16 @@ def test_no_dashes_in_new_pages(site):
     for name in ("results.html", "use.html", "relate.html"):
         body = re.sub(r"<pre.*?</pre>|<svg.*?</svg>", "", _read(site, name), flags=re.S)
         assert "–" not in body and "—" not in body, name
+
+
+def test_lower_is_better_marked_once_per_source(site):
+    t = _read(site, "results.html")
+    # 4 cards + 4 headline rows + 3 per-case groups
+    assert t.count("(lower is better)") == 11
+
+
+def test_use_command_cells_are_verbatim_code(site):
+    t = _read(site, "use.html")
+    for s in ("<code data-verbatim>build-store</code>", "<code data-verbatim>demo all | installer | release</code>",
+              "<code data-verbatim>site [build | record]</code>"):
+        assert s in t, s

@@ -353,16 +353,17 @@ def _metrics(arms: dict) -> tuple[dict, ...]:
     def ratio(label, key, kk):
         return {"key": key, "label": label,
                 "baseline": f"{b[kk]}/{b['n']}", "graph": f"{g[kk]}/{g['n']}",
-                "baseline_frac": b[kk] / b["n"], "graph_frac": g[kk] / g["n"]}
+                "baseline_frac": b[kk] / b["n"], "graph_frac": g[kk] / g["n"],
+                "lower": False}
 
     def mean(label, key, kk):
         return {"key": key, "label": label, "baseline": _pct(b[kk]), "graph": _pct(g[kk]),
-                "baseline_frac": b[kk], "graph_frac": g[kk]}
+                "baseline_frac": b[kk], "graph_frac": g[kk], "lower": False}
 
     def lower(label, key, bv, gv, fmt):
         top = max(bv, gv) or 1
         return {"key": key, "label": label, "baseline": fmt(bv), "graph": fmt(gv),
-                "baseline_frac": bv / top, "graph_frac": gv / top}
+                "baseline_frac": bv / top, "graph_frac": gv / top, "lower": True}
 
     return (
         ratio("Verdict correct", "verdict", "verdict_k"),

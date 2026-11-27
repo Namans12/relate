@@ -94,44 +94,54 @@ prereqs = ["macOS", "git", "uv", "no API key"]
 commands_title = "All commands"
 
 [[use.commands]]
-name = "demo all | installer | release"
+id = "build-store"
+does = "Build the Relate store from the evidence directory"
+exits = "0 ok"
+
+[[use.commands]]
+id = "demo"
 does = "Replay patches and explain results"
 exits = "0 ok, 2 inconclusive or input missing, 3 mismatch, 4 no upstream"
 
 [[use.commands]]
-name = "explain PATCH_FILE"
+id = "explain"
 does = "Show the decision chain for a diff"
 exits = "0 ok, 2 missing patch file or store"
 
 [[use.commands]]
-name = "mcp"
+id = "mcp"
 does = "Serve the read-only MCP tool"
 exits = "0 ok, 2 missing store"
 
 [[use.commands]]
-name = "verify-store"
+id = "verify-store"
 does = "Check the store matches its evidence"
 exits = "0 match, 1 differs or missing"
 
 [[use.commands]]
-name = "scan-citations"
+id = "scan-citations"
 does = "Re-scan ADR mentions upstream"
 exits = "0 ok, 4 no upstream"
 
 [[use.commands]]
-name = "fetch-relate-cli"
+id = "fetch-relate-cli"
 does = "Download and verify the pinned relate CLI"
 exits = "0 ok, 4 download failed"
 
 [[use.commands]]
-name = "eval run"
+id = "eval-run"
 does = "Run the agent evaluation"
 exits = "0 ok, 2 refused, 4 no upstream"
 
 [[use.commands]]
-name = "eval score | report"
+id = "eval-score"
 does = "Re-score or re-render a results directory"
 exits = "0 ok, 2 results directory missing"
+
+[[use.commands]]
+id = "site"
+does = "Build the static website or record the demo run"
+exits = "0 ok, 2 missing input or bad base URL"
 
 [[use.steps]]
 title = "Clone"

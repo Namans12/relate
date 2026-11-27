@@ -22,7 +22,7 @@
   <div class="mgrid reveal" role="list">
     {% for mt in ev.metrics %}
     <div class="card mcard" role="listitem">
-      <div class="label">{{ mt["label"] }}</div>
+      <div class="label">{{ mt["label"] }}{% if mt["lower"] %} <span class="lower">(lower is better)</span>{% endif %}</div>
       <div class="mbars">
         <span class="muted">baseline</span><div class="mtrack"><div class="mfill base" style="width:{{ (mt['baseline_frac'] * 100) | round(1) }}%"></div></div><b class="mono">{{ mt["baseline"] }}</b>
         <span class="muted">graph</span><div class="mtrack"><div class="mfill graph" style="width:{{ (mt['graph_frac'] * 100) | round(1) }}%"></div></div><b class="mono">{{ mt["graph"] }}</b>
@@ -44,20 +44,20 @@
     <div class="card-head"><span class="label">Headline</span><span class="note muted">n is the number of runs behind each figure</span></div>
     <div class="twrap">
       <table class="t headline">
-        <thead><tr><th>Metric</th><th>Baseline</th><th>Graph</th></tr></thead>
+        <thead><tr><th>Metric</th><th class="num">Baseline</th><th class="num n">n</th><th class="num">Graph</th><th class="num n">n</th></tr></thead>
         <tbody>
-          <tr><td>Verdict correct</td><td class="k">{{ kn(b.verdict_k, b.n) }}</td><td class="k strong">{{ kn(g.verdict_k, g.n) }}</td></tr>
-          <tr><td>Decisions exact</td><td class="k">{{ kn(b.decisions_exact_k, b.n) }}</td><td class="k strong">{{ kn(g.decisions_exact_k, g.n) }}</td></tr>
-          <tr><td>Decision recall (mean)</td><td class="k">{{ pct(b.decisions_recall_mean) }} <small>n {{ b.decisions_recall_n }}</small></td><td class="k strong">{{ pct(g.decisions_recall_mean) }} <small>n {{ g.decisions_recall_n }}</small></td></tr>
-          <tr><td>Checks recall (all linked checks)</td><td class="k">{{ pct(b.checks_recall_mean) }} <small>n {{ b.checks_recall_n }}</small></td><td class="k strong">{{ pct(g.checks_recall_mean) }} <small>n {{ g.checks_recall_n }}</small></td></tr>
-          <tr><td>Catching-checks recall</td><td class="k">{{ pct(b.catching_recall_mean) }} <small>n {{ b.catching_recall_n }}</small></td><td class="k strong">{{ pct(g.catching_recall_mean) }} <small>n {{ g.catching_recall_n }}</small></td></tr>
-          <tr><td>Graph tool returned observed results</td><td class="k">n/a</td><td class="k strong">{{ kn(g.replay_found_k, g.replay_found_n) }}</td></tr>
-          <tr><td>Outcomes marked (of linked checks)</td><td class="k">{{ kn(b.outcome_marked, b.outcome_linked) }}</td><td class="k strong">{{ kn(g.outcome_marked, g.outcome_linked) }}</td></tr>
-          <tr><td>Outcome accuracy (marked checks)</td><td class="k">{{ pct(b.outcome_accuracy) }} <small>{{ kn(b.outcome_correct, b.outcome_marked) }}</small></td><td class="k strong">{{ pct(g.outcome_accuracy) }} <small>{{ kn(g.outcome_correct, g.outcome_marked) }}</small></td></tr>
-          <tr><td>Unsupported claims</td><td class="k">{{ b.unsupported_total }} <small>n {{ b.unsupported_n }}</small></td><td class="k strong">{{ g.unsupported_total }} <small>n {{ g.unsupported_n }}</small></td></tr>
-          <tr><td>Median time to first correct citation</td><td class="k">{{ num(b.citation_median_s, "%.1f") }} s <small>n {{ b.citation_n }}</small></td><td class="k strong">{{ num(g.citation_median_s, "%.1f") }} s <small>n {{ g.citation_n }}</small></td></tr>
-          <tr><td>Mean turns</td><td class="k">{{ num(b.turns_mean, "%.1f") }} <small>n {{ b.turns_n }}</small></td><td class="k strong">{{ num(g.turns_mean, "%.1f") }} <small>n {{ g.turns_n }}</small></td></tr>
-          <tr><td>Total cost</td><td class="k">${{ num(b.cost_total, "%.2f") }} <small>n {{ b.cost_n }}</small></td><td class="k strong">${{ num(g.cost_total, "%.2f") }} <small>n {{ g.cost_n }}</small></td></tr>
+          <tr><td>Verdict correct</td><td class="k num">{{ kn(b.verdict_k, b.n) }}</td><td class="k num n"></td><td class="k num strong">{{ kn(g.verdict_k, g.n) }}</td><td class="k num n"></td></tr>
+          <tr><td>Decisions exact</td><td class="k num">{{ kn(b.decisions_exact_k, b.n) }}</td><td class="k num n"></td><td class="k num strong">{{ kn(g.decisions_exact_k, g.n) }}</td><td class="k num n"></td></tr>
+          <tr><td>Decision recall (mean)</td><td class="k num">{{ pct(b.decisions_recall_mean) }}</td><td class="k num n">{{ b.decisions_recall_n }}</td><td class="k num strong">{{ pct(g.decisions_recall_mean) }}</td><td class="k num n">{{ g.decisions_recall_n }}</td></tr>
+          <tr><td>Checks recall (all linked checks)</td><td class="k num">{{ pct(b.checks_recall_mean) }}</td><td class="k num n">{{ b.checks_recall_n }}</td><td class="k num strong">{{ pct(g.checks_recall_mean) }}</td><td class="k num n">{{ g.checks_recall_n }}</td></tr>
+          <tr><td>Catching-checks recall</td><td class="k num">{{ pct(b.catching_recall_mean) }}</td><td class="k num n">{{ b.catching_recall_n }}</td><td class="k num strong">{{ pct(g.catching_recall_mean) }}</td><td class="k num n">{{ g.catching_recall_n }}</td></tr>
+          <tr><td>Graph tool returned observed results</td><td class="k num">{{ 'n/a' }}</td><td class="k num n"></td><td class="k num strong">{{ kn(g.replay_found_k, g.replay_found_n) }}</td><td class="k num n"></td></tr>
+          <tr><td>Outcomes marked (of linked checks)</td><td class="k num">{{ kn(b.outcome_marked, b.outcome_linked) }}</td><td class="k num n"></td><td class="k num strong">{{ kn(g.outcome_marked, g.outcome_linked) }}</td><td class="k num n"></td></tr>
+          <tr><td>Outcome accuracy (marked checks)</td><td class="k num">{{ pct(b.outcome_accuracy) ~ ' (' ~ kn(b.outcome_correct, b.outcome_marked) ~ ')' }}</td><td class="k num n"></td><td class="k num strong">{{ pct(g.outcome_accuracy) ~ ' (' ~ kn(g.outcome_correct, g.outcome_marked) ~ ')' }}</td><td class="k num n"></td></tr>
+          <tr><td>Unsupported claims <span class="lower">(lower is better)</span></td><td class="k num">{{ b.unsupported_total }}</td><td class="k num n">{{ b.unsupported_n }}</td><td class="k num strong">{{ g.unsupported_total }}</td><td class="k num n">{{ g.unsupported_n }}</td></tr>
+          <tr><td>Median time to first correct citation <span class="lower">(lower is better)</span></td><td class="k num">{{ num(b.citation_median_s, '%.1f') ~ ' s' }}</td><td class="k num n">{{ b.citation_n }}</td><td class="k num strong">{{ num(g.citation_median_s, '%.1f') ~ ' s' }}</td><td class="k num n">{{ g.citation_n }}</td></tr>
+          <tr><td>Mean turns <span class="lower">(lower is better)</span></td><td class="k num">{{ num(b.turns_mean, '%.1f') }}</td><td class="k num n">{{ b.turns_n }}</td><td class="k num strong">{{ num(g.turns_mean, '%.1f') }}</td><td class="k num n">{{ g.turns_n }}</td></tr>
+          <tr><td>Total cost <span class="lower">(lower is better)</span></td><td class="k num">{{ '$' ~ num(b.cost_total, '%.2f') }}</td><td class="k num n">{{ b.cost_n }}</td><td class="k num strong">{{ '$' ~ num(g.cost_total, '%.2f') }}</td><td class="k num n">{{ g.cost_n }}</td></tr>
         </tbody>
       </table>
     </div>
@@ -69,7 +69,7 @@
       <table class="t cases">
         <thead>
           <tr class="grp"><th rowspan="2">Case</th><th rowspan="2">Patch</th><th rowspan="2">Expected</th>
-            <th colspan="2">Verdict correct</th><th colspan="2">Decisions exact</th><th colspan="2">Checks recall</th><th colspan="2">Unsupported</th><th colspan="2">Turns</th><th colspan="2">Cost</th></tr>
+            <th colspan="2">Verdict correct</th><th colspan="2">Decisions exact</th><th colspan="2">Checks recall</th><th colspan="2">Unsupported <span class="lower">(lower is better)</span></th><th colspan="2">Turns <span class="lower">(lower is better)</span></th><th colspan="2">Cost <span class="lower">(lower is better)</span></th></tr>
           <tr class="sub">{% for _ in range(6) %}<th>Base</th><th>Graph</th>{% endfor %}</tr>
         </thead>
         <tbody>
