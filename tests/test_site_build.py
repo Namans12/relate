@@ -15,7 +15,7 @@ SLUGS = ["installer-release-lookup", "installer-token-header", "installer-wordin
          "release-always-rotate", "release-wording", "release-docs-only"]
 PAGES = ["index.html", "home.html", "results.html", "use.html", "relate.html"] + [
     f"scenarios/{s}.html" for s in SLUGS]
-LATER = [p for p in PAGES if p != "index.html"]
+LATER = [p for p in PAGES if p not in ("index.html", "home.html")]
 ALLOWED = ("https://github.com/Namans12/relate", "https://github.com/relatedb/relate/",
            "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://relate.devpost.com")
 pending = pytest.mark.xfail(strict=False, reason="page built in a later task")
@@ -157,7 +157,6 @@ def test_built_with_relate_once(site):
     assert sum(p.read_text().count("Built with Relate") for p in site.rglob("*.html")) <= 1
 
 
-@pending
 def test_built_with_relate_exactly_once(site):
     assert (site / "home.html").read_text().count("Built with Relate") == 1
 
@@ -195,7 +194,6 @@ def test_shared_layout(site):
         assert needle in base, needle
 
 
-@pending
 def test_copy_announces(site):
     assert 'aria-live="polite"' in (site / "home.html").read_text()
 

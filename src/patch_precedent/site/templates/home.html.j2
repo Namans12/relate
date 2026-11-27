@@ -1,0 +1,155 @@
+{% extends "base.html.j2" %}
+{% import "macros.html.j2" as m %}
+{% set nav_active = "overview" %}
+{% block title %}Patch Precedent{% endblock %}
+{% block body_class %}home{% endblock %}
+{% block main %}
+{% set h = c["home"] %}
+{% set chain = data.home_chain %}
+{% set rec = data.recording %}
+{% set kind_class = {"violates": "fail", "consistent": "pass", "no_decision": "none"} %}
+{% set shown = ["verdict", "catching_recall", "turns", "unsupported"] %}
+{% set lower = ["turns", "unsupported"] %}
+
+<section class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div class="hero-copy reveal">
+      <div class="eyebrow">{{ h["eyebrow"] }}</div>
+      <h1>{{ h["title"] }}</h1>
+      <p class="lede">{{ h["lede"] }}</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="#demo"><span class="play-dot">{{ m.play_icon() }}</span>Run the demo</a>
+        <a class="btn btn-ghost" href="#scenarios">Explore the scenarios</a>
+      </div>
+      <div class="hero-cmd">{{ m.copy_block("uv run patch-precedent demo all") }}</div>
+    </div>
+
+    <div class="chain-card reveal">
+      <div class="label mono">{{ chain.fixture.rsplit("/", 1)[-1] }}</div>
+      <div class="chain">
+        <div class="node"><span class="k">{{ chain.diff[0].path }}</span><small>changed file</small></div>
+        <div class="link" aria-hidden="true"></div>
+        {% set d = chain.decisions[0] %}
+        <div class="node"><span class="adr"><b>{{ d.id }}</b><small>{{ d.title | prose }}</small></span><small>decision</small></div>
+        <div class="link" aria-hidden="true"></div>
+        {% for ck in d.checks %}
+        <div class="node"><span class="ck"><span class="k">#{{ ck.number }}</span> {{ ck.short }}</span>{{ m.badge({"ok": "pass", "not ok": "fail"}.get(ck.observed, "none"), ck.observed) }}</div>
+        {% endfor %}
+      </div>
+      <p class="caption">{{ h["chain_caption"] }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="section-head reveal"><h2>How it works</h2></div>
+    <div class="steps">
+      {% for s in h["steps"] %}
+      <div class="step reveal"><h3>{{ s["name"] }}</h3><p>{{ s["text"] }}</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="scenarios" data-carousel>
+  <div class="wrap">
+    <div class="section-head reveal">
+      <h2>{{ h["scenarios_title"] }}</h2>
+      <div class="carousel-ctrl">
+        <button class="icon-btn" type="button" data-prev aria-label="Previous patch"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg></button>
+        <button class="icon-btn" type="button" data-next aria-label="Next patch"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 3 5 5-5 5"/></svg></button>
+      </div>
+    </div>
+    <div class="track" data-track tabindex="0" role="region" aria-label="Scenarios, scroll sideways for more">
+      {% for p in data.patches %}
+      {% set kind = p.verdict["kind"] %}
+      {% set chips = [] %}
+      {% for d in p.decisions %}{% for ck in d.checks %}{% set _ = chips.append(ck) %}{% endfor %}{% endfor %}
+      <article class="pcard" data-card>
+        <div class="top"><span class="scn mono">{{ p.scenario }}</span>{{ m.badge(kind_class[kind], ("violates " ~ p.verdict["decisions"] | join(", ")) if kind == "violates" else ("no linked decision" if kind == "no_decision" else kind)) }}</div>
+        <h3>{{ p.label }}</h3>
+        <p>{{ p.summary }}</p>
+        <div class="chips">
+          {% if chips %}
+          {% for ck in chips %}<span class="chip {{ 'c-ok' if ck.observed == 'ok' else ('c-no' if ck.observed == 'not ok' else 'c-na') }}">#{{ ck.number }} {{ ck.observed }}</span>{% endfor %}
+          {% else %}
+          <span class="chip c-ok">{{ p.passed }} of {{ p.total }} tests ok</span>
+          {% endif %}
+        </div>
+        <a class="more" href="{{ ('scenarios/' ~ p.slug ~ '.html') | rel }}">View patch<span class="sr-only">: {{ p.scenario }} {{ p.label }}</span></a>
+      </article>
+      {% endfor %}
+    </div>
+    <div class="cdots" data-dots></div>
+  </div>
+</section>
+
+<section class="sec" id="demo">
+  <div class="wrap">
+    <div class="section-head reveal"><h2>Run the demo</h2></div>
+    <div class="term reveal">
+      <div class="term-bar">
+        <span class="term-cmd mono"><span class="t-accent">$</span> uv run patch-precedent demo all</span>
+        <span class="term-label mono">Recorded run · {{ rec["recorded_at"][:10] }} {{ rec["recorded_at"][11:16] }} UTC · run {{ rec["run_id"] }}</span>
+        <span class="term-ctrl"><button class="term-btn" type="button" data-play>Play</button><button class="term-btn" type="button" data-skip>Skip</button></span>
+      </div>
+      <pre class="term-body" data-verbatim data-replay tabindex="0" aria-label="Recorded terminal output">{% for ln in rec["transcript"] %}<span class="t-line" data-t="{{ ln["t"] }}">{% for s in ln["spans"] %}<span class="t-{{ s[1] }}">{{ s[0] }}</span>{% endfor %}</span>
+{% endfor %}</pre>
+    </div>
+    <div class="demo-foot reveal">
+      {{ m.copy_block("uv run patch-precedent demo all") }}
+      <p class="muted">{{ h["demo_note"] }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="results">
+  <div class="wrap">
+    <div class="results reveal">
+      <div class="section-head">
+        <div><h2>{{ h["results_title"] }}</h2><p>{{ data.eval.intro }}</p></div>
+        <a class="res-link" href="{{ 'results.html' | rel }}">Every run and the method</a>
+      </div>
+      <div class="metrics">
+        {% for mt in data.eval.metrics if mt["key"] in shown %}
+        <div class="metric">
+          <small>{{ mt["label"] }}{% if mt["key"] in lower %} (lower is better){% endif %}</small>
+          <div class="bar"><span>baseline</span><div class="track2"><div class="fill" style="--w:{{ (mt['baseline_frac'] * 100) | round(1) }}%"></div></div><b>{{ mt["baseline"] }}</b></div>
+          <div class="bar gr"><span>graph</span><div class="track2"><div class="fill" style="--w:{{ (mt['graph_frac'] * 100) | round(1) }}%"></div></div><b>{{ mt["graph"] }}</b></div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="use">
+  <div class="wrap use-grid">
+    <div class="reveal">
+      <h2>{{ h["use_title"] }}</h2>
+      <p class="muted use-note">{{ c["use"]["steps"][0]["text"] }}</p>
+    </div>
+    <div class="reveal" data-tabs>
+      <div class="tabs" role="tablist" aria-label="Ways to use Patch Precedent">
+        <button class="tab" role="tab" type="button" id="tab-demo" aria-controls="panel-demo" aria-selected="true">Run the demo</button>
+        <button class="tab" role="tab" type="button" id="tab-explain" aria-controls="panel-explain" aria-selected="false" tabindex="-1">Explain a patch</button>
+        <button class="tab" role="tab" type="button" id="tab-claude" aria-controls="panel-claude" aria-selected="false" tabindex="-1">Add to Claude Code</button>
+      </div>
+      <div class="panel" role="tabpanel" id="panel-demo" aria-labelledby="tab-demo">
+        <p class="muted">{{ c["use"]["steps"][1]["text"] }}</p>
+        {{ m.copy_block("uv run patch-precedent demo all") }}
+      </div>
+      <div class="panel" role="tabpanel" id="panel-explain" aria-labelledby="tab-explain">
+        <p class="muted">{{ c["use"]["steps"][2]["text"] }}</p>
+        {{ m.copy_block("uv run patch-precedent explain " ~ chain.fixture) }}
+      </div>
+      <div class="panel" role="tabpanel" id="panel-claude" aria-labelledby="tab-claude">
+        <p class="muted">{{ c["use"]["steps"][3]["text"] }}</p>
+        {{ m.copy_block("claude mcp add --scope project precedent -- uv run --project <path-to-relate-clone> --quiet patch-precedent mcp") }}
+        <a class="res-more" href="{{ 'use.html' | rel }}">All the steps</a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
