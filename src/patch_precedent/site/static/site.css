@@ -8,6 +8,7 @@
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
+main [id]{scroll-margin-top:76px}
 body{background:var(--bg);color:var(--ink);font:400 15.5px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
 :focus-visible{outline:3px solid #B4472A;outline-offset:2px;border-radius:4px}
@@ -41,9 +42,9 @@ h3{font-size:18px;font-weight:700}
 .play-dot{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#FAF7F2;color:var(--ink)}
 .menu-btn{display:none}
 .brand svg{flex:0 0 28px;display:block}
-.menu-panel{border-top:1px solid var(--line);background:var(--bg)}
+.menu-panel{position:absolute;left:0;right:0;top:100%;max-height:calc(100dvh - 61px);overflow-y:auto;overscroll-behavior:contain;background:var(--bg);border-bottom:1px solid var(--line);box-shadow:0 12px 24px rgba(27,31,42,.10)}
 .menu-panel[hidden]{display:none}
-.menu-panel .wrap{display:grid;padding-top:var(--s2);padding-bottom:var(--s4)}
+.nav .menu-panel .wrap{display:grid;height:auto;gap:0;justify-content:stretch;padding-top:var(--s2);padding-bottom:var(--s4)}
 .menu-panel a{display:flex;align-items:center;gap:var(--s3);min-height:44px;font-size:16px;color:var(--ink-2);border-bottom:1px solid var(--line)}
 .menu-panel a.on{color:var(--ink);font-weight:600}
 .menu-panel a:last-child{border-bottom:0}

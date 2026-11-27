@@ -224,3 +224,11 @@ def test_vercel_json_copied_into_output(tmp_path):
     root = pins.project_root()
     build_site(root, tmp_path)
     assert (tmp_path / "vercel.json").read_text() == (root / "vercel.json").read_text()
+
+
+def test_menu_panel_and_anchor_offset_css(site):
+    css = (site / "assets/site.css").read_text()
+    m = re.search(r"\.menu-panel\{([^}]*)\}", css).group(1)
+    assert "position:absolute" in m and "top:100%" in m and "overflow-y:auto" in m
+    assert ".nav .menu-panel .wrap{" in css and "height:auto" in css
+    assert re.search(r"main \[id\]\{scroll-margin-top:(7\d|[89]\d)px\}", css)
