@@ -86,3 +86,19 @@ def test_use_command_cells_are_verbatim_code(site):
     for s in ("<code data-verbatim>build-store</code>", "<code data-verbatim>demo all | installer | release</code>",
               "<code data-verbatim>site [build | record]</code>"):
         assert s in t, s
+
+
+def test_lower_flag_drives_every_label(tmp_path, monkeypatch):
+    from patch_precedent.site import data as data_mod
+    real = data_mod._metrics
+
+    def flipped(arms):
+        return tuple({**m, "lower": False} if m["key"] == "turns" else m for m in real(arms))
+
+    monkeypatch.setattr(data_mod, "_metrics", flipped)
+    build_site(pins.project_root(), tmp_path)
+    t = (tmp_path / "results.html").read_text(encoding="utf-8")
+    assert t.count("(lower is better)") == 8  # 11 minus the turns card, row and per-case group
+    assert not re.search(r"Mean turns\s*<span class=\"lower\"", t)
+    assert not re.search(r"Turns\s*<span class=\"lower\"", t)
+    assert "Mean turns (lower is better)" not in (tmp_path / "home.html").read_text(encoding="utf-8")

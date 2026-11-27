@@ -387,7 +387,6 @@ code{font:500 .88em "JetBrains Mono",ui-monospace,monospace;background:var(--sun
 .t small{font:400 11.5px Inter;color:var(--ink-3);margin-left:var(--s1)}
 .t td.strong{color:var(--ink);font-weight:600}
 .headline td:first-child{font-size:14px}
-.headline td.k{white-space:nowrap}
 .cases{min-width:880px}
 .cases th{text-align:center}
 .cases thead tr.grp th{padding-bottom:var(--s2)}
@@ -448,3 +447,9 @@ code{font:500 .88em "JetBrains Mono",ui-monospace,monospace;background:var(--sun
 .lower{font:500 11px Inter;letter-spacing:0;text-transform:none;color:var(--ink-3);white-space:nowrap}
 .cases .lower{display:block}
 code,.code pre,.term-body,.schema-graph text,.patch-graph text{font-variant-ligatures:none;font-feature-settings:"liga" 0,"calt" 0}
+@media (max-width:560px){
+  .headline th.n,.headline td.n{display:none}
+  .headline th,.headline td{padding-left:var(--s2);padding-right:var(--s2)}
+  .headline td:first-child{font-size:13.5px}
+  .headline td.k{font-size:12.5px}
+}
