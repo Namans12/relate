@@ -207,7 +207,7 @@ def patch_graph_svg(page: PatchPage) -> str:
     aria = (f"Graph for patch {prose(page.label)}: {len(files)} changed file(s), "
             f"{len(decisions)} linked decision(s), {len(checks)} check(s), {len(scanned)} scanned decision(s).")
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {_n(height)}" width="100%" '
-            f'role="img" aria-label="{_e(aria)}" class="patch-graph">'
+            f'role="group" aria-label="{_e(aria)}" class="patch-graph">'
             + "".join(edges) + "".join(nodes) + "</svg>")
 
 

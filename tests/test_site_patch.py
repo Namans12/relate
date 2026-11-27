@@ -88,3 +88,20 @@ def test_also_cited_and_explain(site):
     t = _read(site, "scenarios/installer-token-header.html")
     assert "scanned from source, not reviewed" in t and "uv run patch-precedent explain" in t
     assert "Drawn from the Relate store" in t and "read_cypher" in t
+
+
+def test_docs_only_harness_line_from_data(site):
+    t = _read(site, "scenarios/release-docs-only.html")
+    assert "The release harness still ran: 6 of 6 checks passed." in t
+    assert t.count("6 of 6") == 1
+
+
+def test_citation_label_from_url(site):
+    t2 = _read(site, "scenarios/installer-token-header.html")
+    assert "Citation in distribution/install.sh<" in t2
+    assert "Also cited by distribution/install.sh" in t2 and "5 ADRs" in t2
+
+
+def test_pager_names_scenario(site):
+    t = _read(site, "scenarios/installer-wording.html")
+    assert "Installer · token-header" in t and "Release · always-rotate" in t

@@ -51,7 +51,7 @@ def test_six_patch_pages_match_recording(data):
     assert "#64" in th.body and "{" not in th.body
     docs = next(p for p in data.patches if p.label == "docs-only")
     assert docs.decisions == () and docs.verdict["kind"] == "no_decision"
-    assert "CONTRIBUTING.md" in docs.body and "6 of 6" in docs.body
+    assert "CONTRIBUTING.md" in docs.body and "6 of 6" in docs.harness_line
     assert data.home_chain.slug == "installer-token-header"
 
 

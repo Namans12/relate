@@ -127,6 +127,7 @@ class PatchPage:
     heading: str
     body: str
     explain_cmd: str
+    harness_line: str
     queries: tuple[tuple[str, str], ...]
     prev_slug: str | None
     next_slug: str | None
@@ -317,6 +318,7 @@ def _build_patch(run: dict, rec: dict, scenario: str, fixture: str, root: Path, 
         "passed": run["passed"], "total": run["total"],
         "checks": n_checks, "checks_phrase": checks_phrase(n_checks),
         "file": files[0] if files else "",
+        "scenario": scenario,
     }
     body = prose(fill(pc["body"], values))
     diff = parse_diff(_need(root / fixture).read_text(encoding="utf-8"))
@@ -334,7 +336,8 @@ def _build_patch(run: dict, rec: dict, scenario: str, fixture: str, root: Path, 
         failing_numbers=list(run["failing_numbers"]), duration_s=run["duration_s"],
         verdict=verdict, decisions=decisions, also_cites=tuple(also),
         summary=pc["summary"], heading=pc["heading"], body=body,
-        explain_cmd=f"uv run patch-precedent explain {fixture}", queries=queries,
+        explain_cmd=f"uv run patch-precedent explain {fixture}",
+        harness_line=prose(fill(pc.get("harness_line", ""), values)), queries=queries,
         prev_slug=None, next_slug=None)
 
 

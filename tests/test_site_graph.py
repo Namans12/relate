@@ -21,7 +21,7 @@ def test_token_header_graph_nodes_and_classes():
     assert svg.count("n-check-fail") == 1 and "#64" in svg
     assert 'class="node n-decision' in svg and "ADR-0585" in svg
     assert svg.count("n-scanned") == len(page.also_cites)
-    assert 'role="img"' in svg and 'width="100%"' in svg and "<script" not in svg
+    assert 'role="group"' in svg and 'width="100%"' in svg and "<script" not in svg
 
 
 def test_docs_only_graph_has_none_marker():

@@ -63,7 +63,7 @@
       <div class="links-row">
         <a class="lnk" href="{{ d.decision_url }}" target="_blank" rel="noopener">Decision</a>
         <a class="lnk" href="{{ d.consequences_url }}" target="_blank" rel="noopener">Scope</a>
-        <a class="lnk" href="{{ d.citation_url }}" target="_blank" rel="noopener">Citation in {{ patch.diff[0].path.rsplit("/", 1)[-1] }}</a>
+        <a class="lnk" href="{{ d.citation_url }}" target="_blank" rel="noopener">Citation in {{ d.citation_url | cited_file }}</a>
         <a class="lnk" href="{{ d.commit_url }}" target="_blank" rel="noopener">Commit {{ d.commit_sha[:8] }}</a>
       </div>
     </section>
@@ -71,7 +71,7 @@
     <section class="card reveal">
       <div class="card-head"><span class="label">Decision</span><span class="pill">none</span></div>
       <h3><code class="mono">{{ patch.diff[0].path }}</code> cites no decision</h3>
-      <p class="muted">{{ patch.body.partition(". ")[2] }}</p>
+      <p class="muted">{{ patch.harness_line }}</p>
     </section>
     {% endfor %}
 
@@ -104,7 +104,7 @@
 
     {% if patch.also_cites %}
     <details class="card more reveal">
-      <summary><span>Also cited by {{ patch.diff[0].path.rsplit("/", 1)[-1] }}</span><span class="muted note">{{ patch.also_cites | length }} ADRs, scanned from source, not reviewed</span></summary>
+      <summary><span>Also cited by {{ patch.diff | map(attribute="path") | join(", ") }}</span><span class="muted note">{{ patch.also_cites | length }} {{ "ADR" if patch.also_cites | length == 1 else "ADRs" }}, scanned from source, not reviewed</span></summary>
       <ul class="cited">
         {% for a in patch.also_cites %}
         <li><a class="mono" href="{{ a.url }}" target="_blank" rel="noopener">{{ a.id }}</a><span>{{ a.title }}</span><span class="pill">{{ a.status }}</span></li>
@@ -132,8 +132,8 @@
     </div>
 
     <nav class="pager reveal" aria-label="Patches">
-      {% if prev %}<a class="prev" href="{{ ('scenarios/' ~ prev.slug ~ '.html') | rel }}"><small>Previous</small><b>{{ prev.label }}</b></a>{% else %}<span></span>{% endif %}
-      {% if nxt %}<a class="next" href="{{ ('scenarios/' ~ nxt.slug ~ '.html') | rel }}"><small>Next</small><b>{{ nxt.label }}</b></a>{% else %}<span></span>{% endif %}
+      {% if prev %}<a class="prev" href="{{ ('scenarios/' ~ prev.slug ~ '.html') | rel }}"><small>Previous</small><b>{{ prev.scenario_title }} · {{ prev.label }}</b></a>{% else %}<span></span>{% endif %}
+      {% if nxt %}<a class="next" href="{{ ('scenarios/' ~ nxt.slug ~ '.html') | rel }}"><small>Next</small><b>{{ nxt.scenario_title }} · {{ nxt.label }}</b></a>{% else %}<span></span>{% endif %}
     </nav>
   </div>
 </div>

@@ -58,7 +58,8 @@ body = "{decision}: {rule}. {checks_phrase} passed in the replay."
 [patches."release/docs-only"]
 summary = "Edits CONTRIBUTING.md, which cites no ADR."
 heading = "Touches no recorded decision"
-body = "No decision cites {file}. The release harness still ran: {passed} of {total} checks passed."
+body = "No decision cites {file}."
+harness_line = "The {scenario} harness still ran: {passed} of {total} checks passed."
 
 [checks."drift guard: install.sh consults no GitHub API endpoint (ADR-0585)"]
 short = "No GitHub API endpoint in install.sh"

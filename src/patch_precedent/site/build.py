@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import posixpath
+import re
 import shutil
 from pathlib import Path
 
@@ -37,6 +38,12 @@ def _text(value: str) -> markupsafe.Markup:
     return markupsafe.Markup(str(value).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
 
 
+def _cited_file(url: str) -> str:
+    """Repo path a citation URL points at: the part after /blob/<sha>/, before #L."""
+    m = re.search(r"/blob/[0-9a-f]{7,40}/([^#]+)", url)
+    return m.group(1) if m else url
+
+
 def _env() -> jinja2.Environment:
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(str(TEMPLATES)), autoescape=True,
@@ -44,6 +51,7 @@ def _env() -> jinja2.Environment:
         keep_trailing_newline=True)
     env.filters["prose"] = prose
     env.filters["text"] = _text
+    env.filters["cited_file"] = _cited_file
     env.globals["graph_svg"] = patch_graph_svg
     env.filters["rel"] = jinja2.pass_context(_rel)
     return env
