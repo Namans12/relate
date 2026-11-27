@@ -365,3 +365,22 @@ def test_default_spawn_separates_stderr_and_kills_on_timeout(tmp_path, monkeypat
     code, timed_out = runner.default_spawn(
         [sys.executable, "-c", "import time; time.sleep(60)"], tmp_path, out.append, err.append)
     assert timed_out is True and code != 0
+
+
+def _tool_event(name, **inp):
+    return json.dumps({"type": "assistant", "message": {"content": [
+        {"type": "tool_use", "name": name, "input": inp}]}})
+
+
+@pytest.mark.parametrize("name,inp,flagged", [
+    ("Grep", {"pattern": "/usr/local/bin"}, False),
+    ("Grep", {"pattern": "~/.ssh"}, False),
+    ("Grep", {"pattern": "x", "path": "/etc"}, True),
+    ("Glob", {"pattern": "/etc/*"}, True),
+    ("Glob", {"pattern": "**/*.sh"}, False),
+])
+def test_only_glob_patterns_are_paths(tmp_path, worktree, runs_root, name, inp, flagged):
+    _, rows = _run(tmp_path, worktree, runs_root,
+                   FakeSpawn(extra_events=[_tool_event(name, **inp)]), arms=("baseline",))
+    assert bool(rows[0]["out_of_worktree"]) is flagged
+    assert (rows[0]["error"] is not None) is flagged

@@ -152,7 +152,9 @@ def _summarise(event: dict, info: dict, wt: Path) -> None:
             if not (isinstance(block, dict) and block.get("type") == "tool_use"):
                 continue
             args = block.get("input")
-            for key in ("file_path", "path", "pattern"):
+            # Grep's pattern is a regex, not a path; only Glob's pattern can carry one.
+            keys = ("file_path", "path") + (("pattern",) if block.get("name") == "Glob" else ())
+            for key in keys:
                 v = args.get(key) if isinstance(args, dict) else None
                 if isinstance(v, str) and _outside(wt, v) and v not in info["out_of_worktree"]:
                     info["out_of_worktree"].append(v)
