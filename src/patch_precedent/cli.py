@@ -69,6 +69,12 @@ def build_parser() -> tuple[argparse.ArgumentParser, argparse._SubParsersAction]
     run.add_argument("--runs-dir", type=Path, default=project_root() / "runs",
                      help="where demo run directories (replay evidence) live")
 
+    for name, text in (("score", "score a results directory (writes scored.jsonl, results.json)"),
+                       ("report", "render RESULTS.md from a scored results directory")):
+        sub = ev_sub.add_parser(name, help=text)
+        sub.add_argument("--results", type=Path, default=None,
+                         help="results directory (default: newest eval/results/*)")
+
     scan = subparsers.add_parser(
         "scan-citations", help="scan upstream for ADR-NNNN mentions into evidence/scanned/"
     )
@@ -214,6 +220,68 @@ def _cmd_eval_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _results_dir(args: argparse.Namespace, need: str) -> Path | None:
+    d = args.results
+    if d is None:
+        root = project_root() / "eval" / "results"
+        found = sorted(p for p in root.glob("*") if p.is_dir()) if root.is_dir() else []
+        if not found:
+            print(f"no results directory under {root}", file=sys.stderr)
+            return None
+        d = found[-1]
+    if not (Path(d) / need).is_file():
+        print(f"{Path(d) / need} not found (is {d} an eval results directory?)", file=sys.stderr)
+        return None
+    return Path(d)
+
+
+def _cmd_eval_score(args: argparse.Namespace) -> int:
+    import json
+
+    from .eval.cases import load_cases
+    from .eval.score import score_row, summarise
+
+    d = _results_dir(args, "runs.jsonl")
+    if d is None:
+        return 2
+    cases = {c.id: c for c in load_cases()}
+    rows = [json.loads(x) for x in (d / "runs.jsonl").read_text(encoding="utf-8").splitlines()
+            if x.strip()]
+    unknown = sorted({r["case"] for r in rows} - set(cases))
+    if unknown:
+        print(f"runs.jsonl names unknown case(s): {', '.join(unknown)}", file=sys.stderr)
+        return 2
+    scored = [score_row(cases[r["case"]], r, d) for r in rows]
+    (d / "scored.jsonl").write_text(
+        "".join(json.dumps(s, ensure_ascii=False, sort_keys=True) + "\n" for s in scored),
+        encoding="utf-8")
+    (d / "results.json").write_text(
+        json.dumps(summarise(scored), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(f"scored {len(scored)} runs in {d}")
+    return 0
+
+
+def _cmd_eval_report(args: argparse.Namespace) -> int:
+    import json
+
+    from .eval.report import render_results_md
+    from .eval.score import summarise
+
+    d = _results_dir(args, "scored.jsonl")
+    if d is None:
+        return 2
+    if not (d / "meta.json").is_file():
+        print(f"{d / 'meta.json'} not found", file=sys.stderr)
+        return 2
+    scored = [json.loads(x) for x in (d / "scored.jsonl").read_text(encoding="utf-8").splitlines()
+              if x.strip()]
+    meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+    (d / "RESULTS.md").write_text(render_results_md(summarise(scored), scored, meta),
+                                  encoding="utf-8")
+    print(f"wrote {d / 'RESULTS.md'}")
+    return 0
+
+
 def _cmd_scan(args: argparse.Namespace) -> int:
     from .scan import write_index
     from .upstream import UpstreamUnavailable
@@ -249,7 +317,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "fetch-relate-cli":
         return _cmd_fetch_relate_cli(args)
     if args.command == "eval":
-        return _cmd_eval_run(args)
+        return {"run": _cmd_eval_run, "score": _cmd_eval_score,
+                "report": _cmd_eval_report}[args.eval_command](args)
     return 0
 
 
