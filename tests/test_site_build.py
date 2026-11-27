@@ -15,17 +15,14 @@ SLUGS = ["installer-release-lookup", "installer-token-header", "installer-wordin
          "release-always-rotate", "release-wording", "release-docs-only"]
 PAGES = ["index.html", "home.html", "results.html", "use.html", "relate.html"] + [
     f"scenarios/{s}.html" for s in SLUGS]
-LATER = [p for p in PAGES if p in ("results.html", "use.html", "relate.html")]
 ALLOWED = ("https://github.com/Namans12/relate", "https://github.com/relatedb/relate/",
            "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://relate.devpost.com")
-pending = pytest.mark.xfail(strict=False, reason="page built in a later task")
 
 
 @pytest.fixture(scope="module")
 def site(tmp_path_factory):
     out = tmp_path_factory.mktemp("site")
-    # until Task 9 adds the remaining templates
-    build_site(pins.project_root(), out, allow_missing=True)
+    build_site(pins.project_root(), out)
     return out
 
 
@@ -79,16 +76,15 @@ def _scan(path: Path) -> _Scan:
 
 def test_og_image_only_with_base_url(tmp_path):
     root = pins.project_root()
-    build_site(root, tmp_path / "a", allow_missing=True)
+    build_site(root, tmp_path / "a")
     assert "og:image" not in (tmp_path / "a" / "index.html").read_text()
-    build_site(root, tmp_path / "b", base_url="https://x.example/", allow_missing=True)
+    build_site(root, tmp_path / "b", base_url="https://x.example/")
     t = (tmp_path / "b" / "index.html").read_text()
     assert 'content="https://x.example/lockup.png"' in t and 'content="https://x.example/"' in t
     assert 'property="og:title"' in t and 'property="og:description"' in t
 
 
-@pytest.mark.parametrize("page", [pytest.param(p, marks=pending) if p in LATER else p
-                                  for p in PAGES])
+@pytest.mark.parametrize("page", PAGES)
 def test_page_exists(site, page):
     assert (site / page).is_file()
 
@@ -111,8 +107,6 @@ def test_relative_links_resolve(site):
                 assert frag == "" or frag in sc.ids, (page.name, url)
                 continue
             target = (here / path.split("?")[0]).resolve()
-            if not target.exists() and target.relative_to(site.resolve()).as_posix() in LATER:
-                continue  # xfail-equivalent allowance until Task 9 builds these pages
             assert target.exists(), (page.name, url)
             if frag and target.suffix == ".html":
                 assert frag in _scan(target).ids, (page.name, url)
@@ -204,10 +198,6 @@ def test_missing_required_template_raises(tmp_path, monkeypatch):
         build_site(pins.project_root(), tmp_path / "s")
 
 
-def test_cli_fails_while_templates_missing(tmp_path):
-    assert main(["site", "--out", str(tmp_path / "s")]) == 2
-
-
 def test_no_fraunces_and_visible_focus(site):
     for f in site.rglob("*"):
         if f.suffix in {".html", ".js", ".css"}:
@@ -215,7 +205,6 @@ def test_no_fraunces_and_visible_focus(site):
             assert "Fraunces" not in body and "F2C9B9" not in body, f.name
 
 
-@pending
 def test_cli_site_build(tmp_path, capsys):
     assert main(["site", "--out", str(tmp_path / "s")]) == 0
     assert "pages to" in capsys.readouterr().out

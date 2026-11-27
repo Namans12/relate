@@ -77,6 +77,8 @@ short = "Advance leaves CHANGELOG.md untouched"
 short = "Advance still sweeps the version surfaces"
 
 [results]
+eyebrow = "Measured"
+title = "Agents with and without the graph."
 intro = "{model} reviewed each patch {repeats} times per arm. Same prompt, same tools, same budget. The graph arm adds one MCP tool."
 caveats = [
   "Failing-check recall was {catching_recall_baseline} for the baseline and {catching_recall_graph} for the graph arm. The checks-recall gap comes from passing checks.",
@@ -84,6 +86,52 @@ caveats = [
   "In {replay_missed} of {graph_runs} graph runs the agent altered the patch when passing it to the tool, so no evidence came back.",
   "The prompt does not define \"consistent\" versus \"no decision\"; {baseline_misses_sit} on that line.",
 ]
+
+[use]
+eyebrow = "Use it"
+title = "Run it in a minute."
+prereqs = ["macOS", "git", "uv", "no API key"]
+commands_title = "All commands"
+
+[[use.commands]]
+name = "demo all | installer | release"
+does = "Replay patches and explain results"
+exits = "0 ok, 2 inconclusive or input missing, 3 mismatch, 4 no upstream"
+
+[[use.commands]]
+name = "explain PATCH_FILE"
+does = "Show the decision chain for a diff"
+exits = "0 ok, 2 missing patch file or store"
+
+[[use.commands]]
+name = "mcp"
+does = "Serve the read-only MCP tool"
+exits = "0 ok, 2 missing store"
+
+[[use.commands]]
+name = "verify-store"
+does = "Check the store matches its evidence"
+exits = "0 match, 1 differs or missing"
+
+[[use.commands]]
+name = "scan-citations"
+does = "Re-scan ADR mentions upstream"
+exits = "0 ok, 4 no upstream"
+
+[[use.commands]]
+name = "fetch-relate-cli"
+does = "Download and verify the pinned relate CLI"
+exits = "0 ok, 4 download failed"
+
+[[use.commands]]
+name = "eval run"
+does = "Run the agent evaluation"
+exits = "0 ok, 2 refused, 4 no upstream"
+
+[[use.commands]]
+name = "eval score | report"
+does = "Re-score or re-render a results directory"
+exits = "0 ok, 2 results directory missing"
 
 [[use.steps]]
 title = "Clone"
@@ -132,8 +180,37 @@ text = "Queries bind values such as $path and $key instead of splicing strings."
 
 [[relate.capabilities]]
 name = "Read-only opens"
-text = "Every query path opens the store read-only."
+text = "The committed store is only ever opened read-only; each demo run writes its observations into a copy."
 
 [[relate.capabilities]]
 name = "MCP server"
 text = "The relate CLI's `serve --mcp stdio --read-only` exposes raw Cypher over MCP."
+
+[[relate.queries]]
+title = "Decision chain for a file"
+text = "Joins a file's curated citation to its decision, implementing commit and checks."
+used_by = ["explain", "demo", "mcp"]
+which = "evidence"
+
+[[relate.queries]]
+title = "Every decision a file cites"
+text = "Includes scanned, unreviewed citations that have no linked checks."
+used_by = ["explain", "demo", "mcp"]
+which = "cited"
+
+[[relate.queries]]
+title = "Patch to observed result join"
+text = "Runs on the replay copy, linking each patch to the checks observed in its run."
+used_by = ["demo"]
+which = "join"
+
+[[relate.queries]]
+title = "Observed results for a patch key"
+text = "Reads back what a demo run observed for one patch."
+used_by = ["mcp"]
+which = "observed"
+
+[relate.mcp]
+title = "One tool for your agent"
+text = "The MCP server exposes `precedent_for_patch`: give it a diff and it returns the decision chain and any observed results. `relate serve --mcp stdio --read-only` serves the raw store over MCP instead, for arbitrary Cypher."
+link = "Setup steps"

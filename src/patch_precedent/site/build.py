@@ -9,7 +9,8 @@ from pathlib import Path
 import jinja2
 import markupsafe
 
-from .graph import patch_graph_svg
+from .. import evidence as _evidence, replay as _replay, store as _store
+from .graph import patch_graph_svg, schema_svg
 from .data import SiteData, SiteDataError, load_site_data, prose
 
 HERE = Path(__file__).resolve().parent
@@ -44,6 +45,18 @@ def _cited_file(url: str) -> str:
     return m.group(1) if m else url
 
 
+def _code(value: str) -> markupsafe.Markup:
+    """Escape text, turning `backtick` spans into <code> elements."""
+    parts = str(markupsafe.escape(value)).split("`")
+    out = "".join(f"<code>{x}</code>" if i % 2 else x for i, x in enumerate(parts))
+    return markupsafe.Markup(out)
+
+
+def _relate_queries() -> dict[str, str]:
+    return {"evidence": _store._EVIDENCE_QUERY, "cited": _store._CITED_QUERY,
+            "join": _replay.JOIN_QUERY, "observed": _evidence._OBSERVED_QUERY}
+
+
 def _env() -> jinja2.Environment:
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(str(TEMPLATES)), autoescape=True,
@@ -52,7 +65,10 @@ def _env() -> jinja2.Environment:
     env.filters["prose"] = prose
     env.filters["text"] = _text
     env.filters["cited_file"] = _cited_file
+    env.filters["code"] = _code
     env.globals["graph_svg"] = patch_graph_svg
+    env.globals["schema_svg"] = schema_svg
+    env.globals["relate_queries"] = _relate_queries()
     env.filters["rel"] = jinja2.pass_context(_rel)
     return env
 

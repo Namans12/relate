@@ -12,7 +12,7 @@ SLUGS = ["installer-release-lookup", "installer-token-header", "installer-wordin
 @pytest.fixture(scope="module")
 def site(tmp_path_factory):
     out = tmp_path_factory.mktemp("site")
-    build_site(pins.project_root(), out, allow_missing=True)
+    build_site(pins.project_root(), out)
     return out
 
 

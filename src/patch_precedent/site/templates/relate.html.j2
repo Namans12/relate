@@ -1,0 +1,53 @@
+{% extends "base.html.j2" %}
+{% import "macros.html.j2" as m %}
+{% set nav_active = "relate" %}
+{% block title %}How it uses Relate - Patch Precedent{% endblock %}
+{% block body_class %}relate-page{% endblock %}
+{% block main %}
+{% set r = c["relate"] %}
+{% set st = data.store %}
+<div class="wrap page-narrow">
+  <header class="reveal page-head">
+    <div class="eyebrow">Relate</div>
+    <h1>How it uses Relate</h1>
+    <p class="muted lede-sm">{{ r["intro"] | code }}</p>
+  </header>
+
+  <section class="card reveal sec-gap" aria-labelledby="schema-h">
+    <div class="card-head"><h2 class="h-sm" id="schema-h">The store</h2></div>
+    <div class="graph-scroll">{{ schema_svg(st) | safe }}</div>
+    <p class="caption">{{ "{:,}".format(st.nodes) }} nodes and {{ "{:,}".format(st.rels) }} relationships in <code>data/precedent.rl</code>.</p>
+  </section>
+
+  <section class="reveal sec-gap" aria-labelledby="cap-h">
+    <h2 class="h-sm" id="cap-h">What it relies on</h2>
+    <ul class="caps card">
+      {% for cp in r["capabilities"] %}
+      <li><h3>{{ cp["name"] }}</h3><p class="muted">{{ cp["text"] | code }}</p></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="sec-gap" aria-labelledby="q-h">
+    <h2 class="h-sm reveal" id="q-h">The four queries</h2>
+    <div class="qgrid">
+      {% for q in r["queries"] %}
+      <div class="reveal qcard">
+        <h3>{{ q["title"] }}</h3>
+        <p class="muted">{{ q["text"] }} Used by {% for cmd in q["used_by"] %}<code>{{ cmd }}</code>{% if not loop.last %}{% if loop.revindex == 2 %} and {% else %}, {% endif %}{% endif %}{% endfor %}.</p>
+        <div class="code cmd">
+          <div class="code-bar"><span>cypher</span><button class="copy" type="button" data-copy aria-label="Copy query: {{ q['title'] }}">Copy</button></div>
+          <pre data-verbatim tabindex="0">{{ relate_queries[q["which"]] | text }}</pre>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card reveal sec-gap" aria-labelledby="mcp-h">
+    <h2 class="h-sm" id="mcp-h">{{ r["mcp"]["title"] }}</h2>
+    <p class="muted">{{ r["mcp"]["text"] | code }}</p>
+    <p class="links-row"><a class="lnk nolink-arrow" href="{{ 'use.html#mcp' | rel }}">{{ r["mcp"]["link"] }}</a></p>
+  </section>
+</div>
+{% endblock %}

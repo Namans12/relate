@@ -1,0 +1,71 @@
+{% extends "base.html.j2" %}
+{% import "macros.html.j2" as m %}
+{% set nav_active = "use" %}
+{% block title %}Use it - Patch Precedent{% endblock %}
+{% block body_class %}use-page{% endblock %}
+{% block main %}
+{% set u = c["use"] %}
+{% set steps = u["steps"] %}
+{% set rdir = "eval/results/20261127T040059Z" %}
+{% set proj = "<path-to-relate-clone>" %}
+<div class="wrap page-narrow">
+  <header class="reveal page-head">
+    <div class="eyebrow">{{ u["eyebrow"] }}</div>
+    <h1>{{ u["title"] }}</h1>
+    <div class="chips-row">{% for p in u["prereqs"] %}<span class="pill">{{ p }}</span>{% endfor %}</div>
+  </header>
+
+  <ol class="usesteps">
+    {% for s in steps %}
+    <li class="step"{% if loop.index == 4 %} id="mcp"{% elif loop.index == 6 %} id="rescore"{% endif %}>
+      <div class="step-body reveal">
+        <div class="step-head">
+          <h3>{{ s["title"] }}</h3>
+          {% if s["tag"] %}<span class="pill">{{ s["tag"] }}</span>{% endif %}
+        </div>
+        <p class="muted">{{ s["text"] }}</p>
+        {% if loop.index == 1 %}
+        {{ m.copy_block("git clone https://github.com/Namans12/relate.git\ncd relate") }}
+        {% elif loop.index == 2 %}
+        {{ m.copy_block("uv run patch-precedent demo all") }}
+        {% elif loop.index == 3 %}
+        {{ m.copy_block("uv run patch-precedent explain fixtures/installer/token-header.patch") }}
+        {% elif loop.index == 4 %}
+        <div class="code cmd">
+          <div class="code-bar"><span>.mcp.json</span><button class="copy" type="button" data-copy aria-label="Copy .mcp.json">Copy</button></div>
+          {% raw %}<pre data-verbatim tabindex="0">{
+  "mcpServers": {
+    "precedent": {
+      "command": "uv",
+      "args": ["run", "--project", "&lt;path-to-relate-clone&gt;",
+               "--quiet", "patch-precedent", "mcp"]
+    }
+  }
+}</pre>{% endraw %}
+        </div>
+        {{ m.copy_block("claude mcp add --scope project precedent -- uv run --project " ~ proj ~ " --quiet patch-precedent mcp", "or in one line") }}
+        {% elif loop.index == 5 %}
+        {{ m.copy_block("uv run patch-precedent fetch-relate-cli\n<path printed above> serve --mcp stdio --read-only --database <copy of data/precedent.rl>", "terminal") }}
+        {% elif loop.index == 6 %}
+        {{ m.copy_block("uv run patch-precedent eval score --results " ~ rdir ~ "\nuv run patch-precedent eval report --results " ~ rdir) }}
+        {% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+
+  <section class="card reveal" aria-labelledby="cmds-h">
+    <div class="card-head"><h2 class="h-sm" id="cmds-h">{{ u["commands_title"] }}</h2><span class="note muted mono">uv run patch-precedent ...</span></div>
+    <div class="twrap" tabindex="0" role="region" aria-label="Commands and exit codes, scrolls sideways on small screens">
+      <table class="t cmds">
+        <thead><tr><th>Command</th><th>Does</th><th>Exit codes</th></tr></thead>
+        <tbody>
+          {% for cm in u["commands"] %}
+          <tr><td class="k">{{ cm["name"] }}</td><td>{{ cm["does"] }}</td><td class="muted exits">{{ cm["exits"] }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+{% endblock %}

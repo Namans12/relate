@@ -1,0 +1,100 @@
+{% extends "base.html.j2" %}
+{% import "macros.html.j2" as m %}
+{% set nav_active = "results" %}
+{% block title %}Results - Patch Precedent{% endblock %}
+{% block body_class %}results-page{% endblock %}
+{% block main %}
+{% set res = c["results"] %}
+{% set ev = data.eval %}
+{% set b = ev.arms["baseline"] %}
+{% set g = ev.arms["graph"] %}
+{% set md = "https://github.com/Namans12/relate/blob/main/eval/results/20261127T040059Z/RESULTS.md" %}
+{% macro pct(x) %}{% if x is none %}n/a{% else %}{{ (x * 100 + 0.5) | int }}%{% endif %}{% endmacro %}
+{% macro num(x, spec) %}{% if x is none %}n/a{% else %}{{ spec | format(x) }}{% endif %}{% endmacro %}
+{% macro kn(k, n) %}{{ k }}/{{ n }}{% endmacro %}
+<div class="wrap page-narrow">
+  <header class="reveal page-head">
+    <div class="eyebrow">{{ res["eyebrow"] }}</div>
+    <h1>{{ res["title"] }}</h1>
+    <p class="muted lede-sm">{{ ev.intro }}</p>
+  </header>
+
+  <div class="mgrid reveal" role="list">
+    {% for mt in ev.metrics %}
+    <div class="card mcard" role="listitem">
+      <div class="label">{{ mt["label"] }}</div>
+      <div class="mbars">
+        <span class="muted">baseline</span><div class="mtrack"><div class="mfill base" style="width:{{ (mt['baseline_frac'] * 100) | round(1) }}%"></div></div><b class="mono">{{ mt["baseline"] }}</b>
+        <span class="muted">graph</span><div class="mtrack"><div class="mfill graph" style="width:{{ (mt['graph_frac'] * 100) | round(1) }}%"></div></div><b class="mono">{{ mt["graph"] }}</b>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <section class="readfirst reveal" aria-labelledby="read-first">
+    <h3 id="read-first">Read these first</h3>
+    <ul class="muted">
+      {% for cv in ev.caveats %}
+      <li class="caveat">{{ cv }}</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card reveal sec-gap">
+    <div class="card-head"><span class="label">Headline</span><span class="note muted">n is the number of runs behind each figure</span></div>
+    <div class="twrap">
+      <table class="t headline">
+        <thead><tr><th>Metric</th><th>Baseline</th><th>Graph</th></tr></thead>
+        <tbody>
+          <tr><td>Verdict correct</td><td class="k">{{ kn(b.verdict_k, b.n) }}</td><td class="k strong">{{ kn(g.verdict_k, g.n) }}</td></tr>
+          <tr><td>Decisions exact</td><td class="k">{{ kn(b.decisions_exact_k, b.n) }}</td><td class="k strong">{{ kn(g.decisions_exact_k, g.n) }}</td></tr>
+          <tr><td>Decision recall (mean)</td><td class="k">{{ pct(b.decisions_recall_mean) }} <small>n {{ b.decisions_recall_n }}</small></td><td class="k strong">{{ pct(g.decisions_recall_mean) }} <small>n {{ g.decisions_recall_n }}</small></td></tr>
+          <tr><td>Checks recall (all linked checks)</td><td class="k">{{ pct(b.checks_recall_mean) }} <small>n {{ b.checks_recall_n }}</small></td><td class="k strong">{{ pct(g.checks_recall_mean) }} <small>n {{ g.checks_recall_n }}</small></td></tr>
+          <tr><td>Catching-checks recall</td><td class="k">{{ pct(b.catching_recall_mean) }} <small>n {{ b.catching_recall_n }}</small></td><td class="k strong">{{ pct(g.catching_recall_mean) }} <small>n {{ g.catching_recall_n }}</small></td></tr>
+          <tr><td>Graph tool returned observed results</td><td class="k">n/a</td><td class="k strong">{{ kn(g.replay_found_k, g.replay_found_n) }}</td></tr>
+          <tr><td>Outcomes marked (of linked checks)</td><td class="k">{{ kn(b.outcome_marked, b.outcome_linked) }}</td><td class="k strong">{{ kn(g.outcome_marked, g.outcome_linked) }}</td></tr>
+          <tr><td>Outcome accuracy (marked checks)</td><td class="k">{{ pct(b.outcome_accuracy) }} <small>{{ kn(b.outcome_correct, b.outcome_marked) }}</small></td><td class="k strong">{{ pct(g.outcome_accuracy) }} <small>{{ kn(g.outcome_correct, g.outcome_marked) }}</small></td></tr>
+          <tr><td>Unsupported claims</td><td class="k">{{ b.unsupported_total }} <small>n {{ b.unsupported_n }}</small></td><td class="k strong">{{ g.unsupported_total }} <small>n {{ g.unsupported_n }}</small></td></tr>
+          <tr><td>Median time to first correct citation</td><td class="k">{{ num(b.citation_median_s, "%.1f") }} s <small>n {{ b.citation_n }}</small></td><td class="k strong">{{ num(g.citation_median_s, "%.1f") }} s <small>n {{ g.citation_n }}</small></td></tr>
+          <tr><td>Mean turns</td><td class="k">{{ num(b.turns_mean, "%.1f") }} <small>n {{ b.turns_n }}</small></td><td class="k strong">{{ num(g.turns_mean, "%.1f") }} <small>n {{ g.turns_n }}</small></td></tr>
+          <tr><td>Total cost</td><td class="k">${{ num(b.cost_total, "%.2f") }} <small>n {{ b.cost_n }}</small></td><td class="k strong">${{ num(g.cost_total, "%.2f") }} <small>n {{ g.cost_n }}</small></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card reveal sec-gap">
+    <div class="card-head"><span class="label">Per case</span><span class="note muted">Each cell is baseline, then graph</span></div>
+    <div class="twrap" tabindex="0" role="region" aria-label="Per-case results, scrolls sideways on small screens">
+      <table class="t cases">
+        <thead>
+          <tr class="grp"><th rowspan="2">Case</th><th rowspan="2">Patch</th><th rowspan="2">Expected</th>
+            <th colspan="2">Verdict correct</th><th colspan="2">Decisions exact</th><th colspan="2">Checks recall</th><th colspan="2">Unsupported</th><th colspan="2">Turns</th><th colspan="2">Cost</th></tr>
+          <tr class="sub">{% for _ in range(6) %}<th>Base</th><th>Graph</th>{% endfor %}</tr>
+        </thead>
+        <tbody>
+          {% for cs in ev.cases %}
+          {% set cb = cs["baseline"] %}
+          {% set cg = cs["graph"] %}
+          <tr>
+            <td class="k">{{ cs["id"] }}</td>
+            <td><b>{{ cs["label"] }}</b><br><small class="muted">{{ cs["scenario"] }}</small></td>
+            <td><span class="pill">{{ cs["expected"] | replace("_", " ") }}</span></td>
+            {% for a in (cb, cg) %}<td>{{ m.badge("pass" if a.verdict_k == a.n else "fail", kn(a.verdict_k, a.n)) }}</td>{% endfor %}
+            {% for a in (cb, cg) %}<td class="k">{{ kn(a.decisions_exact_k, a.n) }}</td>{% endfor %}
+            {% for a in (cb, cg) %}<td class="k">{{ pct(a.checks_recall_mean) }}</td>{% endfor %}
+            {% for a in (cb, cg) %}<td class="k">{{ a.unsupported_total }}</td>{% endfor %}
+            {% for a in (cb, cg) %}<td class="k">{{ num(a.turns_mean, "%.1f") }}</td>{% endfor %}
+            {% for a in (cb, cg) %}<td class="k">${{ num(a.cost_total, "%.2f") }}</td>{% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="links-row">
+      <a class="lnk" href="{{ md }}" target="_blank" rel="noopener">All {{ ev.per_run | length }} runs and the method</a>
+      <a class="lnk nolink-arrow" href="{{ 'use.html#rescore' | rel }}">Re-score it yourself</a>
+    </div>
+  </section>
+</div>
+{% endblock %}
