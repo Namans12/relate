@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 from rich import box
 from rich.console import Console
+from rich.segment import Segment
 from rich.padding import Padding
 from rich.panel import Panel
 from rich.table import Table
@@ -37,7 +38,32 @@ STYLES: dict[str, str] = {
 _LABEL_W = 16
 _PASSED_W = 11
 _FAILED_W = 9
-_EXIT_W = 12
+_EXIT_W = 14
+
+
+class _Console(Console):
+    """Console that never emits trailing spaces (Rich pads table cells to column width)."""
+
+    def _render_buffer(self, buffer):  # type: ignore[override]
+        segs = list(buffer)
+        ends_nl = bool(segs) and not segs[-1].control and segs[-1].text.endswith("\n")
+        out: list[Segment] = []
+        for line in Segment.split_lines(segs):
+            line = list(line)
+            while line and not line[-1].control:
+                last = line[-1]
+                text = last.text.rstrip(" ")
+                if text == last.text:
+                    break
+                if text:
+                    line[-1] = Segment(text, last.style)
+                    break
+                line.pop()
+            out.extend(line)
+            out.append(Segment.line())
+        if out and not ends_nl:
+            out.pop()
+        return super()._render_buffer(out)
 
 
 def should_style(stream: Any, plain: bool, env: Mapping[str, str] = os.environ) -> bool:
@@ -50,7 +76,7 @@ def should_style(stream: Any, plain: bool, env: Mapping[str, str] = os.environ) 
 
 def make_console(file=None, *, width: int | None = None, force_terminal: bool | None = None,
                  color_system: str | None = "auto") -> Console:
-    return Console(file=file, width=width, force_terminal=force_terminal,
+    return _Console(file=file, width=width, force_terminal=force_terminal,
                    color_system=color_system, theme=Theme(STYLES),  # type: ignore[arg-type]
                    highlight=False, emoji=False, soft_wrap=False)
 
@@ -211,15 +237,19 @@ class StyledReporter:
         return self._table(headers, body)
 
     def _join_table(self, joined) -> Table:
-        # patch id and file are dropped here (label and the evidence block carry them) so the
-        # long assertion text keeps a readable column at 80 columns.
+        # Every field of the plain join table is kept; related short fields share a cell
+        # (one per line) so only the long assertion text has to wrap at 80 columns.
         table = Table(box=box.SIMPLE_HEAD, header_style="pp.dim", pad_edge=False, show_edge=False)
-        for h in ("label", "decision", "implementation", "observed"):
-            table.add_column(Text(h), no_wrap=True)
+        table.add_column(Text("label / patch"), no_wrap=True)
+        table.add_column(Text("file / decision / impl"), no_wrap=True)
+        table.add_column(Text("observed"), no_wrap=True)
         table.add_column(Text("assertion"), overflow="fold")
         for r in joined:
-            table.add_row(Text(r["label"]), Text(r["decision"]), Text(r["implementation"][:8]),
-                          Text(f'{r["observed"]} {r["tap_number"]}'), Text(r["assertion"]))
+            table.add_row(
+                Text(f'{r["label"]}\n{r["patch"]}'),
+                Text(f'{r["file"]}\n{r["decision"]} {r["implementation"][:8]}'),
+                Text(f'{r["observed"]} {r["tap_number"]}'),
+                Text(r["assertion"]))
         return table
 
     # -- verdicts -------------------------------------------------------
@@ -301,9 +331,11 @@ def _chain(console: Console, path: str, rows: list[dict], cited: list[dict], lin
         console.print(_t(path, "pp.strong"))
     for decision, group in groups.items():
         first = group[0]
-        console.print(Text.assemble(
-            (decision, "pp.accent"), "  ", (prose(first["title"]), "pp.strong"), "  ",
+        head = _grid(len(decision), None, padding=(0, 2))
+        head.add_row(_t(decision, "pp.accent"), Text.assemble(
+            (prose(first["title"]), "pp.strong"), "  ",
             (f"[{prose(shorten_status(first['status']))}]", "pp.dim")))
+        console.print(head)
         fields = _grid(8, None)
         fields.add_row(_t("rule", "pp.dim"), _t(prose(first["rule"])))
         fields.add_row(_t("why", "pp.dim"), _t(prose(" ".join(first["reason"].split()))))

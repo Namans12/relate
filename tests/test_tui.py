@@ -109,3 +109,35 @@ def test_cli_plain_flag_keeps_plain_explain(capsys):
     out = capsys.readouterr().out
     assert out.startswith("patch    token-header (sha256 5146b525a26d)\n")
     assert "mode     read-only" in out and "\x1b" not in out
+
+
+def _no_trailing(text: str):
+    bad = [ln for ln in text.splitlines() if ln != ln.rstrip()]
+    assert not bad, bad[:3]
+
+
+def test_no_trailing_whitespace_in_styled_output():
+    for links in (False, True):
+        out, _ = _explain(FIX / "installer/token-header.patch", links=links)
+        _no_trailing(out)
+    buf = io.StringIO()
+    rep = StyledReporter(make_console(file=buf, width=80, force_terminal=False))
+    rep.run_end(_run("baseline", 194, 0, 0), 6.8)
+    rep.run_end(_run("release-lookup", 192, 2, 1, (7, 193)), 7.1)
+    rep.details([_run("baseline", 6, 0, 0)], {}, ["blk"], "Q",
+                [{"patch": "patch:abc", "label": "l", "file": "f.sh", "decision": "ADR-1",
+                  "implementation": "0123456789ab", "assertion": "a long assertion " * 6,
+                  "observed": "ok", "tap_number": 2}])
+    rep.verdicts([], [VerdictRecord("x", "consistent", ("ADR-1",))],
+                 {"line": "l", "reproduced": [], "inconclusive": []}, [], [])
+    rep.finish()
+    out = buf.getvalue()
+    _no_trailing(out)
+    assert "patch:abc" in out and "f.sh" in out and "0123456789"[:8] in out
+
+
+def test_run_row_gap_before_failing_numbers():
+    buf = io.StringIO()
+    rep = StyledReporter(make_console(file=buf, width=80, force_terminal=False))
+    rep.run_end(_run("release-lookup", 192, 2, 1, (7, 193)), 7.1)
+    assert "7.1s   #7 #193" in buf.getvalue()

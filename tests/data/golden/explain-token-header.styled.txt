@@ -1,23 +1,23 @@
 token-header  changes distribution/install.sh · read-only, offline
 
-ADR-0585  The installer downloads release assets over the direct route  
-[Proposed]
-  rule     install.sh consults no GitHub API endpoint and does not read         
-           GITHUB_TOKEN                                                         
-  why      Anonymous GitHub API requests are limited to 60 per hour per IP      
-           address, and users behind shared egress (VPNs, corporate NAT,        
-           Cloudflare WARP) exhausted that quota, so the one-line installer     
-           broke. Release assets are now fetched over the direct download route 
-           instead. Only ADR-0068's installer authentication clause is          
-           superseded; version selection still uses releases.json.              
-  commit   5ac38808                                                             
+ADR-0585  The installer downloads release assets over the direct route
+          [Proposed]
+  rule     install.sh consults no GitHub API endpoint and does not read
+           GITHUB_TOKEN
+  why      Anonymous GitHub API requests are limited to 60 per hour per IP
+           address, and users behind shared egress (VPNs, corporate NAT,
+           Cloudflare WARP) exhausted that quota, so the one-line installer
+           broke. Release assets are now fetched over the direct download route
+           instead. Only ADR-0068's installer authentication clause is
+           superseded; version selection still uses releases.json.
+  commit   5ac38808
 
-  checks                                                                        
-    #7    static   drift guard: install.sh consults no GitHub API endpoint      
-                   (ADR-0585)                                                   
-    #64   runtime  token set: no Authorization header anywhere (GITHUB_TOKEN    
-                   never rides a request)                                       
-    #193  runtime  no case made a GitHub API request (ADR-0585)                 
+  checks
+    #7    static   drift guard: install.sh consults no GitHub API endpoint
+                   (ADR-0585)
+    #64   runtime  token set: no Authorization header anywhere (GITHUB_TOKEN
+                   never rides a request)
+    #193  runtime  no case made a GitHub API request (ADR-0585)
 
 also cites 5 ADRs (scanned, not reviewed): 0115 0250 0431 0457 0586
 
