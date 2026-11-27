@@ -91,3 +91,33 @@ def test_multi_file_patch_edges():
     one = ET.fromstring(patch_graph_svg(page))
     assert {e.get("data-from") for e in one.iter("{http://www.w3.org/2000/svg}path")
             if e.get("data-to", "").startswith("scan:")} == {"file:distribution/install.sh"}
+
+
+def _bezier_points(d, n=40):
+    nums = [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", d)]
+    (x0, y0, x1, y1, x2, y2, x3, y3) = nums[:8]
+    pts = []
+    for i in range(n + 1):
+        t = i / n
+        u = 1 - t
+        pts.append((u**3 * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t**3 * x3,
+                    u**3 * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t**3 * y3))
+    return pts
+
+
+def test_decision_text_clear_of_edges():
+    ns = "{http://www.w3.org/2000/svg}"
+    for p in DATA.patches:
+        root = ET.fromstring(patch_graph_svg(p))
+        paths = [_bezier_points(e.get("d")) for e in root.iter(ns + "path")]
+        for g in root.iter(ns + "g"):
+            if "n-decision" not in g.get("class"):
+                continue
+            for t in g.iter(ns + "text"):
+                size = float(t.get("font-size"))
+                w = len(t.text) * 0.6 * size
+                x, y = float(t.get("x")), float(t.get("y"))
+                box = (x - w / 2, y - size, x + w / 2, y + size * 0.25)
+                for pts in paths:
+                    for px, py in pts:
+                        assert not (box[0] <= px <= box[2] and box[1] <= py <= box[3]), (p.slug, t.text)

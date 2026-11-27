@@ -43,7 +43,14 @@ def _edge(x1, y1, x2, y2, f, t, cls="edge", stroke=LINE2, dash=False) -> str:
             f'stroke="{stroke}" stroke-width="1.5"{da}/>')
 
 
-def _text(x, y, s, size=12, fill=INK, anchor="middle", mono=False, weight=None) -> str:
+def _edge_down(x1, y1, x2, y2, f, t, cls, stroke=LINE2) -> str:
+    """Leave the source going down, then run level into the target (keeps the label lane clear)."""
+    d = (f"M{_n(x1)} {_n(y1)}C{_n(x1)} {_n(y2)} {_n(x1 + (x2 - x1) * 0.3)} {_n(y2)} {_n(x2)} {_n(y2)}")
+    return (f'<path class="{cls}" data-from="{_e(f)}" data-to="{_e(t)}" d="{d}" fill="none" '
+            f'stroke="{stroke}" stroke-width="1.5" stroke-dasharray="5 4"/>')
+
+
+def _text(x, y, s, size=13, fill=INK, anchor="middle", mono=False, weight=None) -> str:
     w = f' font-weight="{weight}"' if weight else ""
     return (f'<text x="{_n(x)}" y="{_n(y)}" text-anchor="{anchor}" font-size="{size}" fill="{fill}" '
             f'font-family="{MONO if mono else SANS}"{w}>{_e(s)}</text>')
@@ -96,8 +103,19 @@ def patch_graph_svg(page: PatchPage) -> str:
     for _ in scanned:
         scan_y.append(y)
         y += 30
-    height = max(y + 20, 40 + 34 * len(checks) + 40, 40 + 36 * len(files) + 40, 150)
-    mid = height / 2
+    anchor_y = (sum(dec_y.values()) / len(dec_y)) if decisions else (none_y if not decisions else 0)
+    half = max(len(files) * 44, len(checks) * 34) / 2 + 24
+    shift = max(0.0, half - anchor_y)
+    if shift:
+        anchor_y += shift
+        commit_y = {k: v + shift for k, v in commit_y.items()}
+        dec_y = {k: v + shift for k, v in dec_y.items()}
+        scan_y = [v + shift for v in scan_y]
+        if not decisions:
+            none_y += shift
+        y += shift
+    height = max(y + 20, anchor_y + half, 150)
+    mid = anchor_y
 
     patch_y = mid
     file_ys = _spread(len(files), mid, 44)
@@ -147,8 +165,8 @@ def patch_graph_svg(page: PatchPage) -> str:
         nodes.append(_node(
             "n-decision", f"dec:{d.id}", f"{d.id} {title} ({prose(d.status)})",
             f'<circle cx="{X_DEC}" cy="{_n(dy)}" r="16" fill="{INK}" stroke="{BRIGHT}" stroke-width="3"/>'
-            + _text(X_DEC, dy + 35, d.id, 14, INK, mono=True, weight=600)
-            + _text(X_DEC, dy + 52, _trunc(title, 28), 14, INK2)))
+            + _text(X_DEC, dy + 38, d.id, 14, INK, mono=True, weight=600)
+            + _text(X_DEC, dy + 56, _trunc(title, 28), 14, INK2)))
     if not decisions:
         for i, f in enumerate(files):
             edges.append(_edge(X_FILE + 95, file_ys[i], X_DEC - 72, none_y, f"file:{f}", "none",
@@ -162,11 +180,11 @@ def patch_graph_svg(page: PatchPage) -> str:
     # scanned
     for c, sy in zip(scanned, scan_y):
         if len(files) == 1:
-            edges.append(_edge(X_FILE + 95, file_ys[0], X_DEC - 5, sy, f"file:{files[0]}", f"scan:{c.id}",
-                               cls="edge edge-scanned", dash=True))
+            edges.append(_edge_down(X_FILE, file_ys[0] + 15, X_DEC - 5, sy, f"file:{files[0]}", f"scan:{c.id}",
+                                    "edge edge-scanned"))
         else:
-            edges.append(_edge(X_PATCH + 64, patch_y, X_DEC - 5, sy, pid, f"scan:{c.id}",
-                               cls="edge edge-scanned", dash=True))
+            edges.append(_edge_down(X_PATCH, patch_y + 18, X_DEC - 5, sy, pid, f"scan:{c.id}",
+                                    "edge edge-scanned"))
         nodes.append(_node(
             "n-scanned", f"scan:{c.id}", f"{c.id} {prose(c.title)} ({prose(c.status)}), scanned" + ("" if len(files) == 1 else " (scanned list is for the whole patch)"),
             f'<circle cx="{X_DEC}" cy="{_n(sy)}" r="5" fill="{SURFACE}" stroke="{INK3}" stroke-width="1.5"/>'
@@ -194,8 +212,8 @@ def patch_graph_svg(page: PatchPage) -> str:
 
 
 _SCHEMA_NODES = {  # label -> (x, y)
-    "Run": (60, 60), "Patch": (225, 60), "File": (395, 60), "Decision": (630, 60),
-    "Observation": (225, 200), "Check": (480, 200), "Commit": (630, 200),
+    "Run": (66, 60), "Patch": (275, 60), "File": (484, 60), "Decision": (693, 60),
+    "Observation": (275, 200), "Check": (484, 200), "Commit": (693, 200),
 }
 _REPLAY_ONLY = {"Run", "Patch", "Observation"}
 _SCHEMA_EDGES = [
@@ -207,7 +225,7 @@ _REPLAY_NOTE = "created in each demo run's replay copy, not in the committed sto
 
 
 def schema_svg(stats: StoreStats) -> str:
-    hw, hh = 54, 26
+    hw, hh = 52, 26
     out: list[str] = []
     for a, b, rel in _SCHEMA_EDGES:
         (x1, y1), (x2, y2) = _SCHEMA_NODES[a], _SCHEMA_NODES[b]
@@ -220,7 +238,12 @@ def schema_svg(stats: StoreStats) -> str:
         elif x1 == x2:
             sx = ex = x1
             sy, ey = (y1 + hh, y2 - hh) if y2 > y1 else (y1 - hh, y2 + hh)
-            lx, ly, anchor = sx + 8, (sy + ey) / 2 + 5, "start"
+            lx, ly = sx - 8, (sy + ey) / 2 + 5
+            if a == "Commit":
+                ly = sy + (ey - sy) * 0.3 + 5
+            anchor = "end" if a == "Commit" else "start"
+            if anchor == "start":
+                lx = sx + 8
         else:
             sx, sy, ex, ey = x1 - 20, y1 + hh, x2 + 30, y2 - hh
             lx, ly = (sx + ex) / 2 - 10, (sy + ey) / 2 - 12
