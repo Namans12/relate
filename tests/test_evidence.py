@@ -1,4 +1,5 @@
 import hashlib
+import json
 import shutil
 from pathlib import Path
 
@@ -56,8 +57,9 @@ def test_precedent_without_replay(tmp_path):
     assert res["changed_files"] == ["distribution/install.sh"]
     assert res["note"] == NOTE
     assert res["hint"] == (
-        f"No replay of this patch was found under {tmp_path}. Run `uv run patch-precedent "
-        "demo all` in the Patch Precedent project to produce observed results.")
+        "No replay matches this diff's changed lines. Pass the patch exactly as given; if Patch "
+        'Precedent has never been replayed here, run "uv run patch-precedent demo all".')
+    assert str(tmp_path) not in json.dumps(res)
     (f,) = res["files"]
     (d,) = f["decisions"]
     assert d["id"] == "ADR-0585" and len(d["commit"]) == 8
@@ -139,11 +141,13 @@ def test_garbage_newest_replay_is_skipped(tmp_path):
     res = precedent_for_patch(_text("installer", "release-lookup"), pins.STORE_PATH, tmp_path)
     assert res["replay"]["run"] == "20260101T000000Z"
     assert _checks(res) == {7: "not ok", 193: "not ok", 64: "ok"}
-    assert res["skipped_replays"] == [str(bad)]
+    assert res["skipped_replays"] == [str(bad.relative_to(tmp_path))]
     # when nothing matches, skipped replays are still reported alongside the hint
     other = _text("installer", "release-lookup").replace("api.github.com", "api.example.com")
     res = precedent_for_patch(other, pins.STORE_PATH, tmp_path)
-    assert res["replay"] is None and res["skipped_replays"] == [str(bad)] and "hint" in res
+    assert res["replay"] is None and "hint" in res
+    assert res["skipped_replays"] == [str(bad.relative_to(tmp_path))]
+    assert str(tmp_path) not in json.dumps(res)
 
 
 def test_hint_only_when_replay_is_null(tmp_path):
@@ -152,7 +156,8 @@ def test_hint_only_when_replay_is_null(tmp_path):
     assert found["replay"] is not None and "hint" not in found
     missing = precedent_for_patch(_text("installer", "wording"), pins.STORE_PATH,
                                   tmp_path / "none")
-    assert missing["replay"] is None and str(tmp_path / "none") in missing["hint"]
+    assert missing["replay"] is None and "demo all" in missing["hint"]
+    assert str(tmp_path) not in missing["hint"]
 
 
 def test_precedent_readonly(tmp_path):

@@ -58,7 +58,7 @@ def _find_replay(key: str, runs_root: Path):
             finally:
                 conn.close()
         except (relate.Error, relate.OperationalError):
-            skipped.append(str(path))
+            skipped.append(str(Path(path).relative_to(runs_root)))
             continue
         return {"scenario": scenario, "run": run, "label": label[0]}, observed, skipped
     return None, {}, skipped
@@ -105,7 +105,7 @@ def precedent_for_patch(diff: str, store: Path, runs_root: Path) -> dict:
     if skipped:
         out["skipped_replays"] = skipped
     if replay is None:
-        out["hint"] = (f"No replay of this patch was found under {runs_root}. Run "
-                       "`uv run patch-precedent demo all` in the Patch Precedent project "
-                       "to produce observed results.")
+        out["hint"] = ("No replay matches this diff's changed lines. Pass the patch exactly as "
+                       'given; if Patch Precedent has never been replayed here, run "uv run '
+                       'patch-precedent demo all".')
     return out

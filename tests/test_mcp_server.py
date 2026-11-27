@@ -122,7 +122,7 @@ def test_tool_call_no_replay_hint(tmp_path):
         res = s.call(_text("installer", "release-lookup"))
         checks, payload = _checks(res)
         assert set(checks.values()) == {"not observed"} and payload["replay"] is None
-        assert "demo all" in payload["hint"] and str(tmp_path / "no-runs") in payload["hint"]
+        assert "demo all" in payload["hint"] and str(tmp_path) not in payload["hint"]
         assert payload["files"][0]["decisions"][0]["id"] == "ADR-0585"
     finally:
         s.close()
