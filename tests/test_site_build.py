@@ -13,7 +13,7 @@ from patch_precedent.site.data import SiteDataError
 
 SLUGS = ["installer-release-lookup", "installer-token-header", "installer-wording",
          "release-always-rotate", "release-wording", "release-docs-only"]
-PAGES = ["index.html", "home.html", "results.html", "use.html", "relate.html"] + [
+PAGES = ["index.html", "home.html", "results.html", "use.html", "relate.html", "404.html"] + [
     f"scenarios/{s}.html" for s in SLUGS]
 ALLOWED = ("https://github.com/Namans12/relate", "https://github.com/relatedb/relate/",
            "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://relate.devpost.com")
@@ -106,7 +106,9 @@ def test_relative_links_resolve(site):
             if not path:
                 assert frag == "" or frag in sc.ids, (page.name, url)
                 continue
-            target = (here / path.split("?")[0]).resolve()
+            # root-relative links (the 404 page only) resolve against the site root
+            base = site if path.startswith("/") else here
+            target = (base / path.split("?")[0].lstrip("/")).resolve()
             assert target.exists(), (page.name, url)
             if frag and target.suffix == ".html":
                 assert frag in _scan(target).ids, (page.name, url)
@@ -325,3 +327,16 @@ def test_graph_aria_label_count_grammar(site):
 def test_results_caveat_names_the_metric(site):
     t = (site / "results.html").read_text()
     assert "Catching-checks recall was" in t and "Failing-check recall" not in t
+
+
+def test_404_page_uses_root_relative_links(site):
+    t = (site / "404.html").read_text()
+    assert 'name="robots" content="noindex"' in t
+    assert 'href="/assets/site.css"' in t and 'src="/assets/site.js"' in t
+    assert 'href="/home.html"' in t and 'href="/home.html#demo"' in t
+    for slug in SLUGS:
+        assert f'href="/scenarios/{slug}.html"' in t, slug
+    # no relative asset or page links that would break when served at a nested missing path
+    assert not re.search(r'(href|src)="(?!/|https?:|#)', t)
+    # other pages keep relative links
+    assert 'href="assets/site.css"' in (site / "home.html").read_text()

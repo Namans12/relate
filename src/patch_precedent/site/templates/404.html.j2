@@ -1,0 +1,32 @@
+{% extends "base.html.j2" %}
+{% import "macros.html.j2" as m %}
+{% block title %}Page not found - Patch Precedent{% endblock %}
+{% block head_extra %}<meta name="robots" content="noindex">{% endblock %}
+{% block body_class %}nf-page{% endblock %}
+{% block main %}
+{% set nf = c["not_found"] %}
+<section class="nf">
+  <div class="nf-dots" aria-hidden="true"></div>
+  <div class="wrap nf-inner">
+    <div class="eyebrow">{{ nf["eyebrow"] }}</div>
+    <h1>{{ nf["title"] }}</h1>
+    <p class="muted nf-text">{{ nf["text"] }}</p>
+    <div class="nf-actions">
+      <a class="btn btn-primary" href="{{ 'home.html' | rel }}"><span class="play-dot"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7.83 13l5.36 5.36-1.41 1.42L4 12l7.78-7.78 1.41 1.42L7.83 11H20v2z" fill="currentColor"/></svg></span>{{ nf["home"] }}</a>
+      <a class="btn btn-ghost" href="{{ 'home.html#demo' | rel }}">Run the demo</a>
+    </div>
+    <div class="nf-patches">
+      <div class="nf-label">{{ nf["patches"] }}</div>
+      {% for scenario, group in data.patches | groupby("scenario") %}
+      <div class="nf-group">
+        <span class="nf-scenario">{{ group[0].scenario_title }}</span>
+        {% for q in group %}
+        {% set qk = {"violates": "fail", "consistent": "pass"}.get(q.verdict.kind, "none") %}
+        <a class="nf-chip" href="{{ ('scenarios/' ~ q.slug ~ '.html') | rel }}"><i class="dot d-{{ qk }}" role="img" aria-label="{{ {'fail': 'violates', 'pass': 'consistent', 'none': 'no linked decision'}[qk] }}"></i>{{ q.label }}</a>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

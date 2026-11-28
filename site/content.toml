@@ -87,6 +87,13 @@ caveats = [
   "The prompt does not define \"consistent\" versus \"no decision\"; {baseline_misses_sit} on that line.",
 ]
 
+[not_found]
+eyebrow = "404"
+title = "No precedent for this page."
+text = "Nothing on this site lives at this address. Everything that does is one click away."
+home = "Back to the overview"
+patches = "Or open a patch"
+
 [use]
 eyebrow = "Use it"
 title = "Run it in a minute."

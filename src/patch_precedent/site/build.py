@@ -17,12 +17,15 @@ HERE = Path(__file__).resolve().parent
 TEMPLATES = HERE / "templates"
 STATIC = HERE / "static"
 REQUIRED = ("intro.html.j2", "home.html.j2", "results.html.j2", "use.html.j2", "relate.html.j2",
-            "scenario.html.j2")
+            "scenario.html.j2", "404.html.j2")
 
 
 def _rel(ctx: jinja2.runtime.Context, target: str) -> str:
     """Relative URL from the page being rendered to a site path (an optional #fragment is kept)."""
     page = ctx["page"]
+    if ctx.get("absolute_links"):
+        # The 404 page is served at whatever path was missed, so relative links would break.
+        return "/" + target.lstrip("/")
     path, sep, frag = target.partition("#")
     start = posixpath.dirname(page) or "."
     if not path:
@@ -85,6 +88,8 @@ def _pages(data: SiteData) -> list[tuple[str, str, dict]]:
         pages.append((out, tpl, {}))
     for p in data.patches:
         pages.append((f"scenarios/{p.slug}.html", "scenario.html.j2", {"patch": p}))
+    # Vercel serves /404.html for any missing path.
+    pages.append(("404.html", "404.html.j2", {"absolute_links": True}))
     return pages
 
 
