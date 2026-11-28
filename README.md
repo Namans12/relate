@@ -86,6 +86,8 @@ uv run patch-precedent site --out _site --base-url https://patch-precedent.verce
 npx vercel deploy _site --prod
 ```
 
+`src/patch_precedent/site/static/lockup.png` is rendered from `c-art.js` by `site/tools/render-lockup.html` in headless Chrome (the command is in the file).
+
 `--base-url` is only needed for link previews (the absolute `og:image` URL); without it the site builds and works the same, with relative links throughout. The build copies `vercel.json` into `_site/`, because Vercel reads it from the deployed folder. `_site/` is not committed. `--out` replaces only an empty directory or one a previous `site` build made (it carries a `.patch-precedent-site` marker); it refuses the project root, its parents, files and any other non-empty directory.
 
 ### Terminal output
@@ -475,6 +477,7 @@ Patch Precedent was built with significant AI assistance, disclosed here as the 
 
 - **Claude Code (Anthropic)** turned the project plan into an implementation plan and ran the build. Claude Opus planned each task and reviewed every change and the final branch. Claude Sonnet subagents wrote the code, tests and documentation.
 - **The website, terminal UI and recording** were also built with Claude Code, with Claude Opus orchestrating and reviewing and Claude Sonnet subagents implementing. The title lockup drawing in `src/patch_precedent/site/static/c-art.js` was adapted from a draft generated with Google Gemini.
+- **Planning documents** (specs and implementation plans written with Claude Code) were removed from `main`; they are in the git history at commit `1cc7213`.
 - **The project owner** chose the idea, approved the plan, and made the integration, licensing and publication decisions.
 - **Not AI-generated:** Relate, the upstream installer, its test harness and ADR-0585, ADR-0580 and the release script come from relatedb/relate at the pinned commit (see [NOTICE](NOTICE)).
 - **No model at run time:** the demo, `explain` and `mcp` call no AI service and need no API key. The one exception is `eval run`, which runs Claude Sonnet through Claude Code as the agent under test.

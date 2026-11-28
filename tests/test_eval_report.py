@@ -68,7 +68,7 @@ def make_results(root: Path) -> Path:
 
     add("C1", "graph", 1, _wrapped(c1_final, [_tool_call(), _tool_result()]))
     add("C1", "baseline", 1, _wrapped(c1_final, turns=7, cost=0.4), turns=7, cost=0.4)
-    shutil.copy2(EV / "spike-run.jsonl", root / "transcripts" / "C4-baseline-r1.jsonl")
+    shutil.copy2(EV / "stream-sample.jsonl", root / "transcripts" / "C4-baseline-r1.jsonl")
     rows.append({"case": "C4", "arm": "baseline", "repeat": 1, "error": None,
                  "model": "claude-sonnet-5-5", "num_turns": 6, "total_cost_usd": 0.0307462,
                  "argv": _argv("baseline"), "transcript": "transcripts/C4-baseline-r1.jsonl"})

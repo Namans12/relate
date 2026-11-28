@@ -81,7 +81,7 @@ def test_load_events_three_formats(tmp_path):
 
 
 def test_real_spike_c4_baseline():
-    ev = load_events(EV / "spike-run.jsonl")
+    ev = load_events(EV / "stream-sample.jsonl")
     final = parse_final(next(e["event"]["result"] for e in ev if e["event"]["type"] == "result"))
     s = score_run(CASES["C4"], ev, final)
     assert s["parse_error"] is False
@@ -96,7 +96,7 @@ def test_real_spike_c4_baseline():
 
 
 def test_real_spike_relate_c1():
-    ev = load_events(EV / "spike-run-relate-c1.jsonl")
+    ev = load_events(EV / "stream-sample-c1.jsonl")
     final = parse_final(next(e["event"]["result"] for e in ev if e["event"]["type"] == "result"))
     s = score_run(CASES["C1"], ev, final)
     assert s["verdict_correct"] is True and s["decisions_exact"] is True

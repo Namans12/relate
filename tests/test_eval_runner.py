@@ -12,7 +12,7 @@ from patch_precedent.eval.runner import EvalRefused, build_command, run_eval, ru
 from patch_precedent.store import open_readonly
 from test_evidence import _make_replays
 
-SPIKE = Path(__file__).parent / "data" / "eval" / "spike-run.jsonl"
+SPIKE = Path(__file__).parent / "data" / "eval" / "stream-sample.jsonl"
 GRAPH_TOOL = "mcp__precedent__precedent_for_patch"
 CASES = load_cases()
 
