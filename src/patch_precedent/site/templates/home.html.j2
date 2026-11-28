@@ -136,7 +136,7 @@
       </div>
       <div class="panel" role="tabpanel" id="panel-clone" aria-labelledby="tab-clone">
         <p class="muted">{{ c["use"]["steps"][0]["text"] }}</p>
-        {{ m.copy_block("git clone https://github.com/Namans12/relate.git\ncd relate") }}
+        {{ m.copy_block("git clone " ~ repo ~ ".git\ncd " ~ repo.split("/")[-1]) }}
       </div>
       <div class="panel" role="tabpanel" id="panel-explain" aria-labelledby="tab-explain">
         <p class="muted">{{ c["use"]["steps"][2]["text"] }}</p>
@@ -144,7 +144,7 @@
       </div>
       <div class="panel" role="tabpanel" id="panel-claude" aria-labelledby="tab-claude">
         <p class="muted">{{ c["use"]["steps"][3]["text"] }}</p>
-        {{ m.copy_block("claude mcp add --scope project precedent -- uv run --project <path-to-relate-clone> --quiet patch-precedent mcp") }}
+        {{ m.copy_block("claude mcp add --scope project precedent -- uv run --project <path-to-patch-precedent> --quiet patch-precedent mcp") }}
         <a class="res-more" href="{{ 'use.html' | rel }}">All the steps</a>
       </div>
     </div>

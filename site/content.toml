@@ -2,6 +2,10 @@
 # which load_site_data fills from the recording and the evaluation results.
 # No en or em dashes in any copy (a test checks this file as a whole).
 
+[site]
+# This project's repository; every template link to it is built from this one value.
+repo = "https://github.com/Namans12/patch-precedent"
+
 [home]
 eyebrow = "Built with Relate"
 title = "Every patch has a precedent."

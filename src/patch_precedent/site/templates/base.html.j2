@@ -44,7 +44,7 @@
       {%- endfor %}
     </nav>
     <div class="nav-cta">
-      <a class="icon-btn gh" href="https://github.com/Namans12/relate" target="_blank" rel="noopener" aria-label="Patch Precedent on GitHub">{{ m.gh_icon() }}</a>
+      <a class="icon-btn gh" href="{{ repo }}" target="_blank" rel="noopener" aria-label="Patch Precedent on GitHub">{{ m.gh_icon() }}</a>
       <a class="btn btn-primary" href="{{ 'home.html#demo' | rel }}"><span class="play-dot">{{ m.play_icon() }}</span>Run the demo</a>
       <button class="icon-btn menu-btn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="menu-panel">
         <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 5h12M3 9h12M3 13h12"/></svg>
@@ -57,7 +57,7 @@
       <a href="{{ href | rel }}"{% if id == na %} class="on" aria-current="page"{% endif %}>{{ label }}</a>
       {%- endfor %}
       <a href="{{ 'home.html#demo' | rel }}">Run the demo</a>
-      <a href="https://github.com/Namans12/relate" target="_blank" rel="noopener">GitHub</a>
+      <a href="{{ repo }}" target="_blank" rel="noopener">GitHub</a>
     </div>
   </div>
 </header>
@@ -67,7 +67,7 @@
 <footer class="foot">
   <div class="wrap">
     <span>Patch Precedent · MIT</span>
-    <span class="foot-links"><a class="gh-link" href="https://github.com/Namans12/relate" target="_blank" rel="noopener">{{ m.gh_icon(16) }}GitHub</a></span>
+    <span class="foot-links"><a class="gh-link" href="{{ repo }}" target="_blank" rel="noopener">{{ m.gh_icon(16) }}GitHub</a></span>
     <span>Relate is a product of Neo4j. Not affiliated.</span>
   </div>
 </footer>

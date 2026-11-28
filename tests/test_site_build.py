@@ -15,7 +15,7 @@ SLUGS = ["installer-release-lookup", "installer-token-header", "installer-wordin
          "release-always-rotate", "release-wording", "release-docs-only"]
 PAGES = ["index.html", "home.html", "results.html", "use.html", "relate.html", "404.html"] + [
     f"scenarios/{s}.html" for s in SLUGS]
-ALLOWED = ("https://github.com/Namans12/relate", "https://github.com/relatedb/relate/",
+ALLOWED = ("https://github.com/Namans12/patch-precedent", "https://github.com/relatedb/relate/",
            "https://fonts.googleapis.com", "https://fonts.gstatic.com", "https://relate.devpost.com")
 
 

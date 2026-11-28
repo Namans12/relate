@@ -24,7 +24,7 @@ Prerequisites:
 Get the code:
 
 ```bash
-git clone https://github.com/Namans12/relate.git && cd relate
+git clone https://github.com/Namans12/patch-precedent.git && cd patch-precedent
 ```
 
 Run both scenarios, replaying each baseline and its fixture patches against the upstream harness and explaining the results:
@@ -195,16 +195,16 @@ The demo shows outcomes only from observed runs and live graph queries. It print
 
 `patch-precedent mcp` serves one read-only [MCP](https://modelcontextprotocol.io) tool over stdio, `precedent_for_patch(diff)`. Give it a unified diff against Relate at the pinned commit and it returns the decisions (ADRs) governing each changed file with their rule and reason, the regression checks that guard them, and each check's observed result from Patch Precedent's replay of that exact patch. It opens the committed store with `read_only=True`, never runs a harness and writes nothing.
 
-For Claude Code, add this to a `.mcp.json` in the project where you want the tool, replacing `<path-to-relate-clone>` with the absolute path of this repository's clone:
+For Claude Code, add this to a `.mcp.json` in the project where you want the tool, replacing `<path-to-patch-precedent>` with the absolute path of this repository's clone:
 
 ```json
-{"mcpServers": {"precedent": {"command": "uv", "args": ["run", "--project", "<path-to-relate-clone>", "--quiet", "patch-precedent", "mcp"]}}}
+{"mcpServers": {"precedent": {"command": "uv", "args": ["run", "--project", "<path-to-patch-precedent>", "--quiet", "patch-precedent", "mcp"]}}}
 ```
 
 The equivalent one-liner:
 
 ```bash
-claude mcp add --scope project precedent -- uv run --project <path-to-relate-clone> --quiet patch-precedent mcp
+claude mcp add --scope project precedent -- uv run --project <path-to-patch-precedent> --quiet patch-precedent mcp
 ```
 
 The tool needs a prior `uv run patch-precedent demo all` to report observed results; without a replay, every check reads `"not observed"`. Matching is by the patch's changed lines, ignoring whitespace and context, so a diff whose tabs or trailing spaces were altered in transit still finds its replay.

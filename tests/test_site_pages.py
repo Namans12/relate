@@ -29,7 +29,7 @@ def test_results_caveats_count(site):
 
 def test_results_links(site):
     t = _read(site, "results.html")
-    assert "https://github.com/Namans12/relate/blob/main/eval/results/20261127T040059Z/RESULTS.md" in t
+    assert "https://github.com/Namans12/patch-precedent/blob/main/eval/results/20261127T040059Z/RESULTS.md" in t
     assert 'href="use.html#rescore"' in t
 
 
@@ -46,9 +46,9 @@ def test_use_steps(site):
 
 def test_use_commands_verbatim(site):
     t = _read(site, "use.html")
-    for s in ("git clone https://github.com/Namans12/relate.git",
+    for s in ("git clone https://github.com/Namans12/patch-precedent.git",
               "uv run patch-precedent explain fixtures/installer/token-header.patch",
-              "claude mcp add --scope project precedent -- uv run --project &lt;path-to-relate-clone&gt;",
+              "claude mcp add --scope project precedent -- uv run --project &lt;path-to-patch-precedent&gt;",
               "serve --mcp stdio --read-only --database &lt;copy of data/precedent.rl&gt;",
               "eval score --results eval/results/20261127T040059Z",
               "eval report --results eval/results/20261127T040059Z",

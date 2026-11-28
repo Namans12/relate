@@ -72,7 +72,7 @@ def test_tab_labels(site):
     t = _read(site, "home.html")
     for label in ("Clone", "Explain a patch", "Add to Claude Code"):
         assert f">{label}</button>" in t
-    assert "git clone https://github.com/Namans12/relate.git\ncd relate" in t
+    assert "git clone https://github.com/Namans12/patch-precedent.git\ncd patch-precedent" in t
 
 
 def test_demo_command_blocks_exactly_twice(site):

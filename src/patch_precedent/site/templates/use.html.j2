@@ -12,7 +12,7 @@
   "mcp": "mcp", "verify-store": "verify-store", "scan-citations": "scan-citations",
   "fetch-relate-cli": "fetch-relate-cli", "eval-run": "eval run", "eval-score": "eval score | report",
   "site": "site [build | record]"} %}
-{% set proj = "<path-to-relate-clone>" %}
+{% set proj = "<path-to-patch-precedent>" %}
 <div class="wrap page-narrow">
   <header class="reveal page-head">
     <div class="eyebrow">{{ u["eyebrow"] }}</div>
@@ -30,7 +30,7 @@
         </div>
         <p class="muted">{{ s["text"] }}</p>
         {% if loop.index == 1 %}
-        {{ m.copy_block("git clone https://github.com/Namans12/relate.git\ncd relate") }}
+        {{ m.copy_block("git clone " ~ repo ~ ".git\ncd " ~ repo.split("/")[-1]) }}
         {% elif loop.index == 2 %}
         {{ m.copy_block("uv run patch-precedent demo all") }}
         {% elif loop.index == 3 %}
@@ -38,15 +38,15 @@
         {% elif loop.index == 4 %}
         <div class="code cmd">
           <div class="code-bar"><span>.mcp.json</span><button class="copy" type="button" data-copy aria-label="Copy .mcp.json">Copy</button></div>
-          {% raw %}<pre data-verbatim tabindex="0">{
+          <pre data-verbatim tabindex="0">{
   "mcpServers": {
     "precedent": {
       "command": "uv",
-      "args": ["run", "--project", "&lt;path-to-relate-clone&gt;",
+      "args": ["run", "--project", "{{ proj }}",
                "--quiet", "patch-precedent", "mcp"]
     }
   }
-}</pre>{% endraw %}
+}</pre>
         </div>
         {{ m.copy_block("claude mcp add --scope project precedent -- uv run --project " ~ proj ~ " --quiet patch-precedent mcp", "or in one line") }}
         {% elif loop.index == 5 %}

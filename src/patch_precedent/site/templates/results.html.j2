@@ -10,7 +10,7 @@
 {% set g = ev.arms["graph"] %}
 {% set mk = {} %}
 {% for mt in ev.metrics %}{% set _ = mk.update({mt["key"]: mt}) %}{% endfor %}
-{% set md = "https://github.com/Namans12/relate/blob/main/" ~ results_dir ~ "/RESULTS.md" %}
+{% set md = repo ~ "/blob/main/" ~ results_dir ~ "/RESULTS.md" %}
 {% macro pct(x) %}{% if x is none %}n/a{% else %}{{ (x * 100 + 0.5) | int }}%{% endif %}{% endmacro %}
 {% macro num(x, spec) %}{% if x is none %}n/a{% else %}{{ spec | format(x) }}{% endif %}{% endmacro %}
 {% macro kn(k, n) %}{{ k }}/{{ n }}{% endmacro %}

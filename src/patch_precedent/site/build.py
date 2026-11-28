@@ -116,6 +116,10 @@ def build_site(root: Path, out: Path, base_url: str | None = None) -> list[Path]
         base_url = base_url.rstrip("/")
     data = load_site_data(root)
     env = _env()
+    repo = data.content.get("site", {}).get("repo")
+    if not repo:
+        raise SiteDataError("content.toml has no [site] repo")
+    env.globals["repo"] = repo.rstrip("/")
     available = {p.name for p in TEMPLATES.glob("*.j2")}
     missing = [t for t in REQUIRED if t not in available]
     if missing:
