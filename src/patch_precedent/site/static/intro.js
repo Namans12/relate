@@ -16,6 +16,20 @@ function showStill() {
   slot.replaceWith(img);
 }
 
+// Resolves once the banner's own stylesheet has loaded and its image has decoded,
+// or after 4 s so a stalled request can never keep the art hidden.
+function bannerReady(art) {
+  const root = art.shadowRoot;
+  const link = root.querySelector('link[rel="stylesheet"]');
+  const css = !link || link.sheet ? Promise.resolve() : new Promise(resolve => {
+    link.addEventListener('load', resolve, { once: true });
+    link.addEventListener('error', resolve, { once: true });
+  });
+  const images = [...root.querySelectorAll('img')].map(img => img.decode().catch(() => {}));
+  const timeout = new Promise(resolve => setTimeout(resolve, 4000));
+  return Promise.race([Promise.all([css, ...images]), timeout]);
+}
+
 try {
   // Offline, the web font never arrives; drawing with a fallback face would misrender the title.
   const fontOk = !reduce && (await document.fonts.load('800 100px "Playfair Display"')).length > 0
@@ -37,8 +51,19 @@ try {
     art.setAttribute('block-size', stacked ? '6' : '8');
     art.setAttribute('alt', 'Patch Precedent');
     art.setAttribute('src', canvas.toDataURL('image/png'));
-    // A late banner upgrades the fallback still in place.
-    currentSlot().replaceWith(art);
+    // The banner loads its stylesheet itself, inside its shadow root. Shown before that
+    // arrives, its screen-reader hint ("Move your pointer...") and the raw full-size image
+    // flash unstyled. So build it hidden and out of the layout, and swap it in only once
+    // its stylesheet and image are ready. A late banner also upgrades the fallback still.
+    art.style.position = 'absolute';
+    art.style.visibility = 'hidden';
+    currentSlot().after(art);
+    await bannerReady(art);
+    // Remove the placeholder rather than moving the banner: moving it would disconnect
+    // and re-render it, bringing the flash back. Both changes land before the next paint.
+    currentSlot()?.remove();
+    art.style.position = '';
+    art.style.visibility = '';
   }
 } catch (err) {
   console.error(err);
