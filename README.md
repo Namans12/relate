@@ -123,7 +123,7 @@ The release scenario's rotation patch drops the `--skip-changelog` guard in `scr
 
 ## What you'll see
 
-![Styled terminal output of demo all: each patch's check results, the verdicts that name ADR-0585 and ADR-0580, and the replay check](docs/images/terminal.png)
+![Styled terminal output of demo all: each patch's check results, the verdicts that name ADR-0585 and ADR-0580, and the 8/8 runs match expectations line](docs/images/terminal.png)
 
 An excerpt of a real `demo all` run. `…` marks omitted sections: the baselines, the per-patch diffs, the graph join tables and the artifact paths in both scenarios, and the installer scenario's comparison and graph evidence. The release scenario's comparison, graph evidence and control line are shown as printed.
 
@@ -213,7 +213,7 @@ The demo shows outcomes only from observed runs and live graph queries. It print
 
 ## How it works
 
-![The token-header patch page: ADR-0585 with its rule and reason, the three linked checks with check #64 failing in the replay, and the graph from the patch to the decision and its checks](docs/images/patch.png)
+![The token-header patch page: the three checks guarding ADR-0585, with check #64 failing in the replay, and the graph from the patch to its file, the decision, the commit and the checks](docs/images/patch.png)
 
 Committed store (`data/precedent.rl`, always opened read-only):
 
