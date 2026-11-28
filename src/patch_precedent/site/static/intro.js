@@ -28,6 +28,11 @@ try {
     const stacked = matchMedia('(max-width: 599px)').matches;
     const canvas = await (stacked ? drawCStacked : drawC)(FONTS.playfair);
     const art = document.createElement('pixelcraft-banner');
+    // Until its image decodes, the banner's panel falls back to a 1:1 shape, which pushes
+    // the Enter button off short screens and then jumps it back up. These custom
+    // properties inherit into the shadow root and give the panel its real shape at once.
+    art.style.setProperty('--source-width', canvas.width);
+    art.style.setProperty('--source-height', canvas.height);
     art.setAttribute('variant', 'hover-drift');
     art.setAttribute('block-size', stacked ? '6' : '8');
     art.setAttribute('alt', 'Patch Precedent');
