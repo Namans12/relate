@@ -2,6 +2,8 @@
 
 Two scenarios, each replaying authored patches against an unmodified upstream test harness and explaining the results through a Relate graph.
 
+**Live site:** [patch-precedent.vercel.app](https://patch-precedent.vercel.app)
+
 **installer.** Three patches touch the same installer file, `distribution/install.sh`. The Relate graph links that file to ADR-0585 ("the installer downloads release assets over the direct route"), the commit that implemented it, and the three regression checks that guard it. Replaying the patches through the unmodified upstream test harness shows that two of them break the ADR: the release-lookup patch probes the GitHub release API to improve an error message, and the token-header patch sends `GITHUB_TOKEN` as an `Authorization` header for a better rate limit. The wording patch passes.
 
 **release.** ADR-0580 says a post-release version advance must never rotate `CHANGELOG.md`. A patch to `scripts/release-bump.sh` that always rotates looks harmless because rotation is idempotent, but it breaks that rule and fails check #2 of the release harness. A rewording patch passes, and a docs-only patch to `CONTRIBUTING.md`, which cites no decision, is the control.
@@ -62,7 +64,7 @@ CONTRIBUTING.md: no linked decision
 
 ## Website
 
-A static site (home, the two scenarios, each patch, the evidence graph and a recorded demo) is generated from the committed evidence and recordings. Once deployed it is also the hackathon demo link: <deployed URL>.
+A static site (home, the two scenarios, each patch, the evidence graph and a recorded demo) is generated from the committed evidence and recordings. It is live at [patch-precedent.vercel.app](https://patch-precedent.vercel.app), which is also the hackathon demo link.
 
 Build it locally and view it:
 
@@ -80,7 +82,7 @@ uv run patch-precedent site record
 Deploy with the Vercel CLI from a local build. This needs your own Vercel login, and Node is needed only for this optional step:
 
 ```bash
-uv run patch-precedent site --out _site --base-url https://<project>.vercel.app
+uv run patch-precedent site --out _site --base-url https://patch-precedent.vercel.app
 npx vercel deploy _site --prod
 ```
 
