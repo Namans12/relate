@@ -5,6 +5,7 @@ import re
 import shlex
 
 from .. import pins
+from .cases import load_cases
 from .runner import GRAPH_TOOL
 from .score import _arm_key, _metrics, error_class
 
@@ -157,8 +158,73 @@ def _replay_limitation(runs: list[dict]) -> list[str]:
             "check outcomes they gave."]
 
 
+_BOUNDARY = ("consistent", "no_decision")
+
+
+def _no_adr(r: dict) -> bool:
+    """The run's final answer listed no ADR (precision is blank only for an empty list)."""
+    return r.get("verdict") is not None and r.get("decisions_precision") is None
+
+
+def _answer(r: dict) -> str:
+    v = r["verdict"]
+    return f"{v} with no ADR" if v == "consistent" and _no_adr(r) else v
+
+
+def _and(items: list[str]) -> str:
+    return items[0] if len(items) == 1 else ", ".join(items[:-1]) + " and " + items[-1]
+
+
+def _boundary_limitation(runs: list[dict], arms: list[str], expected: dict[str, str]) -> str:
+    """The consistent/no_decision caveat, stated from the scored runs."""
+    head = ('- eval/prompt.md does not define the difference between "consistent" and '
+            '"no_decision".')
+    sentences = []
+    for arm in arms:
+        rows = [r for r in runs if r["arm"] == arm and error_class(r.get("error")) != "infrastructure"]
+        misses = [r for r in rows if r.get("verdict_correct") is False]
+        if not misses:
+            continue
+        on = [r for r in misses
+              if r.get("verdict") in _BOUNDARY and expected.get(r["case"]) in _BOUNDARY]
+        n, k = len(misses), len(on)
+        if k == 0:
+            sentences.append(f"No {arm} verdict miss is a choice on that boundary.")
+            continue
+        verb = "is a choice" if k == 1 else "are choices"
+        if k < n:
+            subject = f"{k} of the {n} {arm} verdict misses"
+        elif n == 1:
+            subject = f"The one {arm} verdict miss"
+        elif n == 2:
+            subject = f"Both {arm} verdict misses"
+        else:
+            subject = f"All {n} {arm} verdict misses"
+        ids = [f"{r['case']} r{r['repeat']}" for r in on]
+        text = (f"{subject} {verb} on that boundary ("
+                + "; ".join(f"{i} answered {_answer(r)}" for i, r in zip(ids, on)) + ")")
+        same = []
+        for i, m in zip(ids, on):
+            if _answer(m) != "consistent with no ADR":
+                continue
+            twins = [f"{r['case']} r{r['repeat']}" for r in rows
+                     if r.get("verdict_correct") is True and r["case"] != m["case"]
+                     and _answer(r) == "consistent with no ADR"]
+            if twins:
+                same.append(f"{_and(twins)} gave the same answer as {i} but "
+                            f"{'was' if len(twins) == 1 else 'were'} scored correct")
+        sentences.append(text + "".join(f", and {x}" for x in same) + ".")
+    if not sentences:
+        sentences.append("No verdict was scored incorrect.")
+    return " ".join([head, *sentences])
+
+
 def render_results_md(summary: dict, scored_runs: list[dict], meta: dict,
-                      results_dir: str | None = None) -> str:
+                      results_dir: str | None = None,
+                      expected: dict[str, str] | None = None) -> str:
+    """`expected` maps case id to its ground-truth verdict (default: eval/cases.toml)."""
+    if expected is None:
+        expected = {c.id: c.verdict for c in load_cases()}
     runs = sorted(scored_runs, key=lambda r: (r["case"], _arm_key(r["arm"]), r["repeat"]))
     arms = list(meta.get("arms") or sorted({r["arm"] for r in runs}, key=_arm_key))
     arm_m = {a: summary["arms"].get(a) or _metrics([]) for a in arms}
@@ -306,10 +372,7 @@ def render_results_md(summary: dict, scored_runs: list[dict], meta: dict,
           '- The prompt asks for the checks "that would catch it"; "checks recall" counts every '
           'linked check, including checks expected to pass, and the graph tool lists all linked '
           'checks. "Catching-checks recall" counts only the checks expected to fail.',
-          '- eval/prompt.md does not define the difference between "consistent" and '
-          '"no_decision". Both baseline verdict misses are choices on that boundary (C2 r2 '
-          'answered no_decision; C6 r1 answered consistent with no ADR), and C2 r1 gave the same '
-          'answer as C6 r1 but was scored correct.',
+          _boundary_limitation(runs, arms, expected),
           *_replay_limitation(runs),
           "- Expected decisions are Patch Precedent's curated per-file decisions, which the graph "
           'tool returns directly; listing extra ADRs lowers "decisions exact" but not decision '

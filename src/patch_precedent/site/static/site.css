@@ -242,6 +242,7 @@ pre,.code{max-width:100%}
 .fill{height:100%;border-radius:4px;background:#8C8577;width:var(--w)}
 .bar.gr .fill{background:#F2A07B}
 .bar b{font:500 13px "JetBrains Mono";color:#FAF7F2;min-width:3.2em;text-align:right}
+.bar-note{margin:var(--s1) 0 0 calc(64px + var(--s3));font-size:12px;color:#B9B3A6}
 .js .fill{transition:width 1s cubic-bezier(.2,.7,.2,1)}
 .js .reveal:not(.in) .fill{width:0}
 
@@ -282,6 +283,7 @@ pre,.code{max-width:100%}
   .wrap{padding:0 var(--s4)}
   .node{flex-wrap:wrap;gap:var(--s2)}
   .bar{grid-template-columns:56px minmax(0,1fr) auto}
+  .bar-note{margin-left:calc(56px + var(--s3))}
 }
 @media (prefers-reduced-motion:reduce){.js .fill,.pcard{transition:none}.pcard:hover{transform:none}}
 
@@ -390,6 +392,7 @@ code{font:500 .88em "JetBrains Mono",ui-monospace,monospace;background:var(--sun
 .mgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s4);margin-top:var(--s6)}
 .mcard .label{font:600 12px Inter;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
 .mbars{display:grid;grid-template-columns:56px minmax(0,1fr) auto;align-items:center;gap:var(--s2) var(--s3);margin-top:var(--s4);font-size:13px}
+.mbars .mnote{font-size:12px;margin-top:calc(-1 * var(--s1))}
 .mbars b{font:500 13px "JetBrains Mono";text-align:right;min-width:3.6em}
 .mtrack{height:8px;border-radius:4px;background:var(--sunk);overflow:hidden}
 .mfill{height:100%;border-radius:4px}

@@ -115,6 +115,7 @@
         <div class="metric">
           <small>{{ mt["label"] }}{% if mt["lower"] %} (lower is better){% endif %}</small>
           <div class="bar"><span>baseline</span><div class="track2"><div class="fill" style="--w:{{ (mt['baseline_frac'] * 100) | round(1) }}%"></div></div><b>{{ mt["baseline"] }}</b></div>
+          {% if mt.get("note") %}<p class="bar-note">{{ mt["note"] }}</p>{% endif %}
           <div class="bar gr"><span>graph</span><div class="track2"><div class="fill" style="--w:{{ (mt['graph_frac'] * 100) | round(1) }}%"></div></div><b>{{ mt["graph"] }}</b></div>
         </div>
         {% endfor %}

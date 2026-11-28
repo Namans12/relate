@@ -365,19 +365,47 @@ def _metrics(arms: dict) -> tuple[dict, ...]:
         return {"key": key, "label": label, "baseline": fmt(bv), "graph": fmt(gv),
                 "baseline_frac": bv / top, "graph_frac": gv / top, "lower": True}
 
+    unsupported = lower("Unsupported claims", "unsupported", b["unsupported_total"],
+                        g["unsupported_total"], lambda v: f"{v}")
+    note = _unsupported_note(b)
+    if note:
+        unsupported["note"] = note
     return (
         ratio("Verdict correct", "verdict", "verdict_k"),
+        mean("Catching-checks recall", "catching_recall", "catching_recall_mean"),
         ratio("Decisions exact", "decisions_exact", "decisions_exact_k"),
         mean("Decision recall", "decision_recall", "decisions_recall_mean"),
-        mean("Checks recall", "checks_recall", "checks_recall_mean"),
-        mean("Catching-checks recall", "catching_recall", "catching_recall_mean"),
-        lower("Unsupported claims", "unsupported", b["unsupported_total"],
-              g["unsupported_total"], lambda v: f"{v}"),
+        mean("Checks recall (all linked, incl. passing)", "checks_recall", "checks_recall_mean"),
+        unsupported,
         lower("Median time to first correct citation", "citation_time",
               b["citation_median_s"], g["citation_median_s"], lambda v: f"{v:.1f} s"),
         lower("Mean turns", "turns", b["turns_mean"], g["turns_mean"], lambda v: f"{v:.1f}"),
         lower("Cost", "cost", b["cost_total"], g["cost_total"], lambda v: f"${v:.2f}"),
     )
+
+
+def _unsupported_note(b: dict) -> str | None:
+    """How many of the baseline's unsupported claims matched the observed result.
+
+    Stated only when every claim it marked was unsupported and scored against ground truth,
+    which holds for an arm with no tool that reports observed results.
+    """
+    n = b["unsupported_total"]
+    if not n or n != b["outcome_marked"] or b.get("replay_found_n"):
+        return None
+    k = b["outcome_correct"]
+    return f"all {n} were correct" if k == n else f"{k} of {n} were correct"
+
+
+def _max_turns(scored: list[dict]) -> int:
+    limits = set()
+    for r in scored:
+        argv = r.get("argv") or []
+        if "--max-turns" in argv and argv.index("--max-turns") + 1 < len(argv):
+            limits.add(int(argv[argv.index("--max-turns") + 1]))
+    if len(limits) != 1:
+        raise SiteDataError(f"expected one --max-turns across the scored runs, found {sorted(limits)}")
+    return limits.pop()
 
 
 def _eval_inputs(root: Path):
@@ -396,6 +424,7 @@ def _shared_values(root: Path, rec: dict) -> dict:
     return {
         "model": MODEL_NAME,
         "repeats": max(r["repeat"] for r in scored),
+        "max_turns": _max_turns(scored),
         "cases": len(cases_toml),
         "n": b["n"],
         "graph_runs": g["replay_found_n"],
@@ -407,7 +436,7 @@ def _shared_values(root: Path, rec: dict) -> dict:
         "baseline_misses_sit": misses_sit(b["n"] - b["verdict_k"]),
         "catching_recall_baseline": _pct(b["catching_recall_mean"]),
         "catching_recall_graph": _pct(g["catching_recall_mean"]),
-        "demo_seconds": round(rec["elapsed_s"]),
+        "demo_seconds": int(rec["elapsed_s"]),
     }
 
 

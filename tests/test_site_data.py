@@ -102,9 +102,10 @@ def test_eval_numbers_equal_results_json(data):
 
 def test_caveats_filled(data):
     assert any("3 of 18" in c for c in data.eval.caveats)
-    assert len(data.eval.caveats) == 4
+    assert len(data.eval.caveats) == 5
     assert all("{" not in c and "}" not in c for c in data.eval.caveats)
-    assert "both baseline verdict misses sit on that line" in data.eval.caveats[3]
+    assert "own replay of these same 6 patches" in data.eval.caveats[0]
+    assert "both baseline verdict misses sit on that line" in data.eval.caveats[4]
     assert "{" not in data.eval.intro and "Claude Sonnet" in data.eval.intro
 
 
@@ -192,7 +193,7 @@ def test_bodies_and_demo_strings(data):
     assert "Checks #7 and #193 caught it: install.sh contains a GitHub API URL" in by["installer-release-lookup"]
     assert by["installer-token-header"].count("Check #64 caught it") == 1
     assert "All 3 linked checks passed" in by["installer-wording"]
-    n = round(data.recording["elapsed_s"])
+    n = int(data.recording["elapsed_s"])
     assert data.content["home"]["demo_note"] == f"Runs locally in about {n} seconds."
     assert f"About {n} seconds." in data.content["use"]["steps"][1]["text"]
     for sec in ("home", "use", "relate"):
@@ -205,3 +206,12 @@ def test_stray_placeholder_in_home_raises(tmp_path):
     p.write_text(p.read_text(encoding="utf-8").replace("{demo_seconds}", "{nope}", 1), encoding="utf-8")
     with pytest.raises(SiteDataError, match=r"\{nope\}"):
         load_site_data(tmp_path)
+
+
+def test_results_bars_lead_with_robust_framing(data):
+    keys = [m["key"] for m in data.eval.metrics]
+    assert keys[:2] == ["verdict", "catching_recall"]
+    m = {x["key"]: x for x in data.eval.metrics}
+    assert m["checks_recall"]["label"] == "Checks recall (all linked, incl. passing)"
+    assert m["unsupported"]["note"] == "all 4 were correct"
+    assert "same 25-turn limit" in data.eval.intro

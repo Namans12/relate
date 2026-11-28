@@ -40,7 +40,7 @@ uv run patch-precedent demo installer
 uv run patch-precedent demo release
 ```
 
-`demo all` takes about 50 seconds on the tested Mac once the upstream cache is warm.
+`demo all` takes about 45 seconds on the tested Mac once the upstream cache is warm.
 
 Show the source chain behind a patch without fetching upstream or executing anything:
 
@@ -64,7 +64,7 @@ CONTRIBUTING.md: no linked decision
 
 ## Website
 
-A static site (home, the two scenarios, each patch, the evidence graph and a recorded demo) is generated from the committed evidence and recordings. It is live at [patch-precedent.vercel.app](https://patch-precedent.vercel.app), which is also the hackathon demo link.
+A static site is generated from the committed evidence and recordings: an overview with the recorded demo, one page per patch (diff, decision, checks, graph and the Cypher behind it), the evaluation results, a Relate page with the store and its four queries, and setup steps. It is live at [patch-precedent.vercel.app](https://patch-precedent.vercel.app), which is also the hackathon demo link.
 
 Build it locally and view it:
 
@@ -96,8 +96,8 @@ In a terminal, `demo`, `demo all` and `explain` print styled output. The output 
 
 | Scenario | Decision | Harness | Patches | Observed outcome |
 |---|---|---|---|---|
-| `installer` | ADR-0585, the installer downloads release assets over the direct route | `sh scripts/tests/test_install_sh.sh` (194 checks) | `release-lookup`, `token-header`, `wording` | `release-lookup` violates (exit 1, 192 / 2, fails #7 and #193); `token-header` violates ADR-0585 (exit 1, 193 / 1, fails only #64); `wording` consistent (exit 0, 194 / 0) |
-| `release` | ADR-0580, post-release workspace versioning: an advance never rotates `CHANGELOG.md` | `sh scripts/tests/test_release_advance.sh` (6 checks) | `always-rotate`, `wording`, `docs-only` | `always-rotate` violates (exit 1, 5 / 1, fails #2); `wording` consistent (exit 0, 6 / 0); `docs-only` has no linked decision (exit 0, 6 / 0) |
+| `installer` | ADR-0585, the installer downloads release assets over the direct route | `sh scripts/tests/test_install_sh.sh` (194 checks) | `release-lookup`, `token-header`, `wording` | `release-lookup` violates ADR-0585 (exit 1, 192 / 2, fails #7 and #193); `token-header` violates ADR-0585 (exit 1, 193 / 1, fails only #64); `wording` consistent (exit 0, 194 / 0) |
+| `release` | ADR-0580, post-release workspace versioning: an advance never rotates `CHANGELOG.md` | `sh scripts/tests/test_release_advance.sh` (6 checks) | `always-rotate`, `wording`, `docs-only` | `always-rotate` violates ADR-0580 (exit 1, 5 / 1, fails #2); `wording` consistent (exit 0, 6 / 0); `docs-only` has no linked decision (exit 0, 6 / 0) |
 
 The token-header patch makes `fetch_url` send `Authorization: Bearer $GITHUB_TOKEN` when the variable is set, for the authenticated rate limit. ADR-0585 says `GITHUB_TOKEN` is not read, and check #64 (`token set: no Authorization header anywhere`) fails; the static check #7 and the runtime check #193 still pass, so only the linked check that watches that clause catches it.
 
@@ -193,7 +193,7 @@ The demo shows outcomes only from observed runs and live graph queries. It print
 
 ## Give your coding agent the graph
 
-`patch-precedent mcp` serves one read-only [MCP](https://modelcontextprotocol.io) tool over stdio, `precedent_for_patch(diff)`. Give it a unified diff against Relate at the pinned commit and it returns the decisions (ADRs) governing each changed file with their rule and reason, the regression checks that guard them, and each check's observed result from Patch Precedent's replay of that exact patch. It opens the committed store with `read_only=True`, never runs a harness and writes nothing.
+`patch-precedent mcp` serves one read-only [MCP](https://modelcontextprotocol.io) tool over stdio, `precedent_for_patch(diff)`. Give it a unified diff against Relate at the pinned commit and it returns the decisions (ADRs) governing each changed file with their rule and reason, the regression checks that guard them, and each check's observed result from Patch Precedent's replay of that exact patch (replays exist for the six fixture patches after `demo all`; any other diff gets `not observed`). It opens the committed store with `read_only=True`, never runs a harness and writes nothing.
 
 For Claude Code, add this to a `.mcp.json` in the project where you want the tool, replacing `<path-to-patch-precedent>` with the absolute path of this repository's clone:
 
@@ -294,9 +294,10 @@ The headline table from [`eval/results/20261127T040059Z/RESULTS.md`](eval/result
 
 Setup: 6 cases (three installer patches, two release patches and one docs-only control; ground truth in `eval/cases.toml`), 3 repeats per case and arm, 36 runs in all, with Claude Sonnet through Claude Code. Both arms get the identical prompt and tools (`Read`, `Grep`, `Glob`) in a clean worktree of the pinned upstream; the graph arm adds one MCP tool, `precedent_for_patch`.
 
-In this run the graph arm used fewer turns (2.1 vs 6.2 mean) and listed exactly the expected decisions in 18/18 runs against 13/18, and the baseline made 4 unsupported claims against 0 (all 4 matched the observed results; see outcome accuracy). Four disclosures qualify those numbers; each is also in the RESULTS.md limitations:
+The robust differences in this run: the graph arm listed exactly the expected decisions in 18/18 runs against 13/18, took fewer turns (2.1 vs 6.2 mean) and cost less ($0.38 vs $0.73). Verdicts were near-equal (18/18 vs 16/18), and both baseline misses fall on a boundary the prompt does not define. The baseline made 4 unsupported claims against 0, and all 4 matched the observed results (see outcome accuracy). Five disclosures qualify those numbers; each is also in the RESULTS.md limitations:
 
-- Checks recall counts every linked check, including checks expected to pass, and the graph tool lists all linked checks. The catching-checks recall row counts only the checks expected to fail: 100% (n=9) for both arms.
+- The graph arm's tool returns Patch Precedent's own replay of these same six patches, so the comparison shows whether an agent uses that evidence, not how well the graph generalises.
+- Checks recall counts every linked check, including checks expected to pass, and the graph tool lists all linked checks. The catching-checks recall row counts only the checks expected to fail: 100% (n=9) for both arms, so the checks-recall gap (37% vs 91%) comes entirely from passing checks.
 - Decision recall is 87% (n=15) for the baseline and 100% (n=15) for the graph arm. Expected decisions are Patch Precedent's curated per-file decisions, which the graph tool returns directly; listing extra ADRs lowers "decisions exact" but not decision recall.
 - The graph tool returned observed results in 15 of the 18 runs. In the 3 runs where it reported no replay (C1 r1, C1 r2, C3 r1), the agent had altered the patch while copying it into the tool call (a context line was rewritten as an added line), so the changed-lines key did not match, and those agents answered "unknown" for the check outcomes they gave.
 - eval/prompt.md does not define the difference between "consistent" and "no_decision". Both baseline verdict misses are choices on that boundary (C2 r2 answered no_decision; C6 r1 answered consistent with no ADR), and C2 r1 gave the same answer as C6 r1 but was scored correct.

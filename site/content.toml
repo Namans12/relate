@@ -9,7 +9,7 @@ repo = "https://github.com/Namans12/patch-precedent"
 [home]
 eyebrow = "Built with Relate"
 title = "Every patch has a precedent."
-lede = "Check every patch against the architecture decisions behind the code, and the tests that prove it."
+lede = "See which architecture decisions a patch touches, and what the tests that guard them observed when it ran."
 how_title = "How it works"
 demo_title = "Run the demo"
 scenarios_title = "Six patches, two decisions."
@@ -20,7 +20,7 @@ chain_caption = "A patch, the file it changes, the decision that file cites, and
 
 [[home.steps]]
 name = "Cite"
-text = "Every ADR mention in Relate's repo, plus hand-reviewed rules and the tests that enforce them."
+text = "Every ADR mention in Relate's source (outside the ADRs themselves), plus hand-reviewed rules and the tests that enforce them."
 
 [[home.steps]]
 name = "Replay"
@@ -83,8 +83,9 @@ short = "Advance still sweeps the version surfaces"
 [results]
 eyebrow = "Measured"
 title = "Agents with and without the graph."
-intro = "{model} reviewed each patch {repeats} times per arm. Same prompt, same tools, same budget. The graph arm adds one MCP tool."
+intro = "{model} reviewed each patch {repeats} times per arm. Same prompt, same file tools, same {max_turns}-turn limit. The graph arm adds one MCP tool."
 caveats = [
+  "The graph arm's tool returns Patch Precedent's own replay of these same {cases} patches, so the comparison shows whether an agent uses that evidence, not how well the graph generalises.",
   "Catching-checks recall was {catching_recall_baseline} for the baseline and {catching_recall_graph} for the graph arm. The checks-recall gap comes from passing checks.",
   "The baseline cannot observe test results, so its test claims are unsupported by construction.",
   "In {replay_missed} of {graph_runs} graph runs the agent altered the patch when passing it to the tool, so no evidence came back.",
@@ -166,7 +167,7 @@ tag = ""
 
 [[use.steps]]
 title = "Explain any patch"
-text = "Read-only and offline. Works on any diff against Relate."
+text = "Read-only and offline. Works on any diff against Relate at the pinned commit; outside the two curated decisions it shows scanned citations only."
 tag = ""
 
 [[use.steps]]

@@ -1,7 +1,7 @@
 [project]
 name = "patch-precedent"
 version = "0.1.0"
-description = "Replay patches against an upstream installer test harness and explain the results via a graph."
+description = "Check patches against the architecture decisions (ADRs) behind the code they touch, replaying them against the upstream test harnesses and explaining results through a Relate graph."
 requires-python = ">=3.12,<3.13"
 license = "MIT"
 license-files = ["LICENSE", "NOTICE"]
@@ -11,6 +11,10 @@ dependencies = [
     "relate-db==1.1.0",
     "rich==15.0.0",
 ]
+
+[project.urls]
+Homepage = "https://patch-precedent.vercel.app"
+Repository = "https://github.com/Namans12/patch-precedent"
 
 [project.scripts]
 patch-precedent = "patch_precedent.cli:main"

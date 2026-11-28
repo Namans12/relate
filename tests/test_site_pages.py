@@ -24,7 +24,7 @@ def test_results_numbers(site):
 
 
 def test_results_caveats_count(site):
-    assert _read(site, "results.html").count('class="caveat"') == 4
+    assert _read(site, "results.html").count('class="caveat"') == 5
 
 
 def test_results_links(site):

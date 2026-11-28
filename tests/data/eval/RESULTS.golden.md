@@ -90,6 +90,6 @@ claude -p <prompt from eval/prompt.md> --restricted --mcp-config <results>/mcp-g
 - The graph arm's evidence is Patch Precedent's own replay of the same fixtures that define the ground truth, so what that arm is shown matches what it is scored against.
 - Neither arm can run the test suite (its tools are Read, Grep and Glob only), so any outcome an agent reports without tool evidence is an inference from reading files.
 - The prompt asks for the checks "that would catch it"; "checks recall" counts every linked check, including checks expected to pass, and the graph tool lists all linked checks. "Catching-checks recall" counts only the checks expected to fail.
-- eval/prompt.md does not define the difference between "consistent" and "no_decision". Both baseline verdict misses are choices on that boundary (C2 r2 answered no_decision; C6 r1 answered consistent with no ADR), and C2 r1 gave the same answer as C6 r1 but was scored correct.
+- eval/prompt.md does not define the difference between "consistent" and "no_decision". No graph verdict miss is a choice on that boundary.
 - Expected decisions are Patch Precedent's curated per-file decisions, which the graph tool returns directly; listing extra ADRs lowers "decisions exact" but not decision recall.
 - Elapsed times include model and tool latency and vary between runs.

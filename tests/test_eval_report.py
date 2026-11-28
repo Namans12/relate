@@ -239,3 +239,22 @@ def test_replay_limitation_lists_runs_with_no_replay():
             {"case": "C3", "arm": "graph", "repeat": 1, "tool_replay_found": False}]
     (line,) = _replay_limitation(runs)
     assert line.startswith("- In 2/3 runs") and "C1 r1 (graph), C3 r1 (graph)" in line
+
+
+def test_boundary_limitation_is_computed_from_the_runs():
+    from patch_precedent.eval.report import _boundary_limitation
+
+    def run(case, k, verdict, correct, precision=None):
+        return {"case": case, "arm": "baseline", "repeat": k, "verdict": verdict,
+                "verdict_correct": correct, "decisions_precision": precision, "error": None}
+    expected = {"C2": "consistent", "C6": "no_decision"}
+    runs = [run("C2", 1, "consistent", True), run("C2", 2, "no_decision", False),
+            run("C2", 3, "consistent", True, 0.5), run("C6", 1, "consistent", False),
+            run("C6", 2, "no_decision", True)]
+    assert _boundary_limitation(runs, ["baseline", "graph"], expected).endswith(
+        "Both baseline verdict misses are choices on that boundary (C2 r2 answered no_decision; "
+        "C6 r1 answered consistent with no ADR), and C2 r1 gave the same answer as C6 r1 but was "
+        "scored correct.")
+    clean = [r for r in runs if r["verdict_correct"]]
+    assert _boundary_limitation(clean, ["baseline"], expected).endswith(
+        "No verdict was scored incorrect.")

@@ -27,6 +27,7 @@
       <div class="label">{{ mt["label"] }}{% if mt["lower"] %} <span class="lower">(lower is better)</span>{% endif %}</div>
       <div class="mbars">
         <span class="muted">baseline</span><div class="mtrack"><div class="mfill base" style="width:{{ (mt['baseline_frac'] * 100) | round(1) }}%"></div></div><b class="mono">{{ mt["baseline"] }}</b>
+        {% if mt.get("note") %}<span></span><span class="mnote muted">{{ mt["note"] }}</span><span></span>{% endif %}
         <span class="muted">graph</span><div class="mtrack"><div class="mfill graph" style="width:{{ (mt['graph_frac'] * 100) | round(1) }}%"></div></div><b class="mono">{{ mt["graph"] }}</b>
       </div>
     </div>
