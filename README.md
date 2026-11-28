@@ -1,8 +1,24 @@
 # Patch Precedent
 
-Two scenarios, each replaying authored patches against an unmodified upstream test harness and explaining the results through a Relate graph.
+Does this patch break a decision the repo already made? Patch Precedent replays patches against the real test harness and traces each failure to its architecture decision record (ADR) through a Relate graph.
 
-**Live site:** [patch-precedent.vercel.app](https://patch-precedent.vercel.app)
+Built for the Relate by Neo4j hackathon. Relate is [Neo4j's embedded graph database](https://github.com/relatedb/relate); this project stores ADRs, citations, commits, checks and test observations in one Relate file and joins them in Cypher. The patches target Relate's own repository.
+
+**[Live site](https://patch-precedent.vercel.app/home.html)** · **[Results](https://patch-precedent.vercel.app/results.html)**
+
+![The Patch Precedent overview: a patch, the file it changes, the decision that file cites, and the checks that guard it](docs/images/home.png)
+
+## Quick start
+
+Prerequisites: macOS, git and [uv](https://docs.astral.sh/uv/); internet on the first run only; no API key.
+
+```bash
+git clone https://github.com/Namans12/patch-precedent.git && cd patch-precedent
+uv run patch-precedent demo all
+uv run patch-precedent explain fixtures/installer/token-header.patch
+```
+
+## What it checks
 
 **installer.** Three patches touch the same installer file, `distribution/install.sh`. The Relate graph links that file to ADR-0585 ("the installer downloads release assets over the direct route"), the commit that implemented it, and the three regression checks that guard it. Replaying the patches through the unmodified upstream test harness shows that two of them break the ADR: the release-lookup patch probes the GitHub release API to improve an error message, and the token-header patch sends `GITHUB_TOKEN` as an `Authorization` header for a better rate limit. The wording patch passes.
 
@@ -107,6 +123,8 @@ The release scenario's rotation patch drops the `--skip-changelog` guard in `scr
 
 ## What you'll see
 
+![Styled terminal output of demo all: each patch's check results, the verdicts that name ADR-0585 and ADR-0580, and the replay check](docs/images/terminal.png)
+
 An excerpt of a real `demo all` run. `…` marks omitted sections: the baselines, the per-patch diffs, the graph join tables and the artifact paths in both scenarios, and the installer scenario's comparison and graph evidence. The release scenario's comparison, graph evidence and control line are shown as printed.
 
 ```text
@@ -193,6 +211,56 @@ overall exit 0
 
 The demo shows outcomes only from observed runs and live graph queries. It prints each verdict from the harness's TAP output joined to the graph; nothing is hard-coded by filename.
 
+## How it works
+
+![The token-header patch page: ADR-0585 with its rule and reason, the three linked checks with check #64 failing in the replay, and the graph from the patch to the decision and its checks](docs/images/patch.png)
+
+Committed store (`data/precedent.rl`, always opened read-only):
+
+```text
+(File)-[:CITES]->(Decision)-[:CHECKED_BY]->(Check)
+(Commit)-[:IMPLEMENTS]->(Decision)
+(Upstream)   pinned repo and revision
+```
+
+The store merges the hand-curated manifests (`evidence/installer.toml`, `evidence/release.toml`) with the scanned citation index (`evidence/scanned/*.tsv`) into one file.
+
+Added only in a per-run copy (`runs/<timestamp>/<scenario>/replay.rl`):
+
+```text
+(Patch)-[:CHANGES]->(File)
+(Run)-[:APPLIED]->(Patch)
+(Patch)-[:PRODUCED]->(Observation)-[:FOR_CHECK]->(Check)
+```
+
+The join that connects a patch to the rules and checks behind the files it touches:
+
+```cypher
+MATCH (p:Patch)-[:CHANGES]->(f:File)-[:CITES]->(d:Decision)-[:CHECKED_BY]->(t:Check),
+      (p)-[:PRODUCED]->(o:Observation)-[:FOR_CHECK]->(t),
+      (c:Commit)-[:IMPLEMENTS]->(d)
+RETURN p.id AS patch, f.path AS file, d.id AS decision, d.reason AS reason,
+       c.sha AS implementation, t.name AS assertion, o.tap AS observed,
+       p.label AS label, o.number AS tap_number
+ORDER BY patch, assertion
+```
+
+Single-file mode: the evidence store is one Relate `.rl` file committed in the repo, opened in-process with `relate.connect` (no server, no sidecar files). `explain` and the demo's evidence queries open it with `read_only=True`; each replay writes to its own copy, `runs/<timestamp>/<scenario>/replay.rl`.
+
+All queries use bound parameters. Replays write to a copy because opening a Relate file read-write rewrites it, even for a read-only query; this keeps `data/precedent.rl` byte-unchanged and `git status` clean after a demo.
+
+For each case the demo makes a clean checkout of the pinned upstream revision, applies the patch with `git apply` (after `git apply --check`), and runs the scenario's upstream harness (`sh scripts/tests/test_install_sh.sh` or `sh scripts/tests/test_release_advance.sh`) unmodified.
+
+## Relate capabilities used
+
+- **Embedded single-file store.** All evidence lives in `data/precedent.rl`, opened in-process with `relate.connect` from `relate-db` 1.1.0. There is no server and no sidecar file.
+- **Cypher reads and writes.** `build-store` writes the graph with `UNWIND`, `CREATE` and `MERGE`; each replay adds its patch, run and observation nodes with `MERGE`; every question the demo, `explain`, `mcp` and the site ask is a Cypher `MATCH`.
+- **Parameter binding.** Every query binds its values (`$path`, `$key` and so on) instead of splicing strings.
+- **Read-only opens.** The committed store is opened with `read_only=True`; each replay writes into its own copy, `runs/<timestamp>/<scenario>/replay.rl`.
+- **Relate's MCP server.** The optional Relate CLI v1.3.0 serves the same graph with `relate serve --mcp stdio --read-only` (see [Relate's own MCP server](#relates-own-mcp-server)).
+
+The four queries Patch Precedent runs (decision chain for a file, every decision a file cites, the patch-to-observation join, and observed results for a patch key) are shown with what uses each one on the [Relate page](https://patch-precedent.vercel.app/relate.html). In the source they are `_EVIDENCE_QUERY` and `_CITED_QUERY` in `src/patch_precedent/store.py`, `JOIN_QUERY` in `replay.py` and `_OBSERVED_QUERY` in `evidence.py`.
+
 ## Give your coding agent the graph
 
 `patch-precedent mcp` serves one read-only [MCP](https://modelcontextprotocol.io) tool over stdio, `precedent_for_patch(diff)`. Give it a unified diff against Relate at the pinned commit and it returns the decisions (ADRs) governing each changed file with their rule and reason, the regression checks that guard them, and each check's observed result from Patch Precedent's replay of that exact patch (replays exist for the six fixture patches after `demo all`; any other diff gets `not observed`). It opens the committed store with `read_only=True`, never runs a harness and writes nothing.
@@ -276,6 +344,8 @@ It returns three rows: #7 `drift guard: install.sh consults no GitHub API endpoi
 
 ## Does the graph help? (measured)
 
+![The results page: baseline and graph-arm bars for each metric, followed by the caveats to read first](docs/images/results.png)
+
 The headline table from [`eval/results/20261127T040059Z/RESULTS.md`](eval/results/20261127T040059Z/RESULTS.md), copied verbatim:
 
 | Metric | baseline (n=18) | graph (n=18) |
@@ -294,7 +364,7 @@ The headline table from [`eval/results/20261127T040059Z/RESULTS.md`](eval/result
 | Mean turns | 6.2 (n=18) | 2.1 (n=18) |
 | Total cost, USD | $0.73 (n=18) | $0.38 (n=18) |
 
-Setup: 6 cases (three installer patches, two release patches and one docs-only control; ground truth in `eval/cases.toml`), 3 repeats per case and arm, 36 runs in all, with Claude Sonnet through Claude Code. Both arms get the identical prompt and tools (`Read`, `Grep`, `Glob`) in a clean worktree of the pinned upstream; the graph arm adds one MCP tool, `precedent_for_patch`.
+Setup: 6 cases (three installer patches, two release patches and one docs-only control; ground truth in `eval/cases.toml`), 3 repeats per case and arm, 36 runs in all, with Claude Sonnet (`claude-sonnet-5-5`) through Claude Code 2.1.292. Both arms get the identical prompt and tools (`Read`, `Grep`, `Glob`) in a clean worktree of the pinned upstream; the graph arm adds one MCP tool, `precedent_for_patch`.
 
 The robust differences in this run: the graph arm listed exactly the expected decisions in 18/18 runs against 13/18, took fewer turns (2.1 vs 6.2 mean) and cost less ($0.38 vs $0.73). Verdicts were near-equal (18/18 vs 16/18), and both baseline misses fall on a boundary the prompt does not define. The baseline made 4 unsupported claims against 0, and all 4 matched the observed results (see outcome accuracy). Five disclosures qualify those numbers; each is also in the RESULTS.md limitations:
 
@@ -308,7 +378,7 @@ The method note in RESULTS.md says:
 
 > The baseline arm has no tool that reports observed test results, so any "fails" or "passes" it gives is unsupported by construction. Answering "unknown" never counts as unsupported and never lowers outcome accuracy. A claim is "supported" when the agent saw an observed result for that check; whether the claim matches that result is measured separately by outcome accuracy. Medians of time to first correct citation skip runs that never cite the expected ADR; their count is shown as n.
 
-Read the full per-case table, every run, the exact command lines and the limitations in [RESULTS.md](eval/results/20261127T040059Z/RESULTS.md); the agent transcripts are in [`eval/results/20261127T040059Z/transcripts/`](eval/results/20261127T040059Z/transcripts/).
+Read the full per-case table, every run, the exact command lines and the limitations in [RESULTS.md](eval/results/20261127T040059Z/RESULTS.md); the agent transcripts are in [`eval/results/20261127T040059Z/transcripts/`](eval/results/20261127T040059Z/transcripts/). Each run's `.err` file there is its captured stderr; all 36 are empty.
 
 Re-score the published run (offline, no usage):
 
@@ -329,44 +399,6 @@ uv run patch-precedent eval report
 `eval score` and `eval report` without `--results` pick up the newest directory under `eval/results/`.
 
 `eval run` needs a logged-in Claude Code CLI and spends usage (the published run cost $1.11 in total, per RESULTS.md); it writes a new directory `eval/results/<UTC timestamp>/`. `demo`, `explain` and `mcp` need neither the CLI nor an API key. `eval score` and `eval report` are offline; on the committed results they rewrite `scored.jsonl`, `results.json` and `RESULTS.md` with identical bytes (`git diff --exit-code` stays clean).
-
-## How it works
-
-Committed store (`data/precedent.rl`, always opened read-only):
-
-```text
-(File)-[:CITES]->(Decision)-[:CHECKED_BY]->(Check)
-(Commit)-[:IMPLEMENTS]->(Decision)
-(Upstream)   pinned repo and revision
-```
-
-The store merges the hand-curated manifests (`evidence/installer.toml`, `evidence/release.toml`) with the scanned citation index (`evidence/scanned/*.tsv`) into one file.
-
-Added only in a per-run copy (`runs/<timestamp>/<scenario>/replay.rl`):
-
-```text
-(Patch)-[:CHANGES]->(File)
-(Run)-[:APPLIED]->(Patch)
-(Patch)-[:PRODUCED]->(Observation)-[:FOR_CHECK]->(Check)
-```
-
-The join that connects a patch to the rules and checks behind the files it touches:
-
-```cypher
-MATCH (p:Patch)-[:CHANGES]->(f:File)-[:CITES]->(d:Decision)-[:CHECKED_BY]->(t:Check),
-      (p)-[:PRODUCED]->(o:Observation)-[:FOR_CHECK]->(t),
-      (c:Commit)-[:IMPLEMENTS]->(d)
-RETURN p.id AS patch, f.path AS file, d.id AS decision, d.reason AS reason,
-       c.sha AS implementation, t.name AS assertion, o.tap AS observed,
-       p.label AS label, o.number AS tap_number
-ORDER BY patch, assertion
-```
-
-Single-file mode: the evidence store is one Relate `.rl` file committed in the repo, opened in-process with `relate.connect` (no server, no sidecar files). `explain` and the demo's evidence queries open it with `read_only=True`; each replay writes to its own copy, `runs/<timestamp>/<scenario>/replay.rl`.
-
-All queries use bound parameters. Replays write to a copy because opening a Relate file read-write rewrites it, even for a read-only query; this keeps `data/precedent.rl` byte-unchanged and `git status` clean after a demo.
-
-For each case the demo makes a clean checkout of the pinned upstream revision, applies the patch with `git apply` (after `git apply --check`), and runs the scenario's upstream harness (`sh scripts/tests/test_install_sh.sh` or `sh scripts/tests/test_release_advance.sh`) unmodified.
 
 ## Evidence and provenance
 
@@ -451,6 +483,8 @@ uv run pytest             # unit tests, offline
 uv run pytest -m upstream # runs the real upstream harness, about 2-3 minutes
 ```
 
+The unit suite is 369 tests and runs offline in about 25 seconds.
+
 ## Pins
 
 - Upstream: `https://github.com/relatedb/relate.git` at `5f7a510713c3feac146133e77d8c5bb72bae1b11`
@@ -459,6 +493,22 @@ uv run pytest -m upstream # runs the real upstream harness, about 2-3 minutes
 - `jinja2==3.1.6` and `rich==15.0.0` (site templates and styled terminal output)
 - Implementing commits: `5ac38808547d11f55b02333624cc3e88b46566eb` (ADR-0585), `d79d8b150561f56b4940876a067d6b7e4781d2bc` (ADR-0580)
 - `relate-db==1.1.0`, Python 3.12
+
+## Third-party tools
+
+- [uv](https://docs.astral.sh/uv/) installs Python 3.12 and the dependencies and runs every command.
+- [`relate-db`](https://github.com/relatedb/relate) 1.1.0 (Apache-2.0): the Relate Python package that reads and writes the store.
+- Relate CLI v1.3.0 (Apache-2.0, optional): downloaded and checksum-verified by `fetch-relate-cli` for Relate's own MCP server.
+- `mcp` 2.3.0 (MIT): the Python MCP SDK behind `patch-precedent mcp`.
+- Jinja2 3.1.6 (BSD-3-Clause) and Rich 15.0.0 (MIT): site templates and styled terminal output.
+- pytest 9.2.0: the test suite.
+- Claude Code 2.1.292 with `claude-sonnet-5-5`: the agent under test in `eval run` only.
+- Vercel hosts the static site; the optional deploy step uses the Vercel CLI through Node.
+- Google Fonts serves Playfair Display, Inter and JetBrains Mono (SIL Open Font License 1.1).
+- Pixelcraft, the intro effect, is by the repository author (MIT). The Enter button is adapted from [Uiverse.io by adamgiebl](https://uiverse.io/adamgiebl/new-bird-34) (MIT).
+- Headless Chrome renders `lockup.png` from `site/tools/render-lockup.html` (optional).
+
+[NOTICE](NOTICE) lists the licenses and exactly what is used from relatedb/relate.
 
 ## Limitations
 
